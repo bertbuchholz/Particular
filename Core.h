@@ -43,7 +43,7 @@ public:
 
     Eigen::Quaternion<float> add(Eigen::Quaternion<float> const& q_0, Eigen::Quaternion<float> const& q_1)
     {
-        return Eigen::Quaternion<float>(q_0.w() * q_1.w(), q_0.x() * q_1.x(), q_0.y() * q_1.y(), q_0.z() * q_1.z());
+        return Eigen::Quaternion<float>(q_0.w() + q_1.w(), q_0.x() + q_1.x(), q_0.y() + q_1.y(), q_0.z() + q_1.z());
     }
 
     void update(float const time_step)
@@ -68,33 +68,42 @@ public:
 //            atom._speed *= 0.9f; // arbitrary damping
 //        }
 
-        std::vector<Body_state> tmp_states;
+//        std::vector<Body_state> tmp_states;
 
         for (Molecule & m : _molecules)
         {
-            tmp_states.push_back(m.to_state());
+//            tmp_states.push_back(m.to_state());
             compute_force_and_torque(m);
         }
 
-        for (size_t i = 0; i < tmp_states.size(); ++i)
+        for (size_t i = 0; i < _molecules.size(); ++i)
         {
-            Body_state & state = tmp_states[i];
+//            Body_state & state = tmp_states[i];
             Molecule & molecule = _molecules[i];
 
-            state._x += molecule._v * time_step;
+//            state._x += molecule._v * time_step;
 
-//            Eigen::Matrix3f R_dot = star_matrix(molecule._omega) * molecule._R;
-//            state._R += R_dot * time_step;
+//            Eigen::Quaternion<float> omega_quaternion(0.0f, molecule._omega[0], molecule._omega[1], molecule._omega[2]);
+//            Eigen::Quaternion<float> q_dot = scale(omega_quaternion * molecule._q, 0.5f);
+//            state._q = add(state._q, scale(q_dot, time_step));
+
+//            state._P += molecule._force * time_step;
+
+//            state._L += molecule._torque * time_step;
+
+//            molecule.from_state(state);
+
+            molecule._x += molecule._v * time_step;
 
             Eigen::Quaternion<float> omega_quaternion(0.0f, molecule._omega[0], molecule._omega[1], molecule._omega[2]);
             Eigen::Quaternion<float> q_dot = scale(omega_quaternion * molecule._q, 0.5f);
-            state._q = add(state._q, scale(q_dot, time_step));
+            molecule._q = add(molecule._q, scale(q_dot, time_step));
 
-            state._P += molecule._force * time_step;
+            molecule._P += molecule._force * time_step;
 
-            state._L += molecule._torque * time_step;
+            molecule._L += molecule._torque * time_step;
 
-            molecule.from_state(state);
+            molecule.from_state(Body_state());
         }
     }
 

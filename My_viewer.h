@@ -184,7 +184,7 @@ public:
 //        _parameters.add_parameter(new Parameter("num_dimensions", 1, 1, 3, update));
 
         _parameters.add_parameter(new Parameter("physics_timestep_ms", 10, 1, 100, std::bind(&My_viewer::update_physics_timestep, this)));
-        _parameters.add_parameter(new Parameter("physics_speed", 1.0f, 0.1f, 10.0f, update));
+        _parameters.add_parameter(new Parameter("physics_speed", 1.0f, -10.0f, 100.0f, update));
         _parameters.add_parameter(new Parameter("global_scale", 1.0f, 0.01f, 100.0f, update));
 
         std::vector<std::string> particle_types = { "H", "O", "H2O" };
@@ -262,7 +262,7 @@ public:
 
     void mousePressEvent(QMouseEvent *event)
     {
-        if (event->buttons() & Qt::LeftButton)
+        if (event->buttons() & Qt::LeftButton && event->modifiers() & Qt::ControlModifier)
         {
             qglviewer::Vec qglv_origin;
             qglviewer::Vec qglv_dir;
@@ -339,6 +339,13 @@ public:
         {
             _physics_timer->start();
         }
+    }
+
+    void load_defaults() override
+    {
+        _core.add_molecule(Molecule::create_water(Eigen::Vector3f(3.0f, 3.0f, 0.0f)));
+        _core.add_molecule(Molecule::create_water(Eigen::Vector3f(1.0f, 3.0f, 0.0f)));
+        update();
     }
 
 public Q_SLOTS:

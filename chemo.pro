@@ -40,7 +40,7 @@ QMAKE_CXXFLAGS += -Wall \
     -fPIC \
     -std=c++11
 
-#LIBS += -lglut \
+LIBS += -lGLU
 #    -lpthread \
 #    -lGLEW
 

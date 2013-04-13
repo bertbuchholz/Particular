@@ -168,10 +168,10 @@ public:
 
     void from_state(Body_state const& state)
     {
-        _L = state._L;
-        _P = state._P;
-        _q = state._q;
-        _x = state._x;
+//        _L = state._L;
+//        _P = state._P;
+//        _q = state._q;
+//        _x = state._x;
 
         _v = _P / _mass;
         _R = _q.normalized().toRotationMatrix();
@@ -187,9 +187,9 @@ public:
     std::vector<Atom> _atoms;
 
     /* Constant quantities */
-    double _mass;   /* mass M*/
-    Eigen::Matrix3f _I_body;  /* I_body */
-    Eigen::Matrix3f _I_body_inv; /* I−1 (inverse of Ibody) */
+    double _mass;   /* mass */
+    Eigen::Matrix3f _I_body;
+    Eigen::Matrix3f _I_body_inv; /* inverse of I_body */
 
     /* State variables */
     Eigen::Vector3f _x;
@@ -206,7 +206,7 @@ public:
 
     /* Computed quantities */
     Eigen::Vector3f _force;  /* F(t) */
-    Eigen::Vector3f _torque; /* τ(t) */
+    Eigen::Vector3f _torque; /* omega(t) */
 
 private:
     Molecule(Eigen::Vector3f const& position, float const mass) :

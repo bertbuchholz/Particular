@@ -9,163 +9,10 @@
 #include <Options_viewer.h>
 #include <Draw_functions.h>
 
-
-#include <Low_discrepancy_sequences.h>
-
-
 #include <Registry_parameters.h>
 
 #include "Core.h"
 #include "Atom.h"
-
-inline float erf(float const x)
-{
-    //return std::acos(x);
-    return x * x * x;
-
-    float const a = 8.0f * (M_PI - 3.0f) / (3.0f * M_PI * (4.0f - M_PI));
-
-    float const result = std::sqrt(1.0f - std::exp(-(x*x)*(4.0f / M_PI + a * x*x) / (1.0f + a * x*x)));
-
-    return (x < 0.0f) ? -result : result;
-}
-
-
-template <typename Vec3>
-class Sample_generator
-{
-public:
-    virtual ~Sample_generator() {}
-
-    virtual void set_parameters(Parameter_list const& /* parameters */)
-    { }
-
-    static Parameter_list get_parameters()
-    {
-        Parameter_list parameters;
-        return parameters;
-    }
-
-    virtual std::vector<Vec3> generate_samples(int const num_samples, int const start) = 0;
-};
-
-
-typedef Sample_generator<qglviewer::Vec> Sample_generator_Vec;
-
-template <typename Vec3>
-class Sample_generator_halton : public Sample_generator<Vec3>
-{
-public:
-    std::vector<Vec3> generate_samples(int const num_samples, int const start)
-    {
-        std::vector<Vec3> samples;
-
-        Halton halton2(2);
-        Halton halton3(3);
-        Halton halton5(5);
-
-        halton2.setStart(start);
-        halton3.setStart(start);
-        halton5.setStart(start);
-
-        for (int i = 0; i < num_samples; ++i)
-        {
-            Vec3 v(halton2.getNext(), halton3.getNext(), halton5.getNext());
-
-            samples.push_back(v);
-        }
-
-        return samples;
-    }
-
-    static std::string name()
-    {
-        return "Sample_generator_halton";
-    }
-
-    static Sample_generator<Vec3> * create()
-    {
-        return new Sample_generator_halton;
-    }
-};
-
-typedef Sample_generator_halton<qglviewer::Vec> Sample_generator_halton_Vec;
-
-REGISTER_CLASS_WITH_PARAMETERS(Sample_generator_Vec, Sample_generator_halton_Vec);
-
-template <typename Vec3>
-class Sample_generator_rand : public Sample_generator<Vec3>
-{
-public:
-    std::vector<Vec3> generate_samples(int const num_samples, int const start)
-    {
-        std::vector<Vec3> samples;
-
-        srand(start);
-
-        for (int i = 0; i < num_samples; ++i)
-        {
-            Vec3 v(rand() / float(RAND_MAX), rand() / float(RAND_MAX), rand() / float(RAND_MAX));
-
-            samples.push_back(v);
-        }
-
-        return samples;
-    }
-
-    static std::string name()
-    {
-        return "Sample_generator_rand";
-    }
-
-    static Sample_generator<Vec3> * create()
-    {
-        return new Sample_generator_rand;
-    }
-};
-
-
-typedef Sample_generator_rand<qglviewer::Vec> Sample_generator_rand_Vec;
-
-REGISTER_CLASS_WITH_PARAMETERS(Sample_generator_Vec, Sample_generator_rand_Vec);
-
-
-template <typename Vec3>
-class Sample_generator_dummy : public Sample_generator<Vec3>
-{
-public:
-    std::vector<Vec3> generate_samples(int const , int const )
-    {
-        std::vector<Vec3> samples;
-        return samples;
-    }
-
-    static std::string name()
-    {
-        return "Sample_generator_dummy";
-    }
-
-    static Sample_generator<Vec3> * create()
-    {
-        return new Sample_generator_dummy;
-    }
-
-    static Parameter_list get_parameters()
-    {
-        Parameter_list parameters;
-        parameters.add_parameter(new Parameter("Bla 1", true));
-        parameters.add_parameter(new Parameter("Bla 2", true));
-        parameters.add_parameter(new Parameter("Bla 3", true));
-        parameters.add_parameter(new Parameter("Bla 4", true));
-        return parameters;
-    }
-};
-
-
-typedef Sample_generator_dummy<qglviewer::Vec> Sample_generator_dummy_Vec;
-
-REGISTER_CLASS_WITH_PARAMETERS(Sample_generator_Vec, Sample_generator_dummy_Vec);
-
 
 
 class My_viewer : public Options_viewer
@@ -179,15 +26,15 @@ public:
     {
         std::function<void(void)> update = std::bind(static_cast<void (My_viewer::*)()>(&My_viewer::update), this);
 
-//        _parameters.add_parameter(new Parameter("num_samples", 1, 1, 100000, update));
-//        _parameters.add_parameter(new Parameter("start", 0, 0, 100000, update));
-//        _parameters.add_parameter(new Parameter("num_dimensions", 1, 1, 3, update));
-
         _parameters.add_parameter(new Parameter("physics_timestep_ms", 10, 1, 100, std::bind(&My_viewer::update_physics_timestep, this)));
         _parameters.add_parameter(new Parameter("physics_speed", 1.0f, -10.0f, 100.0f, update));
         _parameters.add_parameter(new Parameter("global_scale", 1.0f, 0.01f, 100.0f, update));
 
-        std::vector<std::string> particle_types = { "H", "O", "H2O" };
+        Parameter_registry<Core>::create_normal_instance("Core", &_parameters, std::bind(&My_viewer::change_core_settings, this));
+
+        _parameters.add_parameter(new Parameter("indicator_scale", 0.1f, 0.01f, 10.0f, update));
+
+        std::vector<std::string> particle_types { "O2", "H2O" };
 
         _parameters.add_parameter(new Parameter("particle_type", 0, particle_types, update));
 
@@ -195,8 +42,17 @@ public:
         _parameters.add_parameter(Parameter::create_button("Do physics timestep", std::bind(&My_viewer::do_physics_timestep, this)));
         _parameters.add_parameter(Parameter::create_button("Clear", std::bind(&My_viewer::clear, this)));
 
-//        Parameter_registry<Sample_generator_Vec>::create_single_select_instance(&_parameters, "Sample_type", update);
-//        Parameter_registry<Sample_generator_Vec>::create_multi_select_instance(&_parameters, "Multi Sample_type", update);
+//        Parameter_registry<Atomic_force>::create_single_select_instance(&_parameters, "Atomic Force Type");
+
+//        change_core_settings();
+
+        _core.set_parameters(*_parameters.get_child("Core"));
+    }
+
+    void change_core_settings()
+    {
+        _core.set_parameters(*_parameters.get_child("Core"));
+        update();
     }
 
     void init() override
@@ -212,31 +68,81 @@ public:
 
         connect(_physics_timer, SIGNAL(timeout()), this, SLOT(update_physics()));
 //        _physics_timer->start();
+
+        qglviewer::ManipulatedCameraFrame * frame = camera()->frame();
+        StandardCamera * my_cam = new StandardCamera(0.1f, 1000.0f);
+        my_cam->setFrame(frame);
+        setCamera(my_cam);
+
+        icosphere = IcoSphere<OpenMesh::Vec3f, Color>(2);
+    }
+
+    void draw_molecule(Molecule const& molecule, Eigen::Vector3f const& normal_z, float const scale)
+    {
+        for (Atom const& atom : molecule._atoms)
+        {
+            glPushMatrix();
+
+            if (atom._type == Atom::Type::H)
+            {
+                set_color(Color(1.0f));
+                glTranslatef(0.0f, 0.0f, -0.01f); // avoid z fighting
+            }
+            else if (atom._type == Atom::Type::O)
+            {
+                set_color(Color(0.9f, 0.2f, 0.2f));
+            }
+
+//            draw_disc(atom._r, normal_z, scale * atom._radius, false, 24);
+//            draw_sphere_ico(Eigen2OM(atom._r), scale * atom._radius);
+
+            float const radius = scale * atom._radius;
+
+            glTranslatef(atom._r[0], atom._r[1], atom._r[2]);
+
+            glScalef(radius, radius, radius);
+
+            icosphere.draw();
+
+            glPopMatrix();
+        }
     }
 
     void draw() override
     {
+        glEnable(GL_LIGHTING);
+//        glDisable(GL_LIGHTING);
+
         float const scale = _parameters["global_scale"]->get_value<float>();
 
         Eigen::Vector3f normal_z = Eigen::Vector3f::UnitZ();
 
-        for (Atom const& atom : _core.get_atoms())
-        {
-            draw_disc(atom._r, normal_z, scale * atom._radius);
-        }
+//        for (Atom const& atom : _core.get_atoms())
+//        {
+//            draw_disc(atom._r, normal_z, scale * atom._radius);
+//        }
 
         for (Molecule const& molecule : _core.get_molecules())
         {
-            glPushMatrix();
+            draw_molecule(molecule, normal_z, scale);
+        }
 
-//            glTranslatef(molecule._x[0], molecule._x[1], molecule._x[2]);
 
-            for (Atom const& atom : molecule._atoms)
+        if (_parameters["Core/use_indicators"]->get_value<bool>())
+        {
+            float const indicator_scale = _parameters["indicator_scale"]->get_value<float>();
+
+            set_color(Color(1.0f));
+
+            for (Force_indicator const& f : _core.get_force_indicators())
             {
-                draw_disc(atom._r, normal_z, scale * atom._radius);
-            }
+                draw_point(f._atom._r);
 
-            glPopMatrix();
+                //glLineWidth(into_range(1.0f, 5.0f, f._force.norm()));
+                //            draw_arrow_z_plane(Eigen2OM(f._atom._r), Eigen2OM(f._atom._r + f._force.normalized()));
+
+                draw_arrow_z_plane(Eigen2OM(f._atom._r), Eigen2OM(f._atom._r + f._force * indicator_scale));
+            }
         }
     }
 
@@ -258,6 +164,11 @@ public:
     qglviewer::Vec OM2QGLV(OpenMesh::Vec3f const& p)
     {
         return qglviewer::Vec(p[0], p[1], p[2]);
+    }
+
+    OpenMesh::Vec3f Eigen2OM(Eigen::Vector3f const& p)
+    {
+        return OpenMesh::Vec3f(p[0], p[1], p[2]);
     }
 
     void mousePressEvent(QMouseEvent *event)
@@ -287,16 +198,14 @@ public:
 //                {
 //                    _core.add_atom(Atom::create_hydrogen(intersect_pos));
 //                }
-//                else if (particle_type == std::string("O"))
-//                {
-//                    _core.add_atom(Atom::create_oxygen(intersect_pos));
-//                }
-//                else if (particle_type == std::string("H2O"))
-//                {
-//                    _core.add_molecule(Molecule::create_water(intersect_pos));
-//                }
-
-                _core.add_molecule(Molecule::create_water(intersect_pos));
+                if (particle_type == std::string("O2"))
+                {
+                    _core.add_molecule(Molecule::create_oxygen(intersect_pos));
+                }
+                else if (particle_type == std::string("H2O"))
+                {
+                    _core.add_molecule(Molecule::create_water(intersect_pos));
+                }
             }
         }
         else
@@ -345,7 +254,33 @@ public:
     {
         _core.add_molecule(Molecule::create_water(Eigen::Vector3f(3.0f, 3.0f, 0.0f)));
         _core.add_molecule(Molecule::create_water(Eigen::Vector3f(1.0f, 3.0f, 0.0f)));
+
+        float const strength = 1.0f;
+        float const radius   = 0.5f;
+
+        _core.add_barrier(new Line_barrier(Eigen::Vector3f(-5.0f, 0.0f, 0.0f), Eigen::Vector3f( 1.0f, 0.0f, 0.0f), strength, radius));
+        _core.add_barrier(new Line_barrier(Eigen::Vector3f( 5.0f, 0.0f, 0.0f), Eigen::Vector3f(-1.0f, 0.0f, 0.0f), strength, radius));
+
+        _core.add_barrier(new Line_barrier(Eigen::Vector3f(0.0f, -5.0f, 0.0f), Eigen::Vector3f(0.0f,  1.0f, 0.0f), strength, radius));
+        _core.add_barrier(new Line_barrier(Eigen::Vector3f(0.0f,  5.0f, 0.0f), Eigen::Vector3f(0.0f, -1.0f, 0.0f), strength, radius));
+
         update();
+    }
+
+    static void test()
+    {
+        Eigen::Vector3f point(-3.0f, 0.0f, 0.0f);
+        Line_barrier b(Eigen::Vector3f(-5.0f, 0.0f, 0.0f), Eigen::Vector3f( 1.0f, 0.0f, 0.0f), 1.0f, 1.0f);
+        Force_indicator f(point);
+        std::cout << b.calc_force(f._atom) << std::endl;
+
+        point = Eigen::Vector3f(-1.0f, 0.0f, 0.0f);
+        f = Force_indicator(point);
+        std::cout << b.calc_force(f._atom) << std::endl;
+
+        point = Eigen::Vector3f(1.0f, 0.0f, 0.0f);
+        f = Force_indicator(point);
+        std::cout << b.calc_force(f._atom) << std::endl;
     }
 
 public Q_SLOTS:
@@ -359,6 +294,8 @@ private:
     QTimer * _physics_timer;
 
     Core _core;
+
+    IcoSphere<OpenMesh::Vec3f, Color> icosphere;
 };
 
 

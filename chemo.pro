@@ -22,6 +22,12 @@ EXT_DIR = ../extern
 BERT_SHARED_DIR = ../shared
 BERT_EXT_DIR = ../extern
 
+macx {
+    CONFIG(debug, debug|release) {
+        QMAKE_POST_LINK = dsymutil \"chemo.app/Contents/MacOS/chemo\"
+    }
+}
+
 DEPENDPATH += $${BERT_SHARED_DIR}
 
 include($${BERT_SHARED_DIR}/libs.pri)

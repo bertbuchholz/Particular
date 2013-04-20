@@ -13,7 +13,7 @@
 class Core
 {
 public:
-    Core()
+    Core() : _current_time(0.0f)
     {
         Eigen::Vector2f grid_start(-10.0f, -10.0f);
         Eigen::Vector2f grid_end  ( 10.0f,  10.0f);
@@ -79,9 +79,23 @@ public:
         receiver._force += -_translation_damping * receiver._v;
         receiver._torque += -_rotation_damping * receiver._omega;
 
-        receiver._torque += 0.1f * Eigen::Vector3f(1.0f - 2.0f * rand() / float(RAND_MAX),
-                                                   1.0f - 2.0f * rand() / float(RAND_MAX),
-                                                   1.0f - 2.0f * rand() / float(RAND_MAX));
+        receiver._torque += _rotation_fluctuation * Eigen::Vector3f(1.0f - 2.0f * rand() / float(RAND_MAX),
+                                                                    1.0f - 2.0f * rand() / float(RAND_MAX),
+                                                                    1.0f - 2.0f * rand() / float(RAND_MAX));
+
+        receiver._force += _translation_fluctuation * Eigen::Vector3f(1.0f - 2.0f * rand() / float(RAND_MAX),
+                                                                      1.0f - 2.0f * rand() / float(RAND_MAX),
+                                                                      1.0f - 2.0f * rand() / float(RAND_MAX));
+
+        // TODO: do the search for affected molecules somewhat less brute force
+        for (Molecule_external_force const& f : _external_forces)
+        {
+            if (receiver._id == f._molecule_id)
+            {
+                receiver._force += f._force;
+                receiver._torque += (f._origin - receiver._x).cross(f._force);
+            }
+        }
     }
 
     Eigen::Quaternion<float> scale(Eigen::Quaternion<float> const& quat, float const factor)
@@ -94,8 +108,23 @@ public:
         return Eigen::Quaternion<float>(q_0.w() + q_1.w(), q_0.x() + q_1.x(), q_0.y() + q_1.y(), q_0.z() + q_1.z());
     }
 
+    struct Check_duration
+    {
+        Check_duration(float const end_time) : _end_time(end_time) {}
+
+        bool operator() (Molecule_external_force const& f) const
+        {
+            return (f._start_time + f._duration < _end_time);
+        }
+
+        float _end_time;
+    };
+
+
     void update(float const time_step)
     {
+        _current_time += time_step;
+
 //        std::vector<Body_state> tmp_states;
 
         for (Molecule & m : _molecules)
@@ -103,6 +132,9 @@ public:
 //            tmp_states.push_back(m.to_state());
             compute_force_and_torque(m);
         }
+
+        _external_forces.erase(std::remove_if(_external_forces.begin(), _external_forces.end(), Check_duration(_current_time)),
+                        _external_forces.end());
 
         if (_use_indicators)
         {
@@ -152,6 +184,7 @@ public:
     {
         _molecules.push_back(molecule);
         _molecules.back()._id = _molecules.size();
+        _molecules.back()._mass_factor = _mass_factor;
     }
 
     void add_barrier(Barrier * barrier)
@@ -164,9 +197,21 @@ public:
         return _indicators;
     }
 
+    void add_external_force(Molecule_external_force const& force)
+    {
+        _external_forces.push_back(force);
+    }
+
+    float get_current_time() const
+    {
+        return _current_time;
+    }
+
     void clear()
     {
         _molecules.clear();
+        _barriers.clear();
+        _external_forces.clear();
     }
 
     void set_parameters(Parameter_list const& parameters)
@@ -174,6 +219,16 @@ public:
         _use_indicators = parameters["use_indicators"]->get_value<bool>();
         _rotation_damping = parameters["rotation_damping"]->get_value<float>();
         _translation_damping = parameters["translation_damping"]->get_value<float>();
+        _rotation_fluctuation = parameters["rotation_fluctuation"]->get_value<float>();
+        _translation_fluctuation = parameters["translation_fluctuation"]->get_value<float>();
+
+        _mass_factor = parameters["mass_factor"]->get_value<float>();
+
+        for (Molecule & m : _molecules)
+        {
+            m._mass_factor = _mass_factor;
+        }
+
         _atomic_force = std::unique_ptr<Atomic_force>(Parameter_registry<Atomic_force>::get_class_from_single_select_instance_2(parameters.get_child("Atomic Force Type")));
     }
 
@@ -183,8 +238,10 @@ public:
         parameters.add_parameter(new Parameter("use_indicators", true));
         parameters.add_parameter(new Parameter("rotation_damping", 0.1f, 0.0f, 10.0f));
         parameters.add_parameter(new Parameter("translation_damping", 0.1f, 0.0f, 10.0f));
+        parameters.add_parameter(new Parameter("rotation_fluctuation", 0.1f, 0.0f, 100.0f));
+        parameters.add_parameter(new Parameter("translation_fluctuation", 0.1f, 0.0f, 100.0f));
+        parameters.add_parameter(new Parameter("mass_factor", 1.0f, 0.01f, 10.0f));
 
-        // FIXME: memory leak
         Parameter_registry<Atomic_force>::create_single_select_instance(&parameters, "Atomic Force Type");
 
         return parameters;
@@ -209,11 +266,19 @@ private:
 
     std::vector<Barrier*> _barriers;
 
+    std::vector<Molecule_external_force> _external_forces;
+
     std::unique_ptr<Atomic_force> _atomic_force;
 
     float _translation_damping;
     float _rotation_damping;
 
+    float _rotation_fluctuation;
+    float _translation_fluctuation;
+
+    float _mass_factor;
+
+    float _current_time;
 };
 
 REGISTER_BASE_CLASS_WITH_PARAMETERS(Core);

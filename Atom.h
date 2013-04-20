@@ -35,12 +35,19 @@ inline Eigen::Matrix3f star_matrix(Eigen::Vector3f const& v)
 class Atom
 {
 public:
-    enum class Type { H, O };
+    enum class Type { Charge, H, O };
 
     static Atom create_oxygen(Eigen::Vector3f const& position)
     {
-        Atom a(position, 26.6f, -0.8f, 152.0f / 100.0f); // FIXME: should be -0.8 charge. changed for 2D (i.e. 1 bonding point)
+        Atom a(position, 26.6f, -0.8f, 152.0f / 100.0f);
         a._type = Type::O;
+        return a;
+    }
+
+    static Atom create_charge(Eigen::Vector3f const& position, float const charge)
+    {
+        Atom a(position, 0.0f, charge, 0.0f);
+        a._type = Type::Charge;
         return a;
     }
 
@@ -101,15 +108,27 @@ public:
         Molecule m(position);
 
         m._atoms.push_back(Atom::create_oxygen(Eigen::Vector3f(0.0f, 0.0f, 0.0f)));
+        m._atoms.back()._charge = 0.0f;
 
-        float const radius = 0.96f;
+        {
+            float const radius = 0.7f;
+            float const angle_2 = 0.5f * 90.0f / 360.0f * 2.0f * M_PI;
 
-        m._atoms.push_back(Atom::create_hydrogen(Eigen::Vector3f(radius, 0.0f, 0.0f)));
+            //        m._atoms.push_back(Atom::create_hydrogen(Eigen::Vector3f(radius, 0.0f, 0.0f)));
+            m._atoms.push_back(Atom::create_charge(Eigen::Vector3f(-std::cos( angle_2) * radius, 0.0f, std::sin( angle_2) * radius), -0.4f));
+            m._atoms.push_back(Atom::create_charge(Eigen::Vector3f(-std::cos(-angle_2) * radius, 0.0f, std::sin(-angle_2) * radius), -0.4f));
+        }
 
-        float const angle = 104.5f / 360.0f * 2.0f * M_PI;
+        {
+            float const radius = 0.96f;
+            float const angle_2 = 0.5f * 104.5f / 360.0f * 2.0f * M_PI;
 
-        m._atoms.push_back(Atom::create_hydrogen(Eigen::Vector3f(std::cos(angle) * radius, std::sin(angle) * radius, 0.0f)));
+            //        m._atoms.push_back(Atom::create_hydrogen(Eigen::Vector3f(radius, 0.0f, 0.0f)));
+            m._atoms.push_back(Atom::create_hydrogen(Eigen::Vector3f(std::cos( angle_2) * radius, std::sin( angle_2) * radius, 0.0f)));
+            m._atoms.push_back(Atom::create_hydrogen(Eigen::Vector3f(std::cos(-angle_2) * radius, std::sin(-angle_2) * radius, 0.0f)));
+        }
 
+        m.reset();
         m.init();
 
         return m;
@@ -130,9 +149,21 @@ public:
 
         m._atoms.push_back(Atom::create_oxygen(Eigen::Vector3f(1.4f, 0.5f, 0.0f)));
 
+        m.reset();
         m.init();
 
         return m;
+    }
+
+    void reset()
+    {
+        _R.setIdentity();
+        _P.setZero();
+        _L.setZero();
+        _q.setIdentity();
+
+        _v = Eigen::Vector3f::Zero();
+        _omega = Eigen::Vector3f::Zero();
     }
 
     void init()
@@ -142,9 +173,8 @@ public:
 
         Eigen::Vector3f center_of_mass = Eigen::Vector3f::Zero();
 
-        _mass = 0.0f;
-
         _I_body.setZero();
+        _mass = 0.0f;
 
         for (Atom const& a : _atoms)
         {
@@ -157,14 +187,6 @@ public:
         _I_body_inv = _I_body.inverse();
 
         center_of_mass /= _mass;
-
-        _R.setIdentity();
-        _P.setZero();
-        _L.setZero();
-        _q.setIdentity();
-
-        _v = Eigen::Vector3f::Zero();
-        _omega = Eigen::Vector3f::Zero();
 
         for (Atom & a : _atoms)
         {
@@ -201,10 +223,10 @@ public:
 //        _q = state._q;
 //        _x = state._x;
 
-        _v = _P / _mass;
+        _v = _P / (_mass * _mass_factor);
         _R = _q.normalized().toRotationMatrix();
         _I_inv = _R * _I_body_inv * _R.transpose();
-        _omega = _I_inv * _L;
+        _omega = (1.0f / _mass_factor) * _I_inv * _L;
 
         for (Atom & a : _atoms)
         {
@@ -215,13 +237,12 @@ public:
     std::vector<Atom> _atoms;
 
     /* Constant quantities */
-    double _mass;   /* mass */
+    float _mass;
     Eigen::Matrix3f _I_body;
     Eigen::Matrix3f _I_body_inv; /* inverse of I_body */
 
     /* State variables */
     Eigen::Vector3f _x;
-//    Eigen::Matrix3f _R;
     Eigen::Quaternion<float> _q;
     Eigen::Vector3f _P;
     Eigen::Vector3f _L;
@@ -237,6 +258,8 @@ public:
     Eigen::Vector3f _torque; /* omega(t) */
 
     int _id;
+
+    float _mass_factor;
 
 private:
     Molecule(Eigen::Vector3f const& position) :
@@ -458,5 +481,14 @@ inline float calc_lennard_jones_potential(Molecule const& m_0, Molecule const& m
     return 4.0f * (std::pow(sigma / dist, 12.0f) - std::pow(sigma / dist, 6.0f));
 }
 
+class Molecule_external_force
+{
+public:
+    int _molecule_id;
+    Eigen::Vector3f _origin;
+    Eigen::Vector3f _force;
+    float _duration;
+    float _start_time;
+};
 
 #endif // ATOM_H

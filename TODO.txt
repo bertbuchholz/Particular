@@ -1,0 +1,5 @@
+- Midpoint/Runge-Kutta
+- Basic interaction, shooting in new molecules, pulling existing molecules
+- Controls FPS like
+- Larger molecules
+- Control the LJ potential force

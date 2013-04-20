@@ -9,6 +9,7 @@
 #include <Options_viewer.h>
 #include <Draw_functions.h>
 
+#include <Picking.h>
 #include <Registry_parameters.h>
 
 #include "Core.h"
@@ -22,7 +23,8 @@ class My_viewer : public Options_viewer
 public:
     typedef Options_viewer Base;
 
-    My_viewer()
+    My_viewer() :
+        _is_dragging(false)
     {
         std::function<void(void)> update = std::bind(static_cast<void (My_viewer::*)()>(&My_viewer::update), this);
 
@@ -75,6 +77,8 @@ public:
         setCamera(my_cam);
 
         icosphere = IcoSphere<OpenMesh::Vec3f, Color>(2);
+
+        _picking.init(context(), size()); // FIXME: needs to be resized when viewer changes
     }
 
     void draw_molecule(Molecule const& molecule, Eigen::Vector3f const& normal_z, float const scale)
@@ -83,20 +87,21 @@ public:
         {
             glPushMatrix();
 
+            float radius = scale * atom._radius;
+
             if (atom._type == Atom::Type::H)
             {
                 set_color(Color(1.0f));
-                glTranslatef(0.0f, 0.0f, -0.01f); // avoid z fighting
             }
             else if (atom._type == Atom::Type::O)
             {
                 set_color(Color(0.9f, 0.2f, 0.2f));
             }
-
-//            draw_disc(atom._r, normal_z, scale * atom._radius, false, 24);
-//            draw_sphere_ico(Eigen2OM(atom._r), scale * atom._radius);
-
-            float const radius = scale * atom._radius;
+            else if (atom._type == Atom::Type::Charge)
+            {
+                set_color(Color(0.3f, 0.2f, 0.7f));
+                radius = 0.3f;
+            }
 
             glTranslatef(atom._r[0], atom._r[1], atom._r[2]);
 
@@ -105,6 +110,32 @@ public:
             icosphere.draw();
 
             glPopMatrix();
+        }
+    }
+
+    void picking_draw()
+    {
+        for (Molecule const& molecule : _core.get_molecules())
+        {
+            int const index = molecule._id;
+            _picking.set_index(index);
+
+            for (Atom const& atom : molecule._atoms)
+            {
+                if (atom._type == Atom::Type::Charge) continue;
+
+                glPushMatrix();
+
+                glTranslatef(atom._r[0], atom._r[1], atom._r[2]);
+
+//                float radius = scale * atom._radius;
+                float radius = atom._radius;
+                glScalef(radius, radius, radius);
+
+                icosphere.draw();
+
+                glPopMatrix();
+            }
         }
     }
 
@@ -117,16 +148,10 @@ public:
 
         Eigen::Vector3f normal_z = Eigen::Vector3f::UnitZ();
 
-//        for (Atom const& atom : _core.get_atoms())
-//        {
-//            draw_disc(atom._r, normal_z, scale * atom._radius);
-//        }
-
         for (Molecule const& molecule : _core.get_molecules())
         {
             draw_molecule(molecule, normal_z, scale);
         }
-
 
         if (_parameters["Core/use_indicators"]->get_value<bool>())
         {
@@ -156,9 +181,14 @@ public:
         return OpenMesh::dot(plane_normal, (plane_position - ray_origin)) / OpenMesh::dot(ray_dir, plane_normal);
     }
 
-    OpenMesh::Vec3f QGLV2OM (qglviewer::Vec const& p)
+    OpenMesh::Vec3f QGLV2OM(qglviewer::Vec const& p)
     {
         return OpenMesh::Vec3f(p.x, p.y, p.z);
+    }
+
+    Eigen::Vector3f QGLV2Eigen(qglviewer::Vec const& p)
+    {
+        return Eigen::Vector3f(p.x, p.y, p.z);
     }
 
     qglviewer::Vec OM2QGLV(OpenMesh::Vec3f const& p)
@@ -189,15 +219,8 @@ public:
             {
                 Eigen::Vector3f const intersect_pos = OM2Eigen(origin + t * dir);
 
-//                Atom const atom(Vec(0.0f), intersect_pos, 1.0f, 1.0f, 1.0f);
-
                 std::string const particle_type = _parameters["particle_type"]->get_value<std::string>();
 
-                // FIXME: add back in
-//                if (particle_type == std::string("H"))
-//                {
-//                    _core.add_atom(Atom::create_hydrogen(intersect_pos));
-//                }
                 if (particle_type == std::string("O2"))
                 {
                     _core.add_molecule(Molecule::create_oxygen(intersect_pos));
@@ -208,9 +231,67 @@ public:
                 }
             }
         }
+        else if (event->buttons() & Qt::LeftButton && event->modifiers() & Qt::AltModifier)
+        {
+            std::cout << __PRETTY_FUNCTION__ << " Picking" << std::endl;
+
+            int const picked_index = _picking.do_pick(event->pos().x(), height() - event->pos().y(), std::bind(&My_viewer::picking_draw, this));
+
+            std::cout << __PRETTY_FUNCTION__ << " index: " << picked_index << std::endl;
+
+            if (picked_index > 0)
+            {
+                _is_dragging = true;
+                _dragging_start = event->pos();
+
+                bool found;
+                qglviewer::Vec world_pos = camera()->pointUnderPixel(event->pos(), found);
+
+                if (found)
+                {
+                    Molecule_external_force f;
+                    f._molecule_id = picked_index;
+                    qglviewer::Vec dir = world_pos - camera()->position();
+                    dir.normalize();
+                    f._force = 1.0f * QGLV2Eigen(dir);
+                    f._origin = QGLV2Eigen(world_pos);
+                    f._duration = 0.5f;
+                    f._start_time = _core.get_current_time();
+
+                    std::cout << "Apply force: " << f._origin << std::endl;
+
+                    _core.add_external_force(f);
+                }
+            }
+        }
         else
         {
             Base::mousePressEvent(event);
+        }
+    }
+
+    void mouseMoveEvent(QMouseEvent * event) override
+    {
+        if (event->buttons() & Qt::LeftButton && event->modifiers() & Qt::AltModifier && _is_dragging)
+        {
+            // update drag indicator
+
+        }
+        else
+        {
+            Base::mouseMoveEvent(event);
+        }
+    }
+
+    void mouseReleaseEvent(QMouseEvent * event)
+    {
+        if (_is_dragging)
+        {
+            _is_dragging = false;
+        }
+        else
+        {
+            Base::mouseReleaseEvent(event);
         }
     }
 
@@ -296,6 +377,10 @@ private:
     Core _core;
 
     IcoSphere<OpenMesh::Vec3f, Color> icosphere;
+
+    Picking _picking;
+    bool _is_dragging;
+    QPoint _dragging_start;
 };
 
 

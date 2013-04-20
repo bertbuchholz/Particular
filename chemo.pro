@@ -20,7 +20,6 @@ CONFIG += qt \
 
 EXT_DIR = ../extern
 BERT_SHARED_DIR = ../shared
-BERT_EXT_DIR = ../extern
 
 macx {
     CONFIG(debug, debug|release) {
@@ -33,10 +32,8 @@ DEPENDPATH += $${BERT_SHARED_DIR}
 include($${BERT_SHARED_DIR}/libs.pri)
 
 INCLUDEPATH += . \
-    $${SHARED_DIR} \
     $${BERT_SHARED_DIR} \
-    $${EXT_DIR} \
-    $${YAF_DIR}/include/utilities
+    $${EXT_DIR}
 
 MOC_DIR = ./moc
 OBJECTS_DIR = ./obj
@@ -53,12 +50,11 @@ LIBS += -lGLU
 # Input
 SOURCES += main.cpp
 
-OTHER_FILES += ../TODO
+OTHER_FILES += TODO.txt \
+    data/shaders/picking.vert \
+    data/shaders/picking.frag
 
 HEADERS += \
     My_viewer.h \
     Atom.h \
     Core.h
-
-
-

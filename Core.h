@@ -6,6 +6,8 @@
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 
+#include <boost/optional.hpp>
+
 #include <Registry_parameters.h>
 
 #include "Atom.h"
@@ -96,6 +98,12 @@ public:
                 receiver._torque += (f._origin - receiver._x).cross(f._force);
             }
         }
+
+        if (_user_force._end_time > _current_time && receiver._id == _user_force._molecule_id)
+        {
+            receiver._force += _user_force._force;
+            receiver._torque += (_user_force._origin - receiver._x).cross(_user_force._force);
+        }
     }
 
     Eigen::Quaternion<float> scale(Eigen::Quaternion<float> const& quat, float const factor)
@@ -114,7 +122,7 @@ public:
 
         bool operator() (Molecule_external_force const& f) const
         {
-            return (f._start_time + f._duration < _end_time);
+            return (f._end_time < _end_time);
         }
 
         float _end_time;
@@ -207,6 +215,25 @@ public:
         return _current_time;
     }
 
+    Molecule_external_force & get_user_force()
+    {
+        return _user_force;
+    }
+
+    boost::optional<Molecule const&> get_molecule(int const id)
+    {
+        // TODO: stupid brute force search, maybe better structure
+        for (Molecule const& m : _molecules)
+        {
+            if (m._id == id)
+            {
+                return boost::optional<Molecule const&>(m);
+            }
+        }
+
+        return boost::optional<Molecule const&>();
+    }
+
     void clear()
     {
         _molecules.clear();
@@ -267,6 +294,8 @@ private:
     std::vector<Barrier*> _barriers;
 
     std::vector<Molecule_external_force> _external_forces;
+
+    Molecule_external_force _user_force;
 
     std::unique_ptr<Atomic_force> _atomic_force;
 

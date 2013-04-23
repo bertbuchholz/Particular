@@ -3,3 +3,4 @@
 - Controls FPS like
 - Larger molecules
 - Control the LJ potential force
+- Molecule pulling: maybe increase the rotational damping for the pulled molecule? Right now too much wiggling during pull

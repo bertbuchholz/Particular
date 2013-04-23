@@ -6,6 +6,8 @@
 #include <QGLWidget>
 #include <iostream>
 
+#include <Eigen/Geometry>
+
 #include <Options_viewer.h>
 #include <Draw_functions.h>
 
@@ -169,6 +171,34 @@ public:
                 draw_arrow_z_plane(Eigen2OM(f._atom._r), Eigen2OM(f._atom._r + f._force * indicator_scale));
             }
         }
+
+        // debug display
+        Molecule_external_force const& force = _core.get_user_force();
+
+        if (force._end_time > _core.get_current_time())
+        {
+            glDisable(GL_LIGHTING);
+
+
+            glBegin(GL_LINES);
+
+            glVertex3fv(force._origin.data());
+            glVertex3fv(Eigen::Vector3f(force._origin + force._force).data());
+
+            glEnd();
+
+            glPushMatrix();
+
+            glTranslatef(force._origin[0], force._origin[1], force._origin[2]);
+
+            //                float radius = scale * atom._radius;
+            float radius = 0.2f;
+            glScalef(radius, radius, radius);
+
+            icosphere.draw();
+
+            glPopMatrix();
+        }
     }
 
     void update_physics_timestep()
@@ -233,34 +263,34 @@ public:
         }
         else if (event->buttons() & Qt::LeftButton && event->modifiers() & Qt::AltModifier)
         {
-            std::cout << __PRETTY_FUNCTION__ << " Picking" << std::endl;
+            std::cout << __PRETTY_FUNCTION__ << " Drag/Click" << std::endl;
+            _dragging_start = event->pos();
 
-            int const picked_index = _picking.do_pick(event->pos().x(), height() - event->pos().y(), std::bind(&My_viewer::picking_draw, this));
+            _picked_index = _picking.do_pick(event->pos().x(), height() - event->pos().y(), std::bind(&My_viewer::picking_draw, this));
 
-            std::cout << __PRETTY_FUNCTION__ << " index: " << picked_index << std::endl;
+            std::cout << __PRETTY_FUNCTION__ << " index: " << _picked_index << std::endl;
 
-            if (picked_index > 0)
+            if (_picked_index > 0)
             {
-                _is_dragging = true;
-                _dragging_start = event->pos();
-
                 bool found;
                 qglviewer::Vec world_pos = camera()->pointUnderPixel(event->pos(), found);
 
                 if (found)
                 {
-                    Molecule_external_force f;
-                    f._molecule_id = picked_index;
+                    boost::optional<Molecule const&> picked_molecule = _core.get_molecule(_picked_index);
+
+                    assert(picked_molecule);
+
+                    Molecule_external_force & f = _core.get_user_force();
+                    f._molecule_id = _picked_index;
                     qglviewer::Vec dir = world_pos - camera()->position();
                     dir.normalize();
                     f._force = 1.0f * QGLV2Eigen(dir);
                     f._origin = QGLV2Eigen(world_pos);
-                    f._duration = 0.5f;
-                    f._start_time = _core.get_current_time();
+                    f._local_origin = picked_molecule->_R.transpose() * (f._origin - picked_molecule->_x);
+                    f._end_time = _core.get_current_time();
 
                     std::cout << "Apply force: " << f._origin << std::endl;
-
-                    _core.add_external_force(f);
                 }
             }
         }
@@ -272,10 +302,45 @@ public:
 
     void mouseMoveEvent(QMouseEvent * event) override
     {
-        if (event->buttons() & Qt::LeftButton && event->modifiers() & Qt::AltModifier && _is_dragging)
+        if (event->buttons() & Qt::LeftButton && event->modifiers() & Qt::AltModifier)
         {
             // update drag indicator
 
+            if (!_is_dragging)
+            {
+                if (_picked_index > 0 && (_dragging_start - event->pos()).manhattanLength() > 0)
+                {
+                    _is_dragging = true;
+                }
+            }
+
+            if (_is_dragging)
+            {
+                boost::optional<Molecule const&> picked_molecule = _core.get_molecule(_picked_index);
+
+                assert(picked_molecule);
+
+                Molecule_external_force & f = _core.get_user_force();
+
+                Eigen::Hyperplane<float, 3> view_plane(QGLV2Eigen(camera()->viewDirection()), f._origin);
+
+                qglviewer::Vec qglv_origin;
+                qglviewer::Vec qglv_dir;
+
+                camera()->convertClickToLine(event->pos(), qglv_origin, qglv_dir);
+
+                Eigen::Vector3f origin = QGLV2Eigen(qglv_origin);
+                Eigen::Vector3f dir    = QGLV2Eigen(qglv_dir).normalized();
+
+                Eigen::ParametrizedLine<float, 3> line(origin, dir);
+
+                Eigen::Vector3f new_force_target = line.intersectionPoint(view_plane);
+
+                f._origin = picked_molecule->_R * f._local_origin + picked_molecule->_x;
+//                f._force = 1.0f * (new_force_target - f._origin).normalized();
+                f._force = new_force_target - f._origin;
+                f._end_time = _core.get_current_time() + 0.1f;
+            }
         }
         else
         {
@@ -288,6 +353,17 @@ public:
         if (_is_dragging)
         {
             _is_dragging = false;
+        }
+        else if (event->modifiers() & Qt::AltModifier)
+        {
+            std::cout << __PRETTY_FUNCTION__ << " click" << std::endl;
+
+            if (_picked_index > 0)
+            {
+                Molecule_external_force & f = _core.get_user_force();
+
+                f._end_time = _core.get_current_time() + 0.5f;
+            }
         }
         else
         {
@@ -312,6 +388,27 @@ public:
         }
 
         update();
+    }
+
+    void animate() override
+    {
+        if (_is_dragging)
+        {
+            boost::optional<Molecule const&> picked_molecule = _core.get_molecule(_picked_index);
+
+            assert(picked_molecule);
+
+            Molecule_external_force & f = _core.get_user_force();
+
+            Eigen::Vector3f old_force_target = f._origin + f._force;
+
+            f._origin = picked_molecule->_R * f._local_origin + picked_molecule->_x;
+//                f._force = 1.0f * (new_force_target - f._origin).normalized();
+            f._force = old_force_target - f._origin;
+            f._end_time = _core.get_current_time() + 0.1f;
+        }
+
+        Base::animate();
     }
 
     void clear()
@@ -381,6 +478,7 @@ private:
     Picking _picking;
     bool _is_dragging;
     QPoint _dragging_start;
+    int _picked_index;
 };
 
 

@@ -486,9 +486,9 @@ class Molecule_external_force
 public:
     int _molecule_id;
     Eigen::Vector3f _origin;
+    Eigen::Vector3f _local_origin; // force origin expressed in molecule's space
     Eigen::Vector3f _force;
-    float _duration;
-    float _start_time;
+    float _end_time;
 };
 
 #endif // ATOM_H

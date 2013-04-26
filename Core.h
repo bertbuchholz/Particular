@@ -11,11 +11,26 @@
 #include <Registry_parameters.h>
 
 #include "Atom.h"
+#include "Spatial_hash.h"
 
 class Core
 {
 public:
-    Core() : _current_time(0.0f)
+
+    struct Molecule_atom_id
+    {
+        Molecule_atom_id(int const m, int const a) : m_id(m), a_id(a)
+        { }
+
+        int m_id;
+        int a_id;
+    };
+
+    typedef Spatial_hash<Eigen::Vector3f, Molecule_atom_id> Molecule_atom_hash;
+
+    Core() :
+        _current_time(0.0f),
+        _molecule_hash(Molecule_atom_hash(100, 3.0f))
     {
         Eigen::Vector2f grid_start(-10.0f, -10.0f);
         Eigen::Vector2f grid_end  ( 10.0f,  10.0f);
@@ -43,7 +58,6 @@ public:
             {
                 if ((receiver_atom._r - sender_atom._r).norm() > 1e-4f)
                 {
-//                    force_i += calc_force_between_atoms(receiver_atom, sender_atom);
                     force_i += _atomic_force->calc_force_between_atoms(receiver_atom, sender_atom);
                 }
             }
@@ -81,13 +95,8 @@ public:
         receiver._force += -_translation_damping * receiver._v;
         receiver._torque += -_rotation_damping * receiver._omega;
 
-        receiver._torque += _rotation_fluctuation * Eigen::Vector3f(1.0f - 2.0f * rand() / float(RAND_MAX),
-                                                                    1.0f - 2.0f * rand() / float(RAND_MAX),
-                                                                    1.0f - 2.0f * rand() / float(RAND_MAX));
-
-        receiver._force += _translation_fluctuation * Eigen::Vector3f(1.0f - 2.0f * rand() / float(RAND_MAX),
-                                                                      1.0f - 2.0f * rand() / float(RAND_MAX),
-                                                                      1.0f - 2.0f * rand() / float(RAND_MAX));
+        receiver._torque += _rotation_fluctuation * Eigen::Vector3f::Random().normalized();
+        receiver._force += _translation_fluctuation * Eigen::Vector3f::Random().normalized();
 
         // TODO: do the search for affected molecules somewhat less brute force
         for (Molecule_external_force const& f : _external_forces)
@@ -132,6 +141,8 @@ public:
     void update(float const time_step)
     {
         _current_time += time_step;
+
+        update_spatial_hash();
 
 //        std::vector<Body_state> tmp_states;
 
@@ -179,7 +190,7 @@ public:
 
             molecule._L += molecule._torque * time_step;
 
-            molecule.from_state(Body_state());
+            molecule.from_state(Body_state(), _mass_factor);
         }
     }
 
@@ -188,11 +199,33 @@ public:
         return _molecules;
     }
 
-    void add_molecule(Molecule const& molecule)
+    Molecule_atom_hash const& get_molecule_hash() const
     {
+        return _molecule_hash;
+    }
+
+    void add_molecule(Molecule molecule)
+    {
+        molecule._id = _molecules.size() + 1;
         _molecules.push_back(molecule);
-        _molecules.back()._id = _molecules.size();
-        _molecules.back()._mass_factor = _mass_factor;
+
+        for (size_t i = 0; i < molecule._atoms.size(); ++i)
+        {
+            _molecule_hash.add_point(molecule._atoms[i]._r, Molecule_atom_id(molecule._id, i));
+        }
+    }
+
+    void update_spatial_hash()
+    {
+        _molecule_hash.clear();
+
+        for (Molecule const& m : _molecules)
+        {
+            for (size_t i = 0; i < m._atoms.size(); ++i)
+            {
+                _molecule_hash.add_point(m._atoms[i]._r, Molecule_atom_id(m._id, i));
+            }
+        }
     }
 
     void add_barrier(Barrier * barrier)
@@ -220,6 +253,11 @@ public:
         return _user_force;
     }
 
+    std::unique_ptr<Atomic_force> const& get_atomic_force()
+    {
+        return _atomic_force;
+    }
+
     boost::optional<Molecule const&> get_molecule(int const id)
     {
         // TODO: stupid brute force search, maybe better structure
@@ -239,6 +277,7 @@ public:
         _molecules.clear();
         _barriers.clear();
         _external_forces.clear();
+        _molecule_hash.clear();
     }
 
     void set_parameters(Parameter_list const& parameters)
@@ -250,11 +289,6 @@ public:
         _translation_fluctuation = parameters["translation_fluctuation"]->get_value<float>();
 
         _mass_factor = parameters["mass_factor"]->get_value<float>();
-
-        for (Molecule & m : _molecules)
-        {
-            m._mass_factor = _mass_factor;
-        }
 
         _atomic_force = std::unique_ptr<Atomic_force>(Parameter_registry<Atomic_force>::get_class_from_single_select_instance_2(parameters.get_child("Atomic Force Type")));
     }
@@ -308,6 +342,8 @@ private:
     float _mass_factor;
 
     float _current_time;
+
+    Molecule_atom_hash _molecule_hash;
 };
 
 REGISTER_BASE_CLASS_WITH_PARAMETERS(Core);

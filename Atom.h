@@ -83,7 +83,7 @@ public:
 //    }
 
 //private:
-    Eigen::Vector3f _r_0; // FIXME: new body space position of particle
+    Eigen::Vector3f _r_0; // body space position of particle
     Eigen::Vector3f _r;   // world space position
     float _mass;
     float _charge;
@@ -216,17 +216,17 @@ public:
         return state;
     }
 
-    void from_state(Body_state const& state)
+    void from_state(Body_state const& state, float const mass_factor)
     {
 //        _L = state._L;
 //        _P = state._P;
 //        _q = state._q;
 //        _x = state._x;
 
-        _v = _P / (_mass * _mass_factor);
+        _v = _P / (_mass * mass_factor);
         _R = _q.normalized().toRotationMatrix();
         _I_inv = _R * _I_body_inv * _R.transpose();
-        _omega = (1.0f / _mass_factor) * _I_inv * _L;
+        _omega = (1.0f / mass_factor) * _I_inv * _L;
 
         for (Atom & a : _atoms)
         {
@@ -249,7 +249,7 @@ public:
 
     /* Derived quantities (auxiliary variables) */
     Eigen::Matrix3f _I_inv;
-    Eigen::Matrix3f _R;
+    Eigen::Matrix3f _R; // no need to store, can be derived from q
     Eigen::Vector3f _v;
     Eigen::Vector3f _omega;
 
@@ -258,8 +258,6 @@ public:
     Eigen::Vector3f _torque; /* omega(t) */
 
     int _id;
-
-    float _mass_factor;
 
 private:
     Molecule(Eigen::Vector3f const& position) :
@@ -315,30 +313,6 @@ struct Force_indicator
     Eigen::Vector3f _force;
 };
 
-// http://en.wikipedia.org/wiki/Coulomb's_law
-
-// k_e * q1 * q2 * dir / distance**2
-
-//inline Eigen::Vector3f coulomb_force(float const distance, float const charge_0, float const charge_1, Eigen::Vector3f const& direction)
-//{
-////    return charge_0 * charge_1 * direction / (distance * distance);
-//    return charge_0 * charge_1 * direction * 100.0f * std::max(0.0f, wendland_2_1(distance / 5.0f));
-//}
-
-
-//inline Eigen::Vector3f calc_force_between_atoms(Atom const& a_0, Atom const& a_1)
-//{
-//    Eigen::Vector3f direction = a_0._r - a_1._r;
-//    float const distance = direction.norm();
-
-//    if (distance < 1e-5f) return Eigen::Vector3f::Zero();
-
-//    direction.normalize();
-
-//    Eigen::Vector3f const force = coulomb_force(distance, a_0._charge, a_1._charge, direction);
-
-//    return force;
-//}
 
 class Atomic_force
 {
@@ -398,6 +372,7 @@ private:
 
 REGISTER_CLASS_WITH_PARAMETERS(Atomic_force, Null_force);
 
+
 class Coulomb_force : public Atomic_force
 {
 public:
@@ -424,6 +399,10 @@ public:
     }
 
 private:
+    // http://en.wikipedia.org/wiki/Coulomb's_law
+
+    // k_e * q1 * q2 * dir / distance**2
+
     float calc_force(float const distance, float const charge_0, float const charge_1) const override
     {
         return _strength * charge_0 * charge_1 / (distance * distance);

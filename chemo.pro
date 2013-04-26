@@ -57,4 +57,5 @@ OTHER_FILES += TODO.txt \
 HEADERS += \
     My_viewer.h \
     Atom.h \
-    Core.h
+    Core.h \
+    Spatial_hash.h

@@ -16,7 +16,7 @@
 
 #include "Core.h"
 #include "Atom.h"
-
+#include "Spatial_hash.h"
 
 class My_viewer : public Options_viewer
 {
@@ -42,7 +42,7 @@ public:
 
         _parameters.add_parameter(new Parameter("particle_type", 0, particle_types, update));
 
-        _parameters.add_parameter(Parameter::create_button("Toggle simulation", std::bind(&My_viewer::toggle_simulation, this)));
+        _parameters.add_parameter(new Parameter("Toggle simulation", false, std::bind(&My_viewer::toggle_simulation, this)));
         _parameters.add_parameter(Parameter::create_button("Do physics timestep", std::bind(&My_viewer::do_physics_timestep, this)));
         _parameters.add_parameter(Parameter::create_button("Clear", std::bind(&My_viewer::clear, this)));
 
@@ -141,6 +141,16 @@ public:
         }
     }
 
+    struct Reject_condition
+    {
+        bool operator() (Core::Molecule_atom_id const& d) const
+        {
+            return d.m_id == molecule_id;
+        }
+
+        int molecule_id;
+    };
+
     void draw() override
     {
         glEnable(GL_LIGHTING);
@@ -172,14 +182,13 @@ public:
             }
         }
 
-        // debug display
+        // debug displays
+        glDisable(GL_LIGHTING);
+
         Molecule_external_force const& force = _core.get_user_force();
 
         if (force._end_time > _core.get_current_time())
         {
-            glDisable(GL_LIGHTING);
-
-
             glBegin(GL_LINES);
 
             glVertex3fv(force._origin.data());
@@ -198,6 +207,46 @@ public:
             icosphere.draw();
 
             glPopMatrix();
+        }
+
+        Reject_condition reject_cond;
+
+        for (Molecule const& molecule : _core.get_molecules())
+        {
+            reject_cond.molecule_id = molecule._id;
+
+            for (Atom const& a : molecule._atoms)
+            {
+                boost::optional<Core::Molecule_atom_hash::Point_data const&> opt_pd = _core.get_molecule_hash().get_closest(a._r, reject_cond);
+
+                if (!opt_pd) continue;
+
+                Core::Molecule_atom_hash::Point_data const& pd = opt_pd.get();
+
+                boost::optional<Molecule const&> opt_molecule = _core.get_molecule(pd.data.m_id);
+
+                assert(opt_molecule);
+
+                Atom const& closest_atom = opt_molecule->_atoms[pd.data.a_id];
+
+                Eigen::Vector3f const force = _core.get_atomic_force().get()->calc_force_between_atoms(closest_atom, a);
+
+                if (force.norm() > 1e-6f)
+                {
+                    if (force.dot(closest_atom._r - a._r) < 0.0f)
+                    {
+                        glColor3f(0.3f, 0.8f, 0.2f);
+                    }
+                    else
+                    {
+                        glColor3f(0.8f, 0.2f, 0.2f);
+                    }
+
+
+                    glLineWidth(into_range(100.0f * force.norm(), 0.5f, 10.0f));
+                    draw_line(a._r, closest_atom._r);
+                }
+            }
         }
     }
 
@@ -414,11 +463,12 @@ public:
     void clear()
     {
         _core.clear();
+        update();
     }
 
     void toggle_simulation()
     {
-        if (_physics_timer->isActive())
+        if (!_parameters["Toggle simulation"]->get_value<bool>())
         {
             _physics_timer->stop();
         }

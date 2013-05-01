@@ -110,8 +110,12 @@ public:
 
         if (_user_force._end_time > _current_time && receiver._id == _user_force._molecule_id)
         {
+            // lower all other forces to give better control
+            receiver._force *= 0.2f;
+            receiver._torque *= 0.01f;
+
             receiver._force += _user_force._force;
-            receiver._torque += (_user_force._origin - receiver._x).cross(_user_force._force);
+            receiver._torque += (_user_force._origin - receiver._x).cross(_user_force._force) * 0.01f;
         }
     }
 

@@ -17,6 +17,7 @@
 #include "Core.h"
 #include "Atom.h"
 #include "Spatial_hash.h"
+#include "Renderer.h"
 
 class My_viewer : public Options_viewer
 {
@@ -34,11 +35,16 @@ public:
         _parameters.add_parameter(new Parameter("physics_speed", 1.0f, -10.0f, 100.0f, update));
         _parameters.add_parameter(new Parameter("global_scale", 1.0f, 0.01f, 100.0f, update));
 
+        _parameters.add_parameter(new Parameter("z_near", 0.1f, 0.01f, 100.0f, std::bind(&My_viewer::change_clipping, this)));
+        _parameters.add_parameter(new Parameter("z_far", 100.0f, 1.0f, 1000.0f, std::bind(&My_viewer::change_clipping, this)));
+
         Parameter_registry<Core>::create_normal_instance("Core", &_parameters, std::bind(&My_viewer::change_core_settings, this));
+
+        _parameters.add_parameter(new Parameter("draw_closest_force", true, update));
 
         _parameters.add_parameter(new Parameter("indicator_scale", 0.1f, 0.01f, 10.0f, update));
 
-        std::vector<std::string> particle_types { "O2", "H2O" };
+        std::vector<std::string> particle_types { "O2", "H2O", "SDS" };
 
         _parameters.add_parameter(new Parameter("particle_type", 0, particle_types, update));
 
@@ -46,16 +52,28 @@ public:
         _parameters.add_parameter(Parameter::create_button("Do physics timestep", std::bind(&My_viewer::do_physics_timestep, this)));
         _parameters.add_parameter(Parameter::create_button("Clear", std::bind(&My_viewer::clear, this)));
 
-//        Parameter_registry<Atomic_force>::create_single_select_instance(&_parameters, "Atomic Force Type");
+        Parameter_registry<Molecule_renderer>::create_single_select_instance(&_parameters, "Molecule Renderer", std::bind(&My_viewer::change_renderer, this));
 
-//        change_core_settings();
+        change_renderer();
 
         _core.set_parameters(*_parameters.get_child("Core"));
+    }
+
+    void change_renderer()
+    {
+        _molecule_renderer = std::unique_ptr<Molecule_renderer>(Parameter_registry<Molecule_renderer>::get_class_from_single_select_instance_2(_parameters.get_child("Molecule Renderer")));
+        update();
     }
 
     void change_core_settings()
     {
         _core.set_parameters(*_parameters.get_child("Core"));
+        update();
+    }
+
+    void change_clipping()
+    {
+        _my_camera->set_near_far(_parameters["z_near"]->get_value<float>(), _parameters["z_far"]->get_value<float>());
         update();
     }
 
@@ -74,45 +92,15 @@ public:
 //        _physics_timer->start();
 
         qglviewer::ManipulatedCameraFrame * frame = camera()->frame();
-        StandardCamera * my_cam = new StandardCamera(0.1f, 1000.0f);
-        my_cam->setFrame(frame);
-        setCamera(my_cam);
+        _my_camera = new StandardCamera(0.1f, 1000.0f);
+        _my_camera->setFrame(frame);
+        setCamera(_my_camera);
 
-        icosphere = IcoSphere<OpenMesh::Vec3f, Color>(2);
+        _icosphere = IcoSphere<OpenMesh::Vec3f, Color>(2);
 
         _picking.init(context(), size()); // FIXME: needs to be resized when viewer changes
-    }
 
-    void draw_molecule(Molecule const& molecule, Eigen::Vector3f const& normal_z, float const scale)
-    {
-        for (Atom const& atom : molecule._atoms)
-        {
-            glPushMatrix();
-
-            float radius = scale * atom._radius;
-
-            if (atom._type == Atom::Type::H)
-            {
-                set_color(Color(1.0f));
-            }
-            else if (atom._type == Atom::Type::O)
-            {
-                set_color(Color(0.9f, 0.2f, 0.2f));
-            }
-            else if (atom._type == Atom::Type::Charge)
-            {
-                set_color(Color(0.3f, 0.2f, 0.7f));
-                radius = 0.3f;
-            }
-
-            glTranslatef(atom._r[0], atom._r[1], atom._r[2]);
-
-            glScalef(radius, radius, radius);
-
-            icosphere.draw();
-
-            glPopMatrix();
-        }
+        glEnable(GL_NORMALIZE);
     }
 
     void picking_draw()
@@ -134,7 +122,7 @@ public:
                 float radius = atom._radius;
                 glScalef(radius, radius, radius);
 
-                icosphere.draw();
+                _icosphere.draw();
 
                 glPopMatrix();
             }
@@ -153,20 +141,16 @@ public:
 
     void draw() override
     {
-        glEnable(GL_LIGHTING);
-//        glDisable(GL_LIGHTING);
+//        float const scale = _parameters["global_scale"]->get_value<float>();
 
-        float const scale = _parameters["global_scale"]->get_value<float>();
+//        Eigen::Vector3f normal_z = Eigen::Vector3f::UnitZ();
 
-        Eigen::Vector3f normal_z = Eigen::Vector3f::UnitZ();
-
-        for (Molecule const& molecule : _core.get_molecules())
-        {
-            draw_molecule(molecule, normal_z, scale);
-        }
+        _molecule_renderer->render(_core.get_molecules());
 
         if (_parameters["Core/use_indicators"]->get_value<bool>())
         {
+            glDisable(GL_LIGHTING);
+
             float const indicator_scale = _parameters["indicator_scale"]->get_value<float>();
 
             set_color(Color(1.0f));
@@ -204,47 +188,50 @@ public:
             float radius = 0.2f;
             glScalef(radius, radius, radius);
 
-            icosphere.draw();
+            _icosphere.draw();
 
             glPopMatrix();
         }
 
-        Reject_condition reject_cond;
-
-        for (Molecule const& molecule : _core.get_molecules())
+        if (_parameters["draw_closest_force"]->get_value<bool>())
         {
-            reject_cond.molecule_id = molecule._id;
+            Reject_condition reject_cond;
 
-            for (Atom const& a : molecule._atoms)
+            for (Molecule const& molecule : _core.get_molecules())
             {
-                boost::optional<Core::Molecule_atom_hash::Point_data const&> opt_pd = _core.get_molecule_hash().get_closest(a._r, reject_cond);
+                reject_cond.molecule_id = molecule._id;
 
-                if (!opt_pd) continue;
-
-                Core::Molecule_atom_hash::Point_data const& pd = opt_pd.get();
-
-                boost::optional<Molecule const&> opt_molecule = _core.get_molecule(pd.data.m_id);
-
-                assert(opt_molecule);
-
-                Atom const& closest_atom = opt_molecule->_atoms[pd.data.a_id];
-
-                Eigen::Vector3f const force = _core.get_atomic_force().get()->calc_force_between_atoms(closest_atom, a);
-
-                if (force.norm() > 1e-6f)
+                for (Atom const& a : molecule._atoms)
                 {
-                    if (force.dot(closest_atom._r - a._r) < 0.0f)
+                    boost::optional<Core::Molecule_atom_hash::Point_data const&> opt_pd = _core.get_molecule_hash().get_closest(a._r, reject_cond);
+
+                    if (!opt_pd) continue;
+
+                    Core::Molecule_atom_hash::Point_data const& pd = opt_pd.get();
+
+                    boost::optional<Molecule const&> opt_molecule = _core.get_molecule(pd.data.m_id);
+
+                    assert(opt_molecule);
+
+                    Atom const& closest_atom = opt_molecule->_atoms[pd.data.a_id];
+
+                    Eigen::Vector3f const force = _core.get_atomic_force().get()->calc_force_between_atoms(closest_atom, a);
+
+                    if (force.norm() > 1e-6f)
                     {
-                        glColor3f(0.3f, 0.8f, 0.2f);
-                    }
-                    else
-                    {
-                        glColor3f(0.8f, 0.2f, 0.2f);
-                    }
+                        if (force.dot(closest_atom._r - a._r) < 0.0f)
+                        {
+                            glColor3f(0.3f, 0.8f, 0.2f);
+                        }
+                        else
+                        {
+                            glColor3f(0.8f, 0.2f, 0.2f);
+                        }
 
 
-                    glLineWidth(into_range(100.0f * force.norm(), 0.5f, 10.0f));
-                    draw_line(a._r, closest_atom._r);
+                        glLineWidth(into_range(100.0f * force.norm(), 0.5f, 10.0f));
+                        draw_line(a._r, closest_atom._r);
+                    }
                 }
             }
         }
@@ -280,35 +267,44 @@ public:
         return OpenMesh::Vec3f(p[0], p[1], p[2]);
     }
 
+    void add_molecule_event(QPoint const& position)
+    {
+        qglviewer::Vec qglv_origin;
+        qglviewer::Vec qglv_dir;
+
+        camera()->convertClickToLine(position, qglv_origin, qglv_dir);
+
+        Vec origin = QGLV2OM(qglv_origin);
+        Vec dir    = QGLV2OM(qglv_dir);
+
+        float const t = ray_plane_intersection(origin, dir, Vec(0.0f, 0.0f, 0.0f), Vec(0.0f, 0.0f, 1.0f));
+
+        if (t > 0)
+        {
+            Eigen::Vector3f const intersect_pos = OM2Eigen(origin + t * dir);
+
+            std::string const particle_type = _parameters["particle_type"]->get_value<std::string>();
+
+            if (particle_type == std::string("O2"))
+            {
+                _core.add_molecule(Molecule::create_oxygen(intersect_pos));
+            }
+            else if (particle_type == std::string("H2O"))
+            {
+                _core.add_molecule(Molecule::create_water(intersect_pos));
+            }
+            else if (particle_type == std::string("SDS"))
+            {
+                _core.add_molecule(Molecule::create_sulfate(intersect_pos));
+            }
+        }
+    }
+
     void mousePressEvent(QMouseEvent *event)
     {
         if (event->buttons() & Qt::LeftButton && event->modifiers() & Qt::ControlModifier)
         {
-            qglviewer::Vec qglv_origin;
-            qglviewer::Vec qglv_dir;
-
-            camera()->convertClickToLine(event->pos(), qglv_origin, qglv_dir);
-
-            Vec origin = QGLV2OM(qglv_origin);
-            Vec dir    = QGLV2OM(qglv_dir);
-
-            float const t = ray_plane_intersection(origin, dir, Vec(0.0f, 0.0f, 0.0f), Vec(0.0f, 0.0f, 1.0f));
-
-            if (t > 0)
-            {
-                Eigen::Vector3f const intersect_pos = OM2Eigen(origin + t * dir);
-
-                std::string const particle_type = _parameters["particle_type"]->get_value<std::string>();
-
-                if (particle_type == std::string("O2"))
-                {
-                    _core.add_molecule(Molecule::create_oxygen(intersect_pos));
-                }
-                else if (particle_type == std::string("H2O"))
-                {
-                    _core.add_molecule(Molecule::create_water(intersect_pos));
-                }
-            }
+            add_molecule_event(event->pos());
         }
         else if (event->buttons() & Qt::LeftButton && event->modifiers() & Qt::AltModifier)
         {
@@ -316,6 +312,7 @@ public:
             _dragging_start = event->pos();
 
             _picked_index = _picking.do_pick(event->pos().x(), height() - event->pos().y(), std::bind(&My_viewer::picking_draw, this));
+//            _picked_index = _picking.do_pick(event->pos().x(), height() - event->pos().y(), std::bind(&Molecule_renderer::picking_draw, _molecule_renderer));
 
             std::cout << __PRETTY_FUNCTION__ << " index: " << _picked_index << std::endl;
 
@@ -523,12 +520,16 @@ private:
 
     Core _core;
 
-    IcoSphere<OpenMesh::Vec3f, Color> icosphere;
+    IcoSphere<OpenMesh::Vec3f, Color> _icosphere;
 
     Picking _picking;
     bool _is_dragging;
     QPoint _dragging_start;
     int _picked_index;
+
+    StandardCamera * _my_camera;
+
+    std::unique_ptr<Molecule_renderer> _molecule_renderer;
 };
 
 

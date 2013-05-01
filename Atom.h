@@ -32,16 +32,19 @@ inline Eigen::Matrix3f star_matrix(Eigen::Vector3f const& v)
     return result;
 }
 
+// 1 mol of H weights 1.008 g
+// 1 mol = 6.02 x 10^23 particles
+// Mass of 1 atom = 1.008 g / 6.02 x 10^23 = 1.67 x 10^-24 g
+
+
 class Atom
 {
 public:
-    enum class Type { Charge, H, O };
+    enum class Type { Charge, H, O, C, S, N };
 
-    static Atom create_oxygen(Eigen::Vector3f const& position)
+    static float get_atom_mass(float const weight_per_mol)
     {
-        Atom a(position, 26.6f, -0.8f, 152.0f / 100.0f);
-        a._type = Type::O;
-        return a;
+        return weight_per_mol / 6.02f; // see above, missing 1e-24 factor
     }
 
     static Atom create_charge(Eigen::Vector3f const& position, float const charge)
@@ -53,13 +56,41 @@ public:
 
     static Atom create_hydrogen(Eigen::Vector3f const& position)
     {
-        Atom a(position, 1.66f, 0.4f, 120.0f / 100.f);
+        Atom a(position, 1.008f, 0.4f, 120.0f / 100.f);
         a._type = Type::H;
         return a;
     }
 
-    Atom(Eigen::Vector3f const& position, float const mass, float const charge, float const radius) :
-        _r_0(position), _mass(mass), _charge(charge), _radius(radius)
+    static Atom create_oxygen(Eigen::Vector3f const& position)
+    {
+        Atom a(position, 16.0f, -0.8f, 152.0f / 100.0f);
+        a._type = Type::O;
+        return a;
+    }
+
+    static Atom create_carbon(Eigen::Vector3f const& position)
+    {
+        Atom a(position, 12.01f, 0.137f, 170.0f / 100.f);
+        a._type = Type::C;
+        return a;
+    }
+
+    static Atom create_sulfur(Eigen::Vector3f const& position)
+    {
+        Atom a(position, 32.07f, 1.284f, 180.0f / 100.f);
+        a._type = Type::S;
+        return a;
+    }
+
+    static Atom create_natrium(Eigen::Vector3f const& position)
+    {
+        Atom a(position, 22.99f, 1.0f, 227.0f / 100.f);
+        a._type = Type::N;
+        return a;
+    }
+
+    Atom(Eigen::Vector3f const& position, float const weight_per_mol, float const charge, float const radius) :
+        _r_0(position), _mass(get_atom_mass(weight_per_mol)), _charge(charge), _radius(radius)
     { }
 
 //    Vec const& get_speed() const
@@ -110,11 +141,14 @@ public:
         m._atoms.push_back(Atom::create_oxygen(Eigen::Vector3f(0.0f, 0.0f, 0.0f)));
         m._atoms.back()._charge = 0.0f;
 
-        {
-            float const radius = 0.7f;
-            float const angle_2 = 0.5f * 90.0f / 360.0f * 2.0f * M_PI;
+        int current_connector = m.set_new_connector();
 
-            //        m._atoms.push_back(Atom::create_hydrogen(Eigen::Vector3f(radius, 0.0f, 0.0f)));
+
+        {
+            float const oxygen_charge_angle_deg = 120.0f;
+            float const radius = 0.7f;
+            float const angle_2 = 0.5f * oxygen_charge_angle_deg / 360.0f * 2.0f * M_PI;
+
             m._atoms.push_back(Atom::create_charge(Eigen::Vector3f(-std::cos( angle_2) * radius, 0.0f, std::sin( angle_2) * radius), -0.4f));
             m._atoms.push_back(Atom::create_charge(Eigen::Vector3f(-std::cos(-angle_2) * radius, 0.0f, std::sin(-angle_2) * radius), -0.4f));
         }
@@ -125,7 +159,9 @@ public:
 
             //        m._atoms.push_back(Atom::create_hydrogen(Eigen::Vector3f(radius, 0.0f, 0.0f)));
             m._atoms.push_back(Atom::create_hydrogen(Eigen::Vector3f(std::cos( angle_2) * radius, std::sin( angle_2) * radius, 0.0f)));
+            m.add_connection(current_connector);
             m._atoms.push_back(Atom::create_hydrogen(Eigen::Vector3f(std::cos(-angle_2) * radius, std::sin(-angle_2) * radius, 0.0f)));
+            m.add_connection(current_connector);
         }
 
         m.reset();
@@ -137,7 +173,6 @@ public:
     static Molecule create_oxygen(Eigen::Vector3f const& position)
     {
         Molecule m(position);
-
 
         m._atoms.push_back(Atom::create_oxygen(Eigen::Vector3f(0.3f, 0.4f, 0.0f)));
 
@@ -153,6 +188,97 @@ public:
         m.init();
 
         return m;
+    }
+
+    static Molecule create_sulfate(Eigen::Vector3f const& position)
+    {
+        Molecule m(position);
+
+        float current_z_offset = 0.0f;
+
+        m._atoms.push_back(Atom::create_hydrogen(Eigen::Vector3f(0.0f, 0.0f, -0.5f)));
+        int current_connector = m.set_new_connector();
+
+        for (int i = 0; i < 12; ++i)
+        {
+            float const radius = 0.96f;
+            Eigen::Vector3f const offset((i % 2 == 0) ? -0.2f : 0.2f, 0.0f, current_z_offset);
+
+            Eigen::AngleAxisf const rotation_pos(50.0f / 360.0f * 2.0f * M_PI, Eigen::Vector3f(0.0f, 0.0f,  1.0f));
+            Eigen::AngleAxisf const rotation_neg(50.0f / 360.0f * 2.0f * M_PI, Eigen::Vector3f(0.0f, 0.0f, -1.0f));
+
+            m._atoms.push_back(Atom::create_carbon(offset));
+            m.add_connection(current_connector);
+            current_connector = m.set_new_connector();
+            m._atoms.push_back(Atom::create_hydrogen(rotation_pos * Eigen::Vector3f(((i % 2 == 0) ? -1.0f : 1.0f) * radius, 0.0f, 0.0f) + offset));
+            m.add_connection(current_connector);
+            m._atoms.push_back(Atom::create_hydrogen(rotation_neg * Eigen::Vector3f(((i % 2 == 0) ? -1.0f : 1.0f) * radius, 0.0f, 0.0f) + offset));
+            m.add_connection(current_connector);
+
+            current_z_offset += 1.0f;
+        }
+
+        for (Atom & a : m._atoms)
+        {
+            a._charge = 0.0f;
+        }
+
+        (m._atoms.end() - 3)->_charge = 0.137f;
+
+        Eigen::Vector3f const o_4_pos(-0.2f, 0.0f, current_z_offset);
+
+        m._atoms.push_back(Atom::create_oxygen(o_4_pos));
+        m._atoms.back()._charge = -0.459f;
+
+        m.add_connection(current_connector);
+        current_connector = m.set_new_connector();
+
+        current_z_offset += 1.0f;
+
+        Eigen::Vector3f const sulfur_pos(0.2f, 0.0f, current_z_offset);
+
+        m.add_connection(current_connector);
+        current_connector = m.set_new_connector();
+
+        m._atoms.push_back(Atom::create_sulfur(sulfur_pos));
+
+        Eigen::Vector3f const rotation_axis((sulfur_pos - o_4_pos).normalized());
+        Eigen::Vector3f const triangle_center(2.0f * sulfur_pos - o_4_pos);
+
+        Eigen::Vector3f const orthogonal_vec(rotation_axis.cross(Eigen::Vector3f(0.0f, 0.0f, 1.0f)).normalized() * 1.2f);
+
+        for (int i = 0; i < 3; ++i)
+        {
+            Eigen::AngleAxisf rotation(i * 120.0f / 360.0f * 2.0f * M_PI, rotation_axis);
+
+            Eigen::Vector3f o_1_3_pos(rotation * orthogonal_vec + triangle_center);
+
+            m._atoms.push_back(Atom::create_oxygen(o_1_3_pos));
+            m._atoms.back()._charge = -0.654f;
+
+            m.add_connection(current_connector);
+        }
+
+        Eigen::Vector3f natrium_pos(-0.2f, 0.0f, current_z_offset + 4.0f);
+        m._atoms.push_back(Atom::create_natrium(natrium_pos));
+
+        m.reset();
+        m.init();
+
+        return m;
+    }
+
+    int set_new_connector()
+    {
+       int const new_connector = _atoms.size() - 1;
+       _connectivity.resize(new_connector + 1);
+       return new_connector;
+    }
+
+    void add_connection(int const connector)
+    {
+        assert(connector < int(_connectivity.size()));
+        _connectivity[connector].push_back(_atoms.size() - 1);
     }
 
     void reset()
@@ -256,6 +382,8 @@ public:
     /* Computed quantities */
     Eigen::Vector3f _force;  /* F(t) */
     Eigen::Vector3f _torque; /* omega(t) */
+
+    std::vector< std::vector<int> > _connectivity;
 
     int _id;
 

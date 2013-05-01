@@ -1,19 +1,29 @@
 - Midpoint/Runge-Kutta
 - Basic interaction, shooting in new molecules, pulling existing molecules
-- Controls FPS like (probably not, rather more automatic camera)
-- Larger molecules
+D - Larger molecules
 - Control the LJ potential force
-- Molecule pulling: maybe increase the rotational damping for the pulled molecule? Right now too much wiggling during pull
+D - Molecule pulling: maybe increase the rotational damping for the pulled molecule? Right now too much wiggling during pull
 
+- Controls FPS like (probably not, rather more automatic camera)
 - Automatic camera, only zoom, facilitate interaction
 - When zooming out, fade over to an iso surface (maybe fast metaballs over the molecules)
 
 - Charge positions possibly adaptable in some region, to allow faster convergence to low energy state
 
 - Cross section display, to make inherent structures be more visible (for example http://www.unc.edu/~perera/PAPERS/J_PHYS_CHEM_2002_1.pdf)
-- Also reduced view using stick model, see PDF above
+D - Also reduced view using stick model, see PDF above
 
 - Show closest atom for each atom (outside its molecule) by connecting them with a stick, width or opacity representing the distance or force
+
+- Store state
+
+- FIX LJ potential to not only take into account the molecules center
+
+D - Add renderers for different styles (ball, sticks etc.)
+
+D - Store connections in molecules
+
+- Check masses, distances etc. scaling, make sure they are relatively correct
 
 Gaming part
 - Have "black box" particles that can interact with other molecules, then generate energy (heat etc.)

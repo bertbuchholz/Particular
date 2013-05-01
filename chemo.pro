@@ -58,4 +58,5 @@ HEADERS += \
     My_viewer.h \
     Atom.h \
     Core.h \
-    Spatial_hash.h
+    Spatial_hash.h \
+    Renderer.h

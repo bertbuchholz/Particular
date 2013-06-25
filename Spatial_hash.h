@@ -80,7 +80,7 @@ public:
     };
 
     template <typename Reject_condition>
-    Index_distance get_closest_in_bin(std::vector<Point_data> const& bin, Vec const& point, Reject_condition const& reject_condition) const
+    Index_distance get_closest_point_in_bin(std::vector<Point_data> const& bin, Vec const& point, Reject_condition const& reject_condition) const
     {
         Index_distance closest_data(-1, 1e10f);
 
@@ -101,7 +101,7 @@ public:
     }
 
     template <typename Reject_condition = Null_condition>
-    boost::optional<Point_data const&> get_closest(Vec const& point, Reject_condition const& reject_condition = Null_condition()) const
+    boost::optional<Point_data const&> get_closest_point(Vec const& point, Reject_condition const& reject_condition = Null_condition()) const
     {
         int closest_point_index = -1;
         int closest_bin_index = -1;
@@ -117,7 +117,7 @@ public:
                 {
                     int const bin_index = hash_function(point + Vec(offsets[x + 1], offsets[y + 1], offsets[z + 1]), _bins.size(), _cell_size);
 
-                    Index_distance const index_distance = get_closest_in_bin(_bins[bin_index], point, reject_condition);
+                    Index_distance const index_distance = get_closest_point_in_bin(_bins[bin_index], point, reject_condition);
 
                     if (index_distance.distance < closest_dist && index_distance.distance <= _cell_size)
                     {
@@ -134,6 +134,28 @@ public:
         if (closest_bin_index < 0) return boost::optional<Point_data const&>();
 
         return boost::optional<Point_data const&>(_bins[closest_bin_index][closest_point_index]);
+    }
+
+    std::vector< std::vector<Point_data> const* > get_neighborhood(Vec const& point) const
+    {
+        std::vector< std::vector<Point_data> const* > result;
+
+        float const offsets[] { -_cell_size, 0.0f, _cell_size };
+
+        for (int x = -1; x <= 1; ++x)
+        {
+            for (int y = -1; y <= 1; ++y)
+            {
+                for (int z = -1; z <= 1; ++z)
+                {
+                    int const bin_index = hash_function(point + Vec(offsets[x + 1], offsets[y + 1], offsets[z + 1]), _bins.size(), _cell_size);
+
+                    result.push_back(&_bins[bin_index]);
+                }
+            }
+        }
+
+        return result;
     }
 
     void clear()
@@ -182,7 +204,7 @@ inline void spatial_hash_test()
 
     std::cout << "Closest point " << closest_index << " " << closest_dist << std::endl;
 
-    boost::optional<Spatial_hash<MyVec, int>::Point_data const&> opt_pd = sh.get_closest(search_point);
+    boost::optional<Spatial_hash<MyVec, int>::Point_data const&> opt_pd = sh.get_closest_point(search_point);
 
     if (!opt_pd)
     {

@@ -14,13 +14,9 @@
 #include <Parameter.h>
 #include <Utilities.h>
 
+#include "Eigen_Matrix_serializer.h"
+
 typedef OpenMesh::Vec3f Vec;
-
-
-inline Eigen::Vector3f OM2Eigen(OpenMesh::Vec3f const& p)
-{
-    return Eigen::Vector3f(p[0], p[1], p[2]);
-}
 
 inline Eigen::Matrix3f star_matrix(Eigen::Vector3f const& v)
 {
@@ -40,7 +36,7 @@ inline Eigen::Matrix3f star_matrix(Eigen::Vector3f const& v)
 class Atom
 {
 public:
-    enum class Type { Charge, H, O, C, S, N };
+    enum class Type { Charge, H, O, C, S, N, Na, Cl };
 
     static float get_atom_mass(float const weight_per_mol)
     {
@@ -85,7 +81,14 @@ public:
     static Atom create_natrium(Eigen::Vector3f const& position)
     {
         Atom a(position, 22.99f, 1.0f, 227.0f / 100.f);
-        a._type = Type::N;
+        a._type = Type::Na;
+        return a;
+    }
+
+    static Atom create_chlorine(Eigen::Vector3f const& position)
+    {
+        Atom a(position, 35.4f, 1.0f, 180.0f / 100.f);
+        a._type = Type::Cl;
         return a;
     }
 
@@ -113,6 +116,24 @@ public:
 //        return _charge;
 //    }
 
+    template<class Archive>
+    void serialize(Archive & ar, const unsigned int /* version */)
+    {
+        ar & _r_0;
+        ar & _r;
+        ar & _mass;
+        ar & _charge;
+        ar & _radius;
+        ar & _type;
+        ar & _parent_id;
+    }
+
+    Atom()
+    {
+//        std::cout << "Atom() should not be used outside serialization" << std::endl;
+        _parent_id = -1;
+    }
+
 //private:
     Eigen::Vector3f _r_0; // body space position of particle
     Eigen::Vector3f _r;   // world space position
@@ -120,6 +141,7 @@ public:
     float _charge;
     float _radius;
     Type _type;
+    int _parent_id;
 };
 
 struct Body_state
@@ -139,19 +161,19 @@ public:
         Molecule m(position);
 
         m._atoms.push_back(Atom::create_oxygen(Eigen::Vector3f(0.0f, 0.0f, 0.0f)));
-        m._atoms.back()._charge = 0.0f;
+//        m._atoms.back()._charge = 0.0f;
 
         int current_connector = m.set_new_connector();
 
 
-        {
-            float const oxygen_charge_angle_deg = 120.0f;
-            float const radius = 0.7f;
-            float const angle_2 = 0.5f * oxygen_charge_angle_deg / 360.0f * 2.0f * M_PI;
+//        {
+//            float const oxygen_charge_angle_deg = 120.0f;
+//            float const radius = 0.7f;
+//            float const angle_2 = 0.5f * oxygen_charge_angle_deg / 360.0f * 2.0f * M_PI;
 
-            m._atoms.push_back(Atom::create_charge(Eigen::Vector3f(-std::cos( angle_2) * radius, 0.0f, std::sin( angle_2) * radius), -0.4f));
-            m._atoms.push_back(Atom::create_charge(Eigen::Vector3f(-std::cos(-angle_2) * radius, 0.0f, std::sin(-angle_2) * radius), -0.4f));
-        }
+//            m._atoms.push_back(Atom::create_charge(Eigen::Vector3f(-std::cos( angle_2) * radius, 0.0f, std::sin( angle_2) * radius), -0.4f));
+//            m._atoms.push_back(Atom::create_charge(Eigen::Vector3f(-std::cos(-angle_2) * radius, 0.0f, std::sin(-angle_2) * radius), -0.4f));
+//        }
 
         {
             float const radius = 0.96f;
@@ -183,6 +205,54 @@ public:
 //        m._atoms.push_back(Atom::create_oxygen(Eigen::Vector3f(radius, 0.0f, 0.0f)));
 
         m._atoms.push_back(Atom::create_oxygen(Eigen::Vector3f(1.4f, 0.5f, 0.0f)));
+
+        m.reset();
+        m.init();
+
+        return m;
+    }
+
+    static Molecule create_dipole(Eigen::Vector3f const& position)
+    {
+        Molecule m(position);
+
+
+        m._atoms.push_back(Atom::create_oxygen(Eigen::Vector3f(0.0f, 0.707f, 0.0f)));
+        m._atoms.back()._charge = -1.0f;
+        m._atoms.back()._radius = 1.0f;
+        m._atoms.back()._type = Atom::Type::H;
+        int current_connector = m.set_new_connector();
+
+        m._atoms.push_back(Atom::create_oxygen(Eigen::Vector3f(0.707f, 0.0f, 0.0f)));
+        m._atoms.back()._charge = 1.0f;
+        m._atoms.back()._radius = 1.0f;
+        m.add_connection(current_connector);
+
+        m.reset();
+        m.init();
+
+        return m;
+    }
+
+    static Molecule create_charged_natrium(Eigen::Vector3f const& position)
+    {
+        Molecule m(position);
+
+        m._atoms.push_back(Atom::create_natrium(Eigen::Vector3f(0.0f, 0.0f, 0.0f)));
+        m._atoms.back()._charge = 1.0f;
+
+        m.reset();
+        m.init();
+
+        return m;
+    }
+
+    static Molecule create_charged_chlorine(Eigen::Vector3f const& position)
+    {
+        Molecule m(position);
+
+        m._atoms.push_back(Atom::create_chlorine(Eigen::Vector3f(0.0f, 0.0f, 0.0f)));
+        m._atoms.back()._charge = -1.0f;
 
         m.reset();
         m.init();
@@ -259,8 +329,8 @@ public:
             m.add_connection(current_connector);
         }
 
-        Eigen::Vector3f natrium_pos(-0.2f, 0.0f, current_z_offset + 4.0f);
-        m._atoms.push_back(Atom::create_natrium(natrium_pos));
+//        Eigen::Vector3f natrium_pos(-0.2f, 0.0f, current_z_offset + 4.0f);
+//        m._atoms.push_back(Atom::create_natrium(natrium_pos));
 
         m.reset();
         m.init();
@@ -268,6 +338,7 @@ public:
         return m;
     }
 
+    // last added atom becomes new connector
     int set_new_connector()
     {
        int const new_connector = _atoms.size() - 1;
@@ -294,8 +365,8 @@ public:
 
     void init()
     {
-        Eigen::Matrix3f identity;
-        identity.setIdentity();
+        Eigen::Matrix3f identity(Eigen::Matrix3f::Identity());
+//        identity.setIdentity();
 
         Eigen::Vector3f center_of_mass = Eigen::Vector3f::Zero();
 
@@ -308,6 +379,11 @@ public:
             center_of_mass += a._mass * a._r_0;
 
             _I_body += a._mass * ((a._r_0.dot(a._r_0) * identity) - (a._r_0 * a._r_0.transpose()));
+        }
+
+        if (_I_body.isZero())
+        {
+            _I_body = identity;
         }
 
         _I_body_inv = _I_body.inverse();
@@ -342,7 +418,7 @@ public:
         return state;
     }
 
-    void from_state(Body_state const& state, float const mass_factor)
+    void from_state(Body_state const& /* state */, float const mass_factor)
     {
 //        _L = state._L;
 //        _P = state._P;
@@ -357,7 +433,55 @@ public:
         for (Atom & a : _atoms)
         {
             a._r = _R * a._r_0 + _x;
+            assert(!std::isnan(a._r[0]) && !std::isinf(a._r[0]));
         }
+    }
+
+    int get_id() const
+    {
+        return _id;
+    }
+
+    void set_id(int const id)
+    {
+        _id = id;
+
+        for (Atom & a : _atoms)
+        {
+            a._parent_id = _id;
+        }
+    }
+
+    template<class Archive>
+    void serialize(Archive & ar, const unsigned int /* version */)
+    {
+        ar & _atoms;
+
+        ar & _mass;
+        ar & _I_body;
+        ar & _I_body_inv;
+
+        ar & _x;
+        ar & _q.x();
+        ar & _q.y();
+        ar & _q.z();
+        ar & _q.w();
+        ar & _P;
+        ar & _L;
+
+        ar & _I_inv;
+        ar & _R;
+        ar & _v;
+        ar & _omega;
+
+        ar & _force;
+        ar & _torque;
+
+        ar & _connectivity;
+
+        ar & _active;
+
+        ar & _id;
     }
 
     std::vector<Atom> _atoms;
@@ -385,48 +509,20 @@ public:
 
     std::vector< std::vector<int> > _connectivity;
 
-    int _id;
+    bool _active;
+
+    Molecule()
+    {
+        std::cout << "Molecule() should not be used outside serialization" << std::endl;
+    }
 
 private:
     Molecule(Eigen::Vector3f const& position) :
-        _x(position)
+        _x(position),
+        _active(true)
     { }
-};
 
-
-class Barrier
-{
-public:
-    Eigen::Vector3f virtual calc_force(Atom const& a) const = 0;
-};
-
-class Line_barrier : public Barrier
-{
-public:
-    Line_barrier(Eigen::Vector3f const& position, Eigen::Vector3f const& normal, float const strength, float const radius) :
-        _point(position), _normal(normal), _strength(strength), _radius(radius)
-    {}
-
-    Eigen::Vector3f calc_force(Atom const& a) const override
-    {
-        return falloff_function(distance_to_object(a._r)) * _normal;
-    }
-
-private:
-    float distance_to_object(Eigen::Vector3f const& p) const
-    {
-        return (p - _point).dot(_normal);
-    }
-
-    float falloff_function(float const distance) const
-    {
-        return std::max(0.0f, _strength * (1.0f -  distance / _radius));
-    }
-
-    Eigen::Vector3f _point;
-    Eigen::Vector3f _normal;
-    float _strength;
-    float _radius;
+    int _id;
 };
 
 struct Force_indicator
@@ -442,144 +538,6 @@ struct Force_indicator
 };
 
 
-class Atomic_force
-{
-public:
-    virtual ~Atomic_force() {}
-
-    virtual void set_parameters(Parameter_list const& /* parameters */)
-    { }
-
-    static Parameter_list get_parameters()
-    {
-        Parameter_list parameters;
-        return parameters;
-    }
-
-    Eigen::Vector3f calc_force_between_atoms(Atom const& a_0, Atom const& a_1)
-    {
-        Eigen::Vector3f direction = a_0._r - a_1._r;
-        float const distance = std::max(1e-5f, direction.norm()); // cap the distance at 1e-5 to avoid the singularity
-
-        direction.normalize();
-
-        Eigen::Vector3f const force = direction * calc_force(distance, a_0._charge, a_1._charge);
-
-        return force;
-    }
-
-private:
-    virtual float calc_force(float const distance, float const charge_0, float const charge_1) const = 0;
-};
-
-class Null_force : public Atomic_force
-{
-public:
-    static std::string name()
-    {
-        return "Null_force";
-    }
-
-    static Atomic_force * create()
-    {
-        return new Null_force;
-    }
-
-    static Parameter_list get_parameters()
-    {
-        Parameter_list parameters;
-        return parameters;
-    }
-
-private:
-    float calc_force(float const , float const , float const ) const override
-    {
-        return 0.0f;
-    }
-};
-
-REGISTER_CLASS_WITH_PARAMETERS(Atomic_force, Null_force);
-
-
-class Coulomb_force : public Atomic_force
-{
-public:
-    static std::string name()
-    {
-        return "Coulomb_force";
-    }
-
-    static Atomic_force * create()
-    {
-        return new Coulomb_force;
-    }
-
-    void set_parameters(Parameter_list const& parameters) override
-    {
-        _strength = parameters["strength"]->get_value<float>();
-    }
-
-    static Parameter_list get_parameters()
-    {
-        Parameter_list parameters;
-        parameters.add_parameter(new Parameter("strength", 1.0f, 0.1f, 100.0f));
-        return parameters;
-    }
-
-private:
-    // http://en.wikipedia.org/wiki/Coulomb's_law
-
-    // k_e * q1 * q2 * dir / distance**2
-
-    float calc_force(float const distance, float const charge_0, float const charge_1) const override
-    {
-        return _strength * charge_0 * charge_1 / (distance * distance);
-    }
-
-    float _strength;
-};
-
-REGISTER_CLASS_WITH_PARAMETERS(Atomic_force, Coulomb_force);
-
-class Wendland_force : public Atomic_force
-{
-public:
-    static std::string name()
-    {
-        return "Wendland_force";
-    }
-
-    static Atomic_force * create()
-    {
-        return new Wendland_force;
-    }
-
-    void set_parameters(Parameter_list const& parameters) override
-    {
-        _strength = parameters["strength"]->get_value<float>();
-        _radius = parameters["radius"]->get_value<float>();
-    }
-
-    static Parameter_list get_parameters()
-    {
-        Parameter_list parameters;
-        parameters.add_parameter(new Parameter("strength", 100.0f, 10.0f, 10000.0f));
-        parameters.add_parameter(new Parameter("radius",   5.0f, 1.0f, 100.0f));
-        return parameters;
-    }
-
-private:
-    float calc_force(float const distance, float const charge_0, float const charge_1) const override
-    {
-        return charge_0 * charge_1 * _strength * std::max(0.0f, wendland_2_1(distance / _radius));
-    }
-
-    float _strength;
-    float _radius;
-};
-
-REGISTER_CLASS_WITH_PARAMETERS(Atomic_force, Wendland_force);
-
 inline float calc_lennard_jones_potential(Molecule const& m_0, Molecule const& m_1)
 {
     float const vdw_radius = 2.0f; // vdW radius for a water molecule
@@ -588,13 +546,27 @@ inline float calc_lennard_jones_potential(Molecule const& m_0, Molecule const& m
     return 4.0f * (std::pow(sigma / dist, 12.0f) - std::pow(sigma / dist, 6.0f));
 }
 
-class Molecule_external_force
+inline float calc_lennard_jones_potential(Atom const& a_0, Atom const& a_1)
 {
-public:
+    float const vdw_radii = a_0._radius + a_1._radius;
+    float const sigma = 2.0f * vdw_radii;
+    float const dist = (a_0._r - a_1._r).norm();
+    return 4.0f * (std::pow(sigma / dist, 12.0f) - std::pow(sigma / dist, 6.0f));
+}
+
+struct External_force
+{
+    Eigen::Vector3f _origin;
+    Eigen::Vector3f _force;
+};
+
+struct Molecule_external_force
+{
     int _molecule_id;
     Eigen::Vector3f _origin;
     Eigen::Vector3f _local_origin; // force origin expressed in molecule's space
     Eigen::Vector3f _force;
+    Eigen::Vector3f _plane_normal;
     float _end_time;
 };
 

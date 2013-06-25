@@ -1,32 +1,74 @@
 - Midpoint/Runge-Kutta
 - Basic interaction, shooting in new molecules, pulling existing molecules
-D - Larger molecules
-- Control the LJ potential force
-D - Molecule pulling: maybe increase the rotational damping for the pulled molecule? Right now too much wiggling during pull
 
 - Controls FPS like (probably not, rather more automatic camera)
 - Automatic camera, only zoom, facilitate interaction
 - When zooming out, fade over to an iso surface (maybe fast metaballs over the molecules)
 
-- Charge positions possibly adaptable in some region, to allow faster convergence to low energy state
-
-- Cross section display, to make inherent structures be more visible (for example http://www.unc.edu/~perera/PAPERS/J_PHYS_CHEM_2002_1.pdf)
-D - Also reduced view using stick model, see PDF above
+- Cross section display, to make internal structures more visible (for example http://www.unc.edu/~perera/PAPERS/J_PHYS_CHEM_2002_1.pdf)
 
 - Show closest atom for each atom (outside its molecule) by connecting them with a stick, width or opacity representing the distance or force
 
-- Store state
+- Picking draw needs to be part of the renderers
 
-- FIX LJ potential to not only take into account the molecules center
+- Check scaling masses, distances etc., make sure they are relatively correct
 
-D - Add renderers for different styles (ball, sticks etc.)
-
-D - Store connections in molecules
-
-- Check masses, distances etc. scaling, make sure they are relatively correct
+- Context-creating animation in the beginning:
+  start with a wobbling blob of water, zoom in, start showing individual water molecules, isolate one and zoom in on it,
+  take it appart into atoms, show the electrons and the core, put it again together to a water molecule and start the simulation
 
 Gaming part
 - Have "black box" particles that can interact with other molecules, then generate energy (heat etc.)
 
 - http://www.spacechemthegame.com/
 - Fold it
+
+- Possibly introduce forces not from the beginning but slowly one after the other, first letting the user move around the molecules
+  basically unaffected in 2D (constrain to 2D) and only have some small "docking" (i.e. attractive/repulsive) forces work on very close
+  distances
+
+- Direct vs. indirect manipulation, e.g., direct dragging vs. heat zones
+- Zones of heat, cold etc. that change the dampening and the fluctuation.
+- Gravity and boundaries, guide molecules from one place to another, possibly using heating/freezing/condensation
+- Interaction in the view cutting plane, show forces in that plane
+- Show the forces between molecules in 2D
+
+- Think about making physics updates less often than position updates (i.e., the speeds are kept during several updates)
+
+- "Noodles" with charges, folding and stretching depending on external charged particles, need to move the noodles through obstacles
+- Radius search for atoms, search per molecule, not atom
+- Molecular spray gun
+
+- Data collectors: data measurements over time for heat sources, molecular movement (speed?), molecules passing through certain areas/gates
+
+- Combine data measurements in some way to generate a score
+
+- Allow exposing the different measurements
+
+- Remove a molecule once it passed a gate
+
+- Save individual scores and of other players, compare own score to others via variance, show own score on distribution curve of all players,
+  show distribution of own scores
+
+- Test same level configuration to check for simulation stability
+
+- Make elements' properties editable (temperature, radius)
+
+- Levels, end conditions
+- Screens (intro screen with menu, general level screen, end screen etc.)
+
+- No wind, no gravity, use moving elements to give pushes to objects
+
+- Penalty when objects move inside a barrier
+
+- object that slowly releases molecules
+
+Done:
+D - Store connections in molecules
+D - Add renderers for different styles (ball, sticks etc.)
+D - FIX LJ potential to not only take into account the molecules center
+D - Also reduced view using stick model, see PDF above
+D - Larger molecules
+D - Molecule pulling: maybe increase the rotational damping for the pulled molecule? Right now too much wiggling during pull
+D - Store state
+D - Control the LJ potential force

@@ -15,17 +15,13 @@ CONFIG += qt \
     QGLViewer \
     OpenMesh \
     eigen3 \
-    BertSharedLib \
-    MacOSg++
+    BertSharedLib  #\
+#    MacOSg++
+
+CONFIG -= app_bundle
 
 EXT_DIR = ../extern
 BERT_SHARED_DIR = ../shared
-
-macx {
-    CONFIG(debug, debug|release) {
-        QMAKE_POST_LINK = dsymutil \"chemo.app/Contents/MacOS/chemo\"
-    }
-}
 
 DEPENDPATH += $${BERT_SHARED_DIR}
 
@@ -41,22 +37,42 @@ OBJECTS_DIR = ./obj
 QMAKE_CXXFLAGS += -Wall \
     -Wextra \
     -fPIC \
-    -std=c++11
+    -std=c++11 \
+    -stdlib=libc++
+
+QMAKE_CXX = /opt/local/bin/clang++-mp-3.3
+QMAKE_LINK = /opt/local/bin/clang++-mp-3.3
+
+QMAKE_LFLAGS_X86_64 = $$QMAKE_CXXFLAGS
 
 LIBS += -lGLU
 #    -lpthread \
 #    -lGLEW
 
 # Input
-SOURCES += main.cpp
+SOURCES += main.cpp \
+    RegularBspTree.cpp
 
 OTHER_FILES += TODO.txt \
     data/shaders/picking.vert \
-    data/shaders/picking.frag
+    data/shaders/picking.frag \
+    data/shaders/force_calc.frag \
+    data/shaders/force_calc.vert
 
 HEADERS += \
     My_viewer.h \
     Atom.h \
     Core.h \
     Spatial_hash.h \
-    Renderer.h
+    Renderer.h \
+    GPU_force.h \
+    Atomic_force.h \
+    RegularBspTree.h \
+    Draggable.h \
+    Level_elements.h \
+    Visitor.h \
+    Level_element_draw_visitor.h \
+    Eigen_Matrix_serializer.h \
+    State.h \
+    End_condition.h \
+    Level_data.h

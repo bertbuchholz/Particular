@@ -539,7 +539,7 @@ public:
 
         distance -= a._radius;
 
-        return  (get_transform() * local_pos.normalized()) * _strength * std::pow(1.0f / distance, 12.0f);
+//        return (get_transform() * local_pos.normalized()) * _strength * std::pow(1.0f / distance, 12.0f);
 
         if (distance < 0.000001f)
         {

@@ -430,6 +430,8 @@ public:
         _I_inv = _R * _I_body_inv * _R.transpose();
         _omega = (1.0f / mass_factor) * _I_inv * _L;
 
+        assert(!std::isnan(_omega.x()));
+
         for (Atom & a : _atoms)
         {
             a._r = _R * a._r_0 + _x;

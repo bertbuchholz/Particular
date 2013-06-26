@@ -215,6 +215,8 @@ public:
             force_i += b->calc_force(receiver_atom);
         }
 
+        assert(!std::isnan(force_i[0]));
+
         return force_i;
     }
 

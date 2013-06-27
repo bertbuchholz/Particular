@@ -7,6 +7,7 @@
 #include <Geometry_utils.h>
 
 #include "Atom.h"
+#include "End_condition.h"
 
 #include "Visitor.h"
 //#include "Barrier_draw_visitor.h"
@@ -95,6 +96,12 @@ public:
         return _duration;
     }
 
+    void reset()
+    {
+        _time = 0.0f;
+        _direction = 1;
+    }
+
     template<class Archive>
     void serialize(Archive & ar, const unsigned int /* version */)
     {
@@ -120,7 +127,7 @@ class Level_element
 public:
     virtual ~Level_element() {}
 
-    Level_element() : _user_editable(false)
+    Level_element() : _user_editable(false), _persistent(true)
     { }
 
     virtual void accept(Level_element_visitor const* visitor) = 0;
@@ -202,6 +209,26 @@ public:
         _observers.erase(std::remove(_observers.begin(), _observers.end(), n), _observers.end());
     }
 
+    virtual void reset()
+    {
+        for (Animation & a : _animations)
+        {
+            a.reset();
+        }
+
+        handle_animation();
+    }
+
+    bool is_persistent() const
+    {
+        return _persistent;
+    }
+
+    void set_persistent(bool const p)
+    {
+        _persistent = p;
+    }
+
     template<class Archive>
     void serialize(Archive & ar, const unsigned int /* version */)
     {
@@ -209,6 +236,7 @@ public:
         ar & _transform.matrix();
         ar & _user_editable;
         ar & _animations;
+        ar & _persistent;
     }
 
 protected:
@@ -220,6 +248,8 @@ protected:
     std::vector<Animation> _animations;
 
     std::vector<Notifiable*> _observers;
+
+    bool _persistent;
 };
 
 class Barrier : public Level_element
@@ -319,7 +349,7 @@ public:
     Molecule_releaser() {}
 
     Molecule_releaser(Eigen::Vector3f const& min, Eigen::Vector3f const& max, float const first_release, float const interval) :
-        _last_release(first_release), _interval(interval), _num_max_molecules(100), _num_released_molecules(0)
+        _first_release(first_release), _last_release(first_release), _interval(interval), _num_max_molecules(100), _num_released_molecules(0)
     {
         set_transform(Eigen::Transform<float, 3, Eigen::Isometry>::Identity());
 
@@ -393,9 +423,26 @@ public:
         _interval = interval;
     }
 
+    float get_first_release() const
+    {
+        return _first_release;
+    }
+
+    void set_first_release(float const first_release)
+    {
+        _first_release = first_release;
+    }
+
     void accept(Level_element_visitor const* visitor)
     {
         visitor->visit(this);
+    }
+
+    void reset() override
+    {
+        Level_element::reset();
+        _last_release = _first_release;
+        _num_released_molecules = 0;
     }
 
     template<class Archive>
@@ -404,6 +451,7 @@ public:
         ar & boost::serialization::base_object<Level_element>(*this);
         ar & _box.min();
         ar & _box.max();
+        ar & _first_release;
         ar & _last_release;
         ar & _interval;
         ar & _num_max_molecules;
@@ -413,6 +461,7 @@ public:
 
 private:
     Eigen::AlignedBox<float, 3> _box;
+    float _first_release;
     float _last_release;
     float _interval;
     int _num_max_molecules;
@@ -427,11 +476,30 @@ public:
 
     virtual bool contains(Eigen::Vector3f const& pos) const = 0;
 
+    void handle_molecule_entering()
+    {
+        _end_condition.set_num_captured_molecules(_end_condition.get_num_captured_molecules() + 1);
+    }
+
+    Molecule_capture_condition const& get_condition() const
+    {
+        return _end_condition;
+    }
+
+    Molecule_capture_condition & get_condition()
+    {
+        return _end_condition;
+    }
+
     template<class Archive>
     void serialize(Archive & ar, const unsigned int /* version */)
     {
         ar & boost::serialization::base_object<Level_element>(*this);
+        ar & _end_condition;
     }
+
+private:
+    Molecule_capture_condition _end_condition;
 };
 
 class Box_portal : public Portal

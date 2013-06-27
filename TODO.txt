@@ -63,6 +63,10 @@ Gaming part
 
 - object that slowly releases molecules
 
+- Portals with end conditions AND and OR (all ANDs must be true or at least one OR)
+
+- Highlight selected
+
 Done:
 D - Store connections in molecules
 D - Add renderers for different styles (ball, sticks etc.)

@@ -18,7 +18,11 @@ CONFIG += qt \
     BertSharedLib  #\
 #    MacOSg++
 
-CONFIG -= app_bundle
+# to relink external libs used by the exetubale to copies inside of the bundle Contents/Frameworks dir
+#    BUNDLE_DIR = chemo.app/Contents/
+#    install_name_tool -change libboost_serialization.dylib @executable_path/../Frameworks/libboost_serialization.dylib $${BUNDLE_DIR}/MacOS/chemo
+
+#CONFIG -= app_bundle
 
 EXT_DIR = ../extern
 BERT_SHARED_DIR = ../shared
@@ -51,7 +55,8 @@ LIBS += -lGLU
 
 # Input
 SOURCES += main.cpp \
-    RegularBspTree.cpp
+    RegularBspTree.cpp \
+    Atom.cpp
 
 OTHER_FILES += TODO.txt \
     data/shaders/picking.vert \

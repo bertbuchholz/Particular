@@ -38,6 +38,7 @@ public:
     enum class Mouse_state { None, Init_drag_handle, Init_drag_molecule, Dragging_molecule, Dragging_handle };
     enum class Selection { None, Level_element, Molecule };
     enum class Game_state { Level_editor, Playing };
+    enum class Level_state { Before_start, Running, After_finish };
 
     My_viewer() :
         _mouse_state(Mouse_state::None), _selection(Selection::None)
@@ -80,10 +81,12 @@ public:
         _parameters.add_parameter(new Parameter("game_state", 0, game_states, std::bind(&My_viewer::change_game_state, this)));
 
         _parameters.add_parameter(new Parameter("Toggle simulation", false, std::bind(&My_viewer::toggle_simulation, this)));
-        _parameters.add_parameter(Parameter::create_button("Do physics timestep", std::bind(&My_viewer::do_physics_timestep, this)));
         _parameters.add_parameter(Parameter::create_button("Save state", std::bind(&My_viewer::save_state, this)));
         _parameters.add_parameter(Parameter::create_button("Load state", std::bind(&My_viewer::load_state, this)));
         _parameters.add_parameter(Parameter::create_button("Clear", std::bind(&My_viewer::clear, this)));
+        _parameters.add_parameter(Parameter::create_button("Start Level", std::bind(&My_viewer::start_level, this)));
+        _parameters.add_parameter(Parameter::create_button("Reset Level", std::bind(&My_viewer::reset_level, this)));
+        _parameters.add_parameter(Parameter::create_button("Do physics timestep", std::bind(&My_viewer::do_physics_timestep, this)));
 
         Parameter_registry<Molecule_renderer>::create_single_select_instance(&_parameters, "Molecule Renderer", std::bind(&My_viewer::change_renderer, this));
 
@@ -94,16 +97,48 @@ public:
 
     void save_state()
     {
-        _core.save_state("state.save");
+        QString filename;
+
+        if (QApplication::keyboardModifiers() & Qt::ControlModifier)
+        {
+            filename = "state.save";
+        }
+        else
+        {
+            filename = QFileDialog::getSaveFileName(this, tr("Save File"),
+                                                    ".",
+                                                    tr("State File (*.save)"));
+        }
+
+        if (!filename.isEmpty())
+        {
+            _core.save_state(filename.toStdString());
+        }
     }
 
     void load_state()
     {
-        clear();
-        _core.load_state("state.save");
-        update_draggable_to_level_element();
-        update_active_draggables();
-        update();
+        QString filename;
+
+        if (QApplication::keyboardModifiers() & Qt::ControlModifier)
+        {
+            filename = "state.save";
+        }
+        else
+        {
+            filename = QFileDialog::getOpenFileName(this, tr("Save File"),
+                                                    ".",
+                                                    tr("State File (*.save)"));
+        }
+
+        if (!filename.isEmpty())
+        {
+            clear();
+            _core.load_state(filename.toStdString());
+            update_draggable_to_level_element();
+            update_active_draggables();
+            update();
+        }
     }
 
     void restore_parameters() override
@@ -112,6 +147,26 @@ public:
 
         change_renderer();
         change_core_settings();
+    }
+
+    void start_level()
+    {
+        if (!animationIsStarted())
+        {
+            startAnimation();
+        }
+
+        _core.start_level();
+        _parameters["Toggle simulation"]->set_value(true);
+        update();
+    }
+
+    void reset_level()
+    {
+        _core.reset_level();
+        update_draggable_to_level_element();
+        update_active_draggables();
+        update();
     }
 
     void change_game_field_borders()
@@ -232,6 +287,8 @@ public:
 
 //        GPU_force * gpu_force = new GPU_force(context());
 //        gpu_force->calc_forces(_core.get_molecules());
+
+        startAnimation();
     }
 
     void draw_molecules_for_picking()
@@ -625,47 +682,27 @@ public:
         {
             Eigen::Vector3f const intersect_pos = OM2Eigen(origin + t * dir);
 
-            std::string const particle_type = _parameters["particle_type"]->get_value<std::string>();
+            std::string const element_type = _parameters["particle_type"]->get_value<std::string>();
 
-            if (particle_type == std::string("O2"))
+            if (Molecule::molecule_exists(element_type))
             {
-                _core.add_molecule(Molecule::create_oxygen(intersect_pos));
+                _core.add_molecule(Molecule::create(element_type, intersect_pos));
             }
-            else if (particle_type == std::string("H2O"))
-            {
-                _core.add_molecule(Molecule::create_water(intersect_pos));
-            }
-            else if (particle_type == std::string("SDS"))
-            {
-                _core.add_molecule(Molecule::create_sulfate(intersect_pos));
-            }
-            else if (particle_type == std::string("Na"))
-            {
-                _core.add_molecule(Molecule::create_charged_natrium(intersect_pos));
-            }
-            else if (particle_type == std::string("Cl"))
-            {
-                _core.add_molecule(Molecule::create_charged_chlorine(intersect_pos));
-            }
-            else if (particle_type == std::string("Dipole"))
-            {
-                _core.add_molecule(Molecule::create_dipole(intersect_pos));
-            }
-            else if (particle_type == std::string("Box_barrier"))
+            else if (element_type == std::string("Box_barrier"))
             {
                 float const strength = 10000.0f;
                 float const radius   = 2.0f;
 
                 _core.add_barrier(new Box_barrier(Eigen::Vector3f(-10.0f, -20.0f, -10.0f) + intersect_pos, Eigen::Vector3f(10.0f, 20.0f, 10.0f) + intersect_pos, strength, radius));
             }
-            else if (particle_type == std::string("Moving_box_barrier"))
+            else if (element_type == std::string("Moving_box_barrier"))
             {
                 float const strength = 10000.0f;
                 float const radius   = 2.0f;
 
                 _core.add_barrier(new Moving_box_barrier(Eigen::Vector3f(-10.0f, -20.0f, -10.0f) + intersect_pos, Eigen::Vector3f(10.0f, 20.0f, 10.0f) + intersect_pos, strength, radius));
             }
-            else if (particle_type == std::string("Blow_barrier"))
+            else if (element_type == std::string("Blow_barrier"))
             {
                 float const strength = 10000.0f;
                 float const radius   = 2.0f;
@@ -676,27 +713,28 @@ public:
                 e->set_user_editable(true);
                 _core.add_barrier(e);
             }
-            else if (particle_type == std::string("Plane_barrier"))
+            else if (element_type == std::string("Plane_barrier"))
             {
                 float const strength = 100.0f;
                 float const radius   = 5.0f;
 
                 _core.add_barrier(new Plane_barrier(intersect_pos, Eigen::Vector3f::UnitZ(), strength, radius, Eigen::Vector2f(10.0f, 20.0)));
             }
-            else if (particle_type == std::string("Brownian_box"))
+            else if (element_type == std::string("Brownian_box"))
             {
                 float const strength = 10.0f;
                 float const radius   = 25.0f;
 
                 Brownian_box * e = new Brownian_box(Eigen::Vector3f(-10.0f, -20.0f, -10.0f) + intersect_pos, Eigen::Vector3f(10.0f, 20.0f, 10.0f) + intersect_pos, strength, radius);
                 e->set_user_editable(true);
+                e->set_persistent(false);
                 _core.add_brownian_element(e);
             }
-            else if (particle_type == std::string("Box_portal"))
+            else if (element_type == std::string("Box_portal"))
             {
                 _core.add_portal(new Box_portal(Eigen::Vector3f(-10.0f, -20.0f, -10.0f) + intersect_pos, Eigen::Vector3f(10.0f, 20.0f, 10.0f) + intersect_pos));
             }
-            else if (particle_type == std::string("Molecule_releaser"))
+            else if (element_type == std::string("Molecule_releaser"))
             {
                 Molecule_releaser * m = new Molecule_releaser(Eigen::Vector3f(-10.0f, -20.0f, -10.0f) + intersect_pos, Eigen::Vector3f(10.0f, 20.0f, 10.0f) + intersect_pos, 1.0f, 1.0f);
                 m->set_exemplar(Molecule::create_water(Eigen::Vector3f::Zero()));
@@ -953,6 +991,18 @@ public:
         }
     }
 
+    class Widget_text_combination : public QWidget
+    {
+        public:
+        Widget_text_combination(QString const& text, QWidget * widget)
+        {
+            QHBoxLayout * layout = new QHBoxLayout;
+            layout->addWidget(new QLabel(text));
+            layout->addWidget(widget);
+            setLayout(layout);
+        }
+    };
+
     void show_context_menu_for_element()
     {
         Draggable * parent = _active_draggables[_picked_index]->get_parent();
@@ -969,21 +1019,22 @@ public:
 
             QWidgetAction * action_duration = new QWidgetAction(this);
             FloatSlider * slider = new FloatSlider(0.1f, 10.0f, b->get_animation().get_duration());
-            action_duration->setDefaultWidget(slider);
+//            action_duration->setDefaultWidget(slider);
+            action_duration->setDefaultWidget(new Widget_text_combination("Duration", slider));
 
-            menu.addAction("Startpoint");
-            menu.addAction("Endpoint");
+            menu.addAction("Set startpoint");
+            menu.addAction("Set endpoint");
             menu.addAction(action_duration);
 
             QAction * selected_action = menu.exec(QCursor::pos());
 
             if (selected_action)
             {
-                if (selected_action->text() == "Startpoint")
+                if (selected_action->text() == "Set startpoint")
                 {
                     b->get_animation().set_start_point(b->get_position());
                 }
-                else if (selected_action->text() == "Endpoint")
+                else if (selected_action->text() == "Set endpoint")
                 {
                     b->get_animation().set_end_point(b->get_position());
                 }
@@ -997,15 +1048,15 @@ public:
         {
             QMenu menu;
 
-            QWidgetAction * action_num_release_molecules = new QWidgetAction(this);
+            QWidgetAction * action_num_max_molecules = new QWidgetAction(this);
 
-            QSpinBox * spinbox_num_release_molecules = new QSpinBox();
+            QSpinBox * spinbox_num_max_molecules = new QSpinBox();
             {
-                spinbox_num_release_molecules->setMaximum(1000);
-                spinbox_num_release_molecules->setMinimum(1);
-                spinbox_num_release_molecules->setValue(m->get_num_max_molecules());
+                spinbox_num_max_molecules->setMaximum(1000);
+                spinbox_num_max_molecules->setMinimum(1);
+                spinbox_num_max_molecules->setValue(m->get_num_max_molecules());
 
-                action_num_release_molecules->setDefaultWidget(spinbox_num_release_molecules);
+                action_num_max_molecules->setDefaultWidget(new Widget_text_combination("Max. Molecules", spinbox_num_max_molecules));
             }
 
             QWidgetAction * action_interval = new QWidgetAction(this);
@@ -1015,31 +1066,85 @@ public:
                 spinbox_interval->setRange(0.1f, 10.0f);
                 spinbox_interval->setValue(m->get_interval());
 
-                action_interval->setDefaultWidget(spinbox_interval);
+                action_interval->setDefaultWidget(new Widget_text_combination("Rel. Interval (s)", spinbox_interval));
             }
 
-            menu.addAction(action_num_release_molecules);
+            QWidgetAction * action_first_release = new QWidgetAction(this);
+
+            QDoubleSpinBox * spinbox_first_release = new QDoubleSpinBox();
+            {
+                spinbox_first_release->setRange(0.0f, 10000.0f);
+                spinbox_first_release->setValue(m->get_interval());
+
+                action_first_release->setDefaultWidget(new Widget_text_combination("First release", spinbox_first_release));
+            }
+
+            menu.addAction(action_num_max_molecules);
             menu.addAction(action_interval);
+            menu.addAction(action_first_release);
 
             menu.exec(QCursor::pos());
-//            QAction * selected_action = menu.exec(QCursor::pos());
 
-//            if (selected_action)
-//            {
-//                if (selected_action->text() == "Startpoint")
-//                {
-//                    m->get_animation().set_start_point(m->get_position());
-//                }
-//                else if (selected_action->text() == "Endpoint")
-//                {
-//                    m->get_animation().set_end_point(m->get_position());
-//                }
-//            }
-
-            m->set_num_max_molecules(spinbox_num_release_molecules->value());
+            m->set_num_max_molecules(spinbox_num_max_molecules->value());
             m->set_interval(spinbox_interval->value());
+            m->set_first_release(spinbox_first_release->value());
 
-            delete action_num_release_molecules;
+            delete action_num_max_molecules;
+            delete action_interval;
+            delete action_first_release;
+        }
+        else if (Portal * m = dynamic_cast<Portal*>(element))
+        {
+            QMenu menu;
+
+            QWidgetAction * action_num_min_captured_molecules = new QWidgetAction(this);
+
+            QSpinBox * spinbox_num_min_captured_molecules = new QSpinBox();
+            {
+                spinbox_num_min_captured_molecules->setMaximum(1000);
+                spinbox_num_min_captured_molecules->setMinimum(1);
+                spinbox_num_min_captured_molecules->setValue(m->get_condition().get_min_captured_molecules());
+
+                action_num_min_captured_molecules->setDefaultWidget(new Widget_text_combination("Captured Molecules", spinbox_num_min_captured_molecules));
+            }
+
+            QWidgetAction * action_type = new QWidgetAction(this);
+
+            QComboBox * combo_type = new QComboBox();
+            {
+                combo_type->addItem("And");
+                combo_type->addItem("Or");
+
+                if (m->get_condition().get_type() == End_condition::Type::And)
+                {
+                    combo_type->setCurrentIndex(0);
+                }
+                else
+                {
+                    combo_type->setCurrentIndex(1);
+                }
+
+                action_type->setDefaultWidget(new Widget_text_combination("Type", combo_type));
+            }
+
+            menu.addAction(action_num_min_captured_molecules);
+            menu.addAction(action_type);
+
+            menu.exec(QCursor::pos());
+
+            m->get_condition().set_min_captured_molecules(spinbox_num_min_captured_molecules->value());
+
+            if (combo_type->currentText() == "Or")
+            {
+                m->get_condition().set_type(End_condition::Type::Or);
+            }
+            if (combo_type->currentText() == "And")
+            {
+                m->get_condition().set_type(End_condition::Type::And);
+            }
+
+            delete action_num_min_captured_molecules;
+            delete action_type;
         }
     }
 
@@ -1330,7 +1435,6 @@ public Q_SLOTS:
         // some updates are really far away from the set time step, not sure why
         _core.update(_parameters["physics_timestep_ms"]->get_value<int>() / 1000.0f * _parameters["physics_speed"]->get_value<float>());
 //        _core.update(elapsed_milliseconds / 1000.0f * _parameters["physics_speed"]->get_value<float>());
-
     }
 
 private:

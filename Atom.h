@@ -156,6 +156,29 @@ struct Body_state
 class Molecule
 {
 public:
+    static std::unordered_map< std::string, std::function<Molecule(Eigen::Vector3f const& position)> > _molecule_factory_map;
+
+    static bool molecule_exists(std::string const& name)
+    {
+        auto iter = Molecule::_molecule_factory_map.find(name);
+
+        return (iter != _molecule_factory_map.end());
+    }
+
+    static Molecule create(std::string const& name, Eigen::Vector3f const& position)
+    {
+        auto iter = Molecule::_molecule_factory_map.find(name);
+
+        if (iter != _molecule_factory_map.end())
+        {
+            return iter->second(position);
+        }
+
+        assert(false);
+
+        return Molecule();
+    }
+
     static Molecule create_water(Eigen::Vector3f const& position)
     {
         Molecule m(position);

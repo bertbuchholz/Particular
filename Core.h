@@ -381,10 +381,12 @@ public:
         {
             if (!m._active) continue;
 
-            for (Portal const* p : _level_data._portals)
+            for (Portal * p : _level_data._portals)
             {
                 if (p->contains(m._x))
                 {
+                    p->handle_molecule_entering();
+
                     m._active = false;
                 }
             }
@@ -475,17 +477,30 @@ public:
 
             std::cout << "update molecules: " << elapsed_milliseconds << std::endl;
         }
+    }
 
+    bool check_is_finished()
+    {
         End_condition::State end_state = End_condition::State::Finished;
 
-        for (End_condition const* end_condition : _level_data._end_conditions)
+        for (Portal const* p : _level_data._portals)
         {
-            if (end_condition->check_state(_level_data._molecules) == End_condition::State::Not_finished)
+            End_condition const& condition = p->get_condition();
+
+            if (condition.check_state(_level_data._molecules) == End_condition::State::Finished && condition.get_type() == End_condition::Type::Or)
+            {
+                end_state = End_condition::State::Finished;
+                break;
+            }
+
+            if (condition.check_state(_level_data._molecules) == End_condition::State::Not_finished && condition.get_type() == End_condition::Type::And)
             {
                 end_state = End_condition::State::Not_finished;
                 break;
             }
         }
+
+        return (end_state == End_condition::State::Finished);
     }
 
     std::vector<Molecule> const& get_molecules() const
@@ -753,6 +768,54 @@ public:
         _level_data._brownian_elements.erase(std::remove(_level_data._brownian_elements.begin(), _level_data._brownian_elements.end(), level_element), _level_data._brownian_elements.end());
     }
 
+    void reset_level_elements()
+    {
+        for (Level_element * e : _level_data._barriers)
+        {
+            e->reset();
+        }
+
+        for (Level_element * e : _level_data._brownian_elements)
+        {
+            e->reset();
+        }
+
+        for (Level_element * e : _level_data._portals)
+        {
+            e->reset();
+        }
+
+        for (Level_element * e : _level_data._molecule_releasers)
+        {
+            e->reset();
+        }
+    }
+
+    void start_level()
+    {
+        reset_level();
+    }
+
+
+    static bool is_not_persistent(Level_element const* e)
+    {
+        return !e->is_persistent();
+    }
+
+    void delete_non_persistent_objects()
+    {
+        _level_data._barriers.erase(std::remove_if(_level_data._barriers.begin(), _level_data._barriers.end(), is_not_persistent), _level_data._barriers.end());
+
+        _level_data._brownian_elements.erase(std::remove_if(_level_data._brownian_elements.begin(), _level_data._brownian_elements.end(), is_not_persistent),
+                                             _level_data._brownian_elements.end());
+
+        _level_data._portals.erase(std::remove_if(_level_data._portals.begin(), _level_data._portals.end(), is_not_persistent),
+                                             _level_data._portals.end());
+
+        _level_data._molecule_releasers.erase(std::remove_if(_level_data._molecule_releasers.begin(), _level_data._molecule_releasers.end(), is_not_persistent),
+                                             _level_data._molecule_releasers.end());
+    }
+
     void clear()
     {
         // TODO & FIXME: delete stuff or use freaking smart pointers
@@ -766,6 +829,21 @@ public:
         _molecule_external_forces.clear();
         _external_forces.clear();
         _molecule_hash.clear();
+    }
+
+    void reset_level()
+    {
+        delete_non_persistent_objects();
+
+        _level_data._molecules.clear();
+
+        _molecule_external_forces.clear();
+        _external_forces.clear();
+        _molecule_hash.clear();
+
+        reset_level_elements();
+
+        _current_time = 0.0f;
     }
 
     void save_state(std::string const& file_name) const

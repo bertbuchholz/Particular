@@ -21,9 +21,6 @@ public:
             glTranslatef(b->get_position()[0], b->get_position()[1], b->get_position()[2]);
             glMultMatrixf(b->get_transform().data());
 
-            //        drawRect(Eigen::Vector3f(b->get_plane().offset() * b->get_plane().normal()),
-            //                 Eigen::Vector3f(b->get_plane().normal()), 20.0f, Color(0.7f), true);
-
             glColor3f(1.0f, 0.0f, 0.0f);
             drawLine(Eigen::Vector3f(Eigen::Vector3f::Zero()), Eigen::Vector3f(Eigen::Vector3f::UnitX()));
             glColor3f(0.0f, 1.0f, 0.0f);
@@ -34,6 +31,12 @@ public:
             glColor3f(0.7f, 0.7f, 0.7f);
             drawRect(Eigen::Vector3f(Eigen::Vector3f::Zero()), Eigen::Vector3f(Eigen::Vector3f::UnitZ()),
                      b->get_extent().get()[0] * 0.5f, b->get_extent().get()[1] * 0.5f, Color(0.7f), true);
+
+            if (b->is_selected())
+            {
+                drawRect(Eigen::Vector3f(Eigen::Vector3f::Zero()), Eigen::Vector3f(Eigen::Vector3f::UnitZ()),
+                         b->get_extent().get()[0] * 0.55f, b->get_extent().get()[1] * 0.55f, Color(1.0f, 1.0f, 0.7f), true);
+            }
 
             glPopMatrix();
 
@@ -51,6 +54,12 @@ public:
         glColor3f(0.7f, 0.7f, 0.7f);
         draw_box(b->get_box().min(), b->get_box().max());
 
+        if (b->is_selected())
+        {
+            glColor3f(1.0f, 1.0f, 0.7f);
+            draw_box(b->get_box().min(), b->get_box().max(), 1.05f, true);
+        }
+
         glPopMatrix();
     }
 
@@ -64,6 +73,12 @@ public:
         glColor3f(0.7f, 0.7f, 0.7f);
         draw_box(b->get_box().min(), b->get_box().max());
 
+        if (b->is_selected())
+        {
+            glColor3f(1.0f, 1.0f, 0.7f);
+            draw_box(b->get_box().min(), b->get_box().max(), 1.05f, true);
+        }
+
         glPopMatrix();
     }
 
@@ -76,6 +91,12 @@ public:
 
         glColor3f(0.5f, 0.6f, 0.8f);
         draw_box(b->get_box().min(), b->get_box().max());
+
+        if (b->is_selected())
+        {
+            glColor3f(1.0f, 1.0f, 0.7f);
+            draw_box(b->get_box().min(), b->get_box().max(), 1.05f, true);
+        }
 
         Eigen::Vector3f arrow_start = Eigen::Vector3f::Zero();
         arrow_start[int(b->get_direction())] = b->get_extent()[int(b->get_direction())] * 0.5f;
@@ -104,8 +125,14 @@ public:
         glTranslatef(b->get_position()[0], b->get_position()[1], b->get_position()[2]);
         glMultMatrixf(b->get_transform().data());
 
-        glColor3f(0.5f, 0.6f, 0.8f);
+        glColor3f(0.8f, 0.8f, 0.6f);
         draw_box(b->get_box().min(), b->get_box().max());
+
+        if (b->is_selected())
+        {
+            glColor3f(1.0f, 1.0f, 0.7f);
+            draw_box(b->get_box().min(), b->get_box().max(), 1.05f, true);
+        }
 
         Eigen::Vector3f arrow_start = Eigen::Vector3f::Zero();
         arrow_start[0] = b->get_extent()[0] * 0.5f;
@@ -143,6 +170,12 @@ public:
 
         draw_box(b->get_box().min(), b->get_box().max());
 
+        if (b->is_selected())
+        {
+            glColor3f(1.0f, 1.0f, 0.7f);
+            draw_box(b->get_box().min(), b->get_box().max(), 1.05f, true);
+        }
+
         glPopMatrix();
     }
 
@@ -167,6 +200,12 @@ public:
 
         glColor3f(0.3f, 0.8f, 0.4f);
         draw_box(b->get_box().min(), b->get_box().max());
+
+        if (b->is_selected())
+        {
+            glColor3f(1.0f, 1.0f, 0.7f);
+            draw_box(b->get_box().min(), b->get_box().max(), 1.05f, true);
+        }
 
         glPopMatrix();
     }

@@ -41,7 +41,7 @@ public:
     enum class Level_state { Before_start, Running, After_finish };
 
     My_viewer() :
-        _mouse_state(Mouse_state::None), _selection(Selection::None)
+        _mouse_state(Mouse_state::None), _selection(Selection::None), _selected_level_element(nullptr)
     {
         std::function<void(void)> update = std::bind(static_cast<void (My_viewer::*)()>(&My_viewer::update), this);
 
@@ -945,6 +945,9 @@ public:
             if (_picked_index != -1)
             {
                 _selection = Selection::Level_element;
+                Draggable * parent = _active_draggables[_picked_index]->get_parent();
+                _selected_level_element = _draggable_to_level_element[parent];
+                _selected_level_element->set_selected(true);
 
                 if (event->button() == Qt::RightButton)
                 {
@@ -954,6 +957,12 @@ public:
         }
         else
         {
+            if (_selected_level_element)
+            {
+                _selected_level_element->set_selected(false);
+                _selected_level_element = nullptr;
+            }
+
             _selection = Selection::None;
 
             Base::mouseReleaseEvent(event);
@@ -964,30 +973,36 @@ public:
 
     void keyPressEvent(QKeyEvent *event) override
     {
-        if (event->key() == Qt::Key_Delete)
+        if (event->key() == Qt::Key_Delete && _game_state == Game_state::Level_editor)
         {
-            if (_selection == Selection::Molecule)
-            {
-
-            }
-            else if (_selection == Selection::Level_element)
-            {
-                Draggable * parent = _active_draggables[_picked_index]->get_parent();
-                assert(_draggable_to_level_element.find(parent) != _draggable_to_level_element.end());
-
-                _core.delete_level_element(_draggable_to_level_element.find(parent)->second);
-
-                update_draggable_to_level_element();
-                update_active_draggables();
-
-                _selection = Selection::None;
-
-                update();
-            }
+            delete_selected_element();
         }
         else
         {
             Base::keyPressEvent(event);
+        }
+    }
+
+    void delete_selected_element()
+    {
+        if (_selection == Selection::Molecule)
+        {
+
+        }
+        else if (_selection == Selection::Level_element)
+        {
+            Draggable * parent = _active_draggables[_picked_index]->get_parent();
+            assert(_draggable_to_level_element.find(parent) != _draggable_to_level_element.end());
+
+            _core.delete_level_element(_draggable_to_level_element.find(parent)->second);
+
+            update_draggable_to_level_element();
+            update_active_draggables();
+
+            _selection = Selection::None;
+            _selected_level_element = nullptr;
+
+            update();
         }
     }
 
@@ -1448,6 +1463,7 @@ private:
     Picking _picking;
     Mouse_state _mouse_state;
     Selection _selection;
+    Level_element * _selected_level_element;
     Game_state _game_state;
 //    bool _is_dragging;
     QPoint _dragging_start;

@@ -61,11 +61,7 @@ Gaming part
 
 - Penalty when objects move inside a barrier
 
-- object that slowly releases molecules
-
 - Portals with end conditions AND and OR (all ANDs must be true or at least one OR)
-
-- Highlight selected
 
 Done:
 D - Store connections in molecules
@@ -76,3 +72,5 @@ D - Larger molecules
 D - Molecule pulling: maybe increase the rotational damping for the pulled molecule? Right now too much wiggling during pull
 D - Store state
 D - Control the LJ potential force
+D - object that slowly releases molecules
+D - Highlight selected

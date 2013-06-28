@@ -217,6 +217,8 @@ public:
         }
 
         handle_animation();
+
+        _selected = false;
     }
 
     bool is_persistent() const
@@ -229,6 +231,16 @@ public:
         _persistent = p;
     }
 
+    bool is_selected() const
+    {
+        return _selected;
+    }
+
+    void set_selected(bool const s)
+    {
+        _selected = s;
+    }
+
     template<class Archive>
     void serialize(Archive & ar, const unsigned int /* version */)
     {
@@ -237,6 +249,7 @@ public:
         ar & _user_editable;
         ar & _animations;
         ar & _persistent;
+        ar & _selected;
     }
 
 protected:
@@ -250,6 +263,8 @@ protected:
     std::vector<Notifiable*> _observers;
 
     bool _persistent;
+
+    bool _selected;
 };
 
 class Barrier : public Level_element

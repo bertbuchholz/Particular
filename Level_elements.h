@@ -506,6 +506,12 @@ public:
         return _end_condition;
     }
 
+    void reset() override
+    {
+        Level_element::reset();
+        _end_condition.set_num_captured_molecules(0);
+    }
+
     template<class Archive>
     void serialize(Archive & ar, const unsigned int /* version */)
     {

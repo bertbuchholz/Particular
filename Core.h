@@ -26,6 +26,8 @@ class Core : public QObject
     Q_OBJECT
 public:
 
+    enum class Game_state { Unstarted, Running, Finished };
+
     struct Molecule_atom_id
     {
         Molecule_atom_id(int const m, int const a) : m_id(m), a_id(a)
@@ -39,6 +41,8 @@ public:
     typedef Regular_bsp_tree<Eigen::Vector3f, 3, Atom> My_tree;
 
     Core() :
+        _game_state(Game_state::Unstarted),
+        _previous_game_state(Game_state::Unstarted),
         _current_time(0.0f),
         _molecule_hash(Molecule_atom_hash(100, 4.0f))
     {
@@ -477,9 +481,14 @@ public:
 
             std::cout << "update molecules: " << elapsed_milliseconds << std::endl;
         }
+
+        if (_game_state == Game_state::Running && check_is_finished())
+        {
+            set_new_game_state(Game_state::Finished);
+        }
     }
 
-    bool check_is_finished()
+    bool check_is_finished() const
     {
         End_condition::State end_state = End_condition::State::Finished;
 
@@ -794,8 +803,27 @@ public:
     void start_level()
     {
         reset_level();
+
+        set_new_game_state(Game_state::Running);
     }
 
+    void set_new_game_state(Game_state state)
+    {
+        _previous_game_state = _game_state;
+        _game_state = state;
+
+        Q_EMIT game_state_changed();
+    }
+
+    Game_state get_game_state() const
+    {
+        return _game_state;
+    }
+
+    Game_state get_previous_game_state() const
+    {
+        return _previous_game_state;
+    }
 
     static bool is_not_persistent(Level_element const* e)
     {
@@ -930,6 +958,9 @@ public:
         ar & _level_data;
     }
 
+signals:
+    void game_state_changed();
+
 private:
 //    std::vector<Molecule> _molecules;
 
@@ -940,6 +971,9 @@ private:
 //    std::vector<Brownian_element*> _brownian_elements;
 
     Level_data _level_data;
+
+    Game_state _game_state;
+    Game_state _previous_game_state;
 
     bool _use_indicators;
     std::vector<Force_indicator> _indicators;

@@ -37,7 +37,7 @@ public:
 
     enum class Mouse_state { None, Init_drag_handle, Init_drag_molecule, Dragging_molecule, Dragging_handle };
     enum class Selection { None, Level_element, Molecule };
-    enum class Game_state { Level_editor, Playing };
+    enum class Ui_state { Level_editor, Playing };
     enum class Level_state { Before_start, Running, After_finish };
 
     My_viewer() :
@@ -76,9 +76,9 @@ public:
 
         _parameters.add_parameter(new Parameter("particle_type", 0, particle_types, update));
 
-        std::vector<std::string> game_states { "Level_editor", "Playing" };
+        std::vector<std::string> ui_states { "Level_editor", "Playing" };
 
-        _parameters.add_parameter(new Parameter("game_state", 0, game_states, std::bind(&My_viewer::change_game_state, this)));
+        _parameters.add_parameter(new Parameter("ui_state", 0, ui_states, std::bind(&My_viewer::change_ui_state, this)));
 
         _parameters.add_parameter(new Parameter("Toggle simulation", false, std::bind(&My_viewer::toggle_simulation, this)));
         _parameters.add_parameter(Parameter::create_button("Save state", std::bind(&My_viewer::save_state, this)));
@@ -92,7 +92,9 @@ public:
 
         change_renderer();
         change_core_settings();
-        change_game_state();
+        change_ui_state();
+
+        connect(&_core, SIGNAL(game_state_changed()), this, SLOT(handle_game_state_change()));
     }
 
     void save_state()
@@ -220,17 +222,17 @@ public:
         }
     };
 
-    void change_game_state()
+    void change_ui_state()
     {
-        if (_parameters["game_state"]->get_value<std::string>() == "Level_editor")
+        if (_parameters["ui_state"]->get_value<std::string>() == "Level_editor")
         {
-            _game_state = Game_state::Level_editor;
+            _ui_state = Ui_state::Level_editor;
 
             camera()->frame()->setConstraint(nullptr);
         }
-        else if (_parameters["game_state"]->get_value<std::string>() == "Playing")
+        else if (_parameters["ui_state"]->get_value<std::string>() == "Playing")
         {
-            _game_state = Game_state::Playing;
+            _ui_state = Ui_state::Playing;
 
 
             Game_camera_constraint * camera_constraint = new Game_camera_constraint;
@@ -973,7 +975,7 @@ public:
 
     void keyPressEvent(QKeyEvent *event) override
     {
-        if (event->key() == Qt::Key_Delete && _game_state == Game_state::Level_editor)
+        if (event->key() == Qt::Key_Delete && _ui_state == Ui_state::Level_editor)
         {
             delete_selected_element();
         }
@@ -1219,7 +1221,7 @@ public:
 
         for (Brownian_element * e : _core.get_brownian_elements())
         {
-            if (_game_state == Game_state::Level_editor || (_game_state != Game_state::Level_editor && e->is_user_editable()))
+            if (_ui_state == Ui_state::Level_editor || (_ui_state != Ui_state::Level_editor && e->is_user_editable()))
             {
                 if (Brownian_box const* b = dynamic_cast<Brownian_box const*>(e))
                 {
@@ -1233,7 +1235,7 @@ public:
 
         for (Barrier * e : _core.get_barriers())
         {
-            if (_game_state == Game_state::Level_editor || (_game_state != Game_state::Level_editor && e->is_user_editable()))
+            if (_ui_state == Ui_state::Level_editor || (_ui_state != Ui_state::Level_editor && e->is_user_editable()))
             {
                 if (Plane_barrier const* b = dynamic_cast<Plane_barrier const*>(e))
                 {
@@ -1277,7 +1279,7 @@ public:
 
         for (Portal * p : _core.get_portals())
         {
-            if (_game_state == Game_state::Level_editor || (_game_state != Game_state::Level_editor && p->is_user_editable()))
+            if (_ui_state == Ui_state::Level_editor || (_ui_state != Ui_state::Level_editor && p->is_user_editable()))
             {
                 if (Box_portal const* b = dynamic_cast<Box_portal const*>(p))
                 {
@@ -1289,7 +1291,7 @@ public:
 
         for (Molecule_releaser * m : _core.get_molecule_releasers())
         {
-            if (_game_state == Game_state::Level_editor || (_game_state != Game_state::Level_editor && m->is_user_editable()))
+            if (_ui_state == Ui_state::Level_editor || (_ui_state != Ui_state::Level_editor && m->is_user_editable()))
             {
                 Draggable_box * draggable = new Draggable_box(m->get_position(), m->get_extent(), m->get_transform());
                 _draggable_to_level_element[draggable] = m;
@@ -1323,6 +1325,11 @@ public:
             _physics_timer->start();
             _physics_elapsed_time = std::chrono::system_clock::now();
         }
+    }
+
+    void set_simulation_state(bool const s)
+    {
+        _parameters["Toggle simulation"]->set_value(s);
     }
 
     void load_defaults() override
@@ -1452,6 +1459,21 @@ public Q_SLOTS:
 //        _core.update(elapsed_milliseconds / 1000.0f * _parameters["physics_speed"]->get_value<float>());
     }
 
+    void handle_game_state_change()
+    {
+        if (_core.get_previous_game_state() == Core::Game_state::Unstarted && _core.get_game_state() == Core::Game_state::Running)
+        {
+            // show a "Start!" sort of message
+            std::cout << __PRETTY_FUNCTION__ << " starting the game" << std::endl;
+        }
+        else if (_core.get_previous_game_state() == Core::Game_state::Running && _core.get_game_state() == Core::Game_state::Finished)
+        {
+            // show score etc. on a screen that allows "replay", "next level" etc.
+            std::cout << __PRETTY_FUNCTION__ << " finishing the game" << std::endl;
+            set_simulation_state(false);
+        }
+    }
+
 private:
     QTimer * _physics_timer;
     std::chrono::time_point<std::chrono::system_clock> _physics_elapsed_time;
@@ -1464,7 +1486,7 @@ private:
     Mouse_state _mouse_state;
     Selection _selection;
     Level_element * _selected_level_element;
-    Game_state _game_state;
+    Ui_state _ui_state;
 //    bool _is_dragging;
     QPoint _dragging_start;
     Eigen::Vector3f _dragging_start_3d;

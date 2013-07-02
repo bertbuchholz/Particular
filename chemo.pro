@@ -62,7 +62,8 @@ OTHER_FILES += TODO.txt \
     data/shaders/picking.vert \
     data/shaders/picking.frag \
     data/shaders/force_calc.frag \
-    data/shaders/force_calc.vert
+    data/shaders/force_calc.vert \
+    README.txt
 
 HEADERS += \
     My_viewer.h \

@@ -139,6 +139,8 @@ public:
             _core.load_state(filename.toStdString());
             update_draggable_to_level_element();
             update_active_draggables();
+            change_renderer();
+            change_core_settings();
             update();
         }
     }
@@ -149,6 +151,7 @@ public:
 
         change_renderer();
         change_core_settings();
+        update();
     }
 
     void start_level()
@@ -190,6 +193,7 @@ public:
     void change_renderer()
     {
         _molecule_renderer = std::unique_ptr<Molecule_renderer>(Parameter_registry<Molecule_renderer>::get_class_from_single_select_instance_2(_parameters.get_child("Molecule Renderer")));
+        _molecule_renderer->init(context(), size());
         update();
     }
 
@@ -338,7 +342,7 @@ public:
     {
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
-        _molecule_renderer->render(_core.get_molecules(), _my_camera);
+        _molecule_renderer->render(_core.get_level_data(), _core.get_current_time(), _my_camera);
 
         // debug displays
 
@@ -346,9 +350,9 @@ public:
 
 //        draw_tree_for_point(Eigen::Vector3f(0.0f, 0.0f, 0.0f));
 
-        draw_barriers();
+//        draw_barriers();
 
-        draw_brownian_elements();
+//        draw_brownian_elements();
 
         draw_portals();
 
@@ -367,7 +371,7 @@ public:
 
         draw_closest_force();
 
-        draw_temperature();
+//        draw_temperature();
     }
 
     void draw_draggables() // FIXME: use visitors or change it so that draggables can only have a single type of handles (Draggable_point)
@@ -1237,28 +1241,28 @@ public:
         {
             if (_ui_state == Ui_state::Level_editor || (_ui_state != Ui_state::Level_editor && e->is_user_editable()))
             {
-                if (Plane_barrier const* b = dynamic_cast<Plane_barrier const*>(e))
-                {
-                    Eigen::Vector3f extent = Eigen::Vector3f::Zero();
+//                if (Plane_barrier const* b = dynamic_cast<Plane_barrier const*>(e))
+//                {
+//                    Eigen::Vector3f extent = Eigen::Vector3f::Zero();
 
-                    if (b->get_extent())
-                    {
-                        extent = Eigen::Vector3f(b->get_extent().get()[0], b->get_extent().get()[1], 0.0f);
-                    }
+//                    if (b->get_extent())
+//                    {
+//                        extent = Eigen::Vector3f(b->get_extent().get()[0], b->get_extent().get()[1], 0.0f);
+//                    }
 
-                    Draggable_box * draggable = new Draggable_box(b->get_position() - extent * 0.5f,
-                                                                  b->get_position() + extent * 0.5f,
-                    {
-                                                                      { Draggable_box::Corner_type::Min, Draggable_box::Corner_type::Min, Draggable_box::Corner_type::Min },
-                                                                      { Draggable_box::Corner_type::Max, Draggable_box::Corner_type::Min, Draggable_box::Corner_type::Min },
-                                                                  },
-                    { Draggable_box::Plane::Neg_Y }, { Draggable_box::Plane::Neg_Y } );
+//                    Draggable_box * draggable = new Draggable_box(b->get_position() - extent * 0.5f,
+//                                                                  b->get_position() + extent * 0.5f,
+//                    {
+//                                                                      { Draggable_box::Corner_type::Min, Draggable_box::Corner_type::Min, Draggable_box::Corner_type::Min },
+//                                                                      { Draggable_box::Corner_type::Max, Draggable_box::Corner_type::Min, Draggable_box::Corner_type::Min },
+//                                                                  },
+//                    { Draggable_box::Plane::Neg_Y }, { Draggable_box::Plane::Neg_Y } );
 
-                    draggable->set_transform(b->get_transform());
+//                    draggable->set_transform(b->get_transform());
 
-                    _draggable_to_level_element[draggable] = e;
-                }
-                else if (Moving_box_barrier * b = dynamic_cast<Moving_box_barrier*>(e))
+//                    _draggable_to_level_element[draggable] = e;
+//                }
+                if (Moving_box_barrier * b = dynamic_cast<Moving_box_barrier*>(e))
                 {
                     Draggable_box * draggable = new Draggable_box(b->get_position(), b->get_extent(), b->get_transform(), b);
                     b->add_observer(draggable);
@@ -1417,11 +1421,11 @@ public:
 
                     if ((sum % 2) == 0)
                     {
-                        _core.add_molecule(Molecule::create_charged_chlorine(pos));
+//                        _core.add_molecule(Molecule::create_charged_chlorine(pos));
                     }
                     else
                     {
-                        _core.add_molecule(Molecule::create_charged_natrium(pos));
+//                        _core.add_molecule(Molecule::create_charged_natrium(pos));
                     }
                 }
             }
@@ -1438,10 +1442,26 @@ public:
             }
         }
 
+
+        Brownian_box * e = new Brownian_box(Eigen::Vector3f(-10.0f, -20.0f, -10.0f), Eigen::Vector3f(10.0f, 20.0f, 10.0f), 10.0f, 25.0f);
+        e->set_user_editable(true);
+        e->set_persistent(false);
+        _core.add_brownian_element(e);
+
+        _parameters["Molecule Renderer/type"]->set_value<std::string>("Shader Renderer");
+        change_renderer();
+
         update_draggable_to_level_element();
         update_active_draggables();
 
         update();
+    }
+
+    void resizeEvent(QResizeEvent *ev)
+    {
+        _molecule_renderer->resize(ev->size());
+
+        Base::resizeEvent(ev);
     }
 
 public Q_SLOTS:

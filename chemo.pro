@@ -63,7 +63,16 @@ OTHER_FILES += TODO.txt \
     data/shaders/picking.frag \
     data/shaders/force_calc.frag \
     data/shaders/force_calc.vert \
-    README.txt
+    README.txt \
+    data/shaders/simple.vert \
+    data/shaders/molecule.frag \
+    data/shaders/fullscreen_square.vert \
+    data/shaders/simple_texture.frag \
+    data/shaders/temperature.vert \
+    temperature.frag \
+    data/shaders/temperature.frag \
+    data/shaders/post.frag \
+    data/shaders/blur_1D.frag
 
 HEADERS += \
     My_viewer.h \

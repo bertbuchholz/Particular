@@ -517,6 +517,11 @@ public:
         return _level_data._molecules;
     }
 
+    Level_data const& get_level_data() const
+    {
+        return _level_data;
+    }
+
     Molecule_atom_hash const& get_molecule_hash() const
     {
         return _molecule_hash;
@@ -699,8 +704,9 @@ public:
 
     void set_game_field_borders(Eigen::Vector3f const& min, Eigen::Vector3f const& max)
     {
-        for (Barrier * b : _level_data._game_field_borders)
+        for (auto const& e : _level_data._game_field_borders)
         {
+            Barrier * b = e.second;
             _level_data._barriers.erase(std::remove(_level_data._barriers.begin(), _level_data._barriers.end(), b), _level_data._barriers.end());
             delete b;
         }
@@ -723,9 +729,11 @@ public:
                 int const first_axis = (axis + 1) % 3;
                 int const second_axis = (axis + 2) % 3;
                 Eigen::Vector2f extent(play_box_extent[first_axis > second_axis ? second_axis : first_axis], play_box_extent[first_axis < second_axis ? second_axis : first_axis]);
-                Barrier * b = new Plane_barrier(play_box_center - normal * play_box_extent[axis] * 0.5f, normal, strength, radius, extent);
+                Plane_barrier * b = new Plane_barrier(play_box_center - normal * play_box_extent[axis] * 0.5f, normal, strength, radius, extent);
 
-                _level_data._game_field_borders.push_back(b);
+                int const sign_axis_to_enum = axis + ((sign < 0) ? 0 : 3);
+                Level_data::Plane const plane = Level_data::Plane(sign_axis_to_enum);
+                _level_data._game_field_borders[plane] = b;
                 _level_data._barriers.push_back(b);
             }
         }

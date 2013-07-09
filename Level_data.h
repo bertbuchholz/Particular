@@ -8,6 +8,8 @@
 class Level_data
 {
 public:
+    enum class Plane { Neg_X = 0, Neg_Y, Neg_Z, Pos_X, Pos_Y, Pos_Z };
+
     template<class Archive>
     void serialize(Archive & ar, const unsigned int /* version */)
     {
@@ -21,7 +23,7 @@ public:
 
     std::vector<Molecule> _molecules;
 
-    std::vector<Barrier*> _game_field_borders;
+    std::map<Plane, Plane_barrier*> _game_field_borders;
 
     std::vector<Barrier*> _barriers;
     std::vector<Portal*> _portals;

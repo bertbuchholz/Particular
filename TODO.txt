@@ -63,6 +63,8 @@ Gaming part
 
 - Portals with end conditions AND and OR (all ANDs must be true or at least one OR)
 
+- Values like gravity are not set after loading defaults but appear correctly in the GUI
+
 Done:
 D - Store connections in molecules
 D - Add renderers for different styles (ball, sticks etc.)

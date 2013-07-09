@@ -127,7 +127,7 @@ class Level_element
 public:
     virtual ~Level_element() {}
 
-    Level_element() : _user_editable(false), _persistent(true)
+    Level_element() : _user_editable(false), _persistent(true), _selected(false)
     { }
 
     virtual void accept(Level_element_visitor const* visitor) = 0;

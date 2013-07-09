@@ -41,6 +41,8 @@ public:
             glPopMatrix();
 
             glEnable(GL_LIGHTING);
+
+            glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
         }
     }
 
@@ -208,6 +210,11 @@ public:
         }
 
         glPopMatrix();
+    }
+
+    void init()
+    {
+
     }
 };
 

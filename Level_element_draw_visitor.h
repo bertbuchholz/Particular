@@ -172,6 +172,23 @@ public:
 
         draw_box(b->get_box().min(), b->get_box().max());
 
+        glPushMatrix();
+
+        glEnable(GL_TEXTURE_2D);
+
+        glTranslatef(0.0f, -b->get_extent()[1] * 0.5f - 0.01f, -5.0f);
+        glScalef(8.24f, 1.0f, 3.47f);
+
+        glRotatef(90, 1.0, 0.0, 0.0);
+        glBindTexture(GL_TEXTURE_2D, _brownian_panel_tex);
+        glColor3f(1.0f, 1.0f, 1.0f);
+        draw_quad_with_tex_coords();
+        glBindTexture(GL_TEXTURE_2D, 0);
+
+        glDisable(GL_TEXTURE_2D);
+
+        glPopMatrix();
+
         if (b->is_selected())
         {
             glColor3f(1.0f, 1.0f, 0.7f);
@@ -212,10 +229,14 @@ public:
         glPopMatrix();
     }
 
-    void init()
+    void init(QGLContext const* /* context */)
     {
-
+        Frame_buffer<Color4> brownian_panel_tex_fb = convert<QRgb_to_Color4_converter, Color4>(QImage("data/textures/brownian_panel.png"));
+        _brownian_panel_tex = create_texture(brownian_panel_tex_fb);
     }
+
+private:
+    GLuint _brownian_panel_tex;
 };
 
 

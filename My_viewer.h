@@ -294,6 +294,13 @@ public:
 //        GPU_force * gpu_force = new GPU_force(context());
 //        gpu_force->calc_forces(_core.get_molecules());
 
+        glEnable(GL_TEXTURE_2D);
+
+        _rotate_tex = bindTexture(QImage("data/textures/rotate.png"));
+        _move_tex = bindTexture(QImage("data/textures/move.png"));
+        _scale_tex = bindTexture(QImage("data/textures/scale.png"));
+        _slider_tex = bindTexture(QImage("data/textures/slider.png"));
+
         startAnimation();
     }
 
@@ -346,7 +353,7 @@ public:
 
         // debug displays
 
-        draw_tree();
+//        draw_tree();
 
 //        draw_tree_for_point(Eigen::Vector3f(0.0f, 0.0f, 0.0f));
 
@@ -358,25 +365,33 @@ public:
 
         draw_molecule_releasers();
 
-        if (_parameters["draw_handles"]->get_value<bool>())
-        {
-            draw_draggables();
-        }
 
         glDisable(GL_LIGHTING);
+        draw_draggables();
 
-        draw_indicators();
+//        draw_indicators();
 
-        draw_user_force();
+//        draw_user_force();
 
-        draw_closest_force();
+//        draw_closest_force();
 
 //        draw_temperature();
+    }
+
+    void draw_textured_quad(GLuint const tex_id)
+    {
+        glBindTexture(GL_TEXTURE_2D, tex_id);
+        draw_quad_with_tex_coords();
+        glBindTexture(GL_TEXTURE_2D, 0);
     }
 
     void draw_draggables() // FIXME: use visitors or change it so that draggables can only have a single type of handles (Draggable_point)
     {
         float const scale = 1.5f;
+
+        glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+
+        float const z_offset = -0.01f;
 
         for (auto const& d : _draggable_to_level_element)
         {
@@ -394,21 +409,58 @@ public:
 
                 for (Draggable_point const& p : corners)
                 {
-                    glColor3f(0.7f, 0.7f, 0.7f);
-                    draw_box_from_center(p.get_position(), Eigen::Vector3f(scale, scale, scale));
+//                    glColor3f(0.7f, 0.7f, 0.7f);
+//                    draw_box_from_center(p.get_position(), Eigen::Vector3f(scale, scale, scale));
+
+                    glPushMatrix();
+
+                    glTranslatef(p.get_position()[0] + z_offset, p.get_position()[1] + z_offset, p.get_position()[2] + z_offset);
+                    glScalef(scale, scale, scale);
+                    glRotatef(90, 1.0, 0.0, 0.0);
+                    draw_textured_quad(_scale_tex);
+
+                    glPopMatrix();
                 }
                 for (Draggable_disc const& d_disc : d_box->get_position_points())
                 {
-                    draw_sphere_ico(Eigen2OM(d_disc.get_position()), 2.0f, Color(0.7f, 0.7f, 1.0f));
+//                    draw_sphere_ico(Eigen2OM(d_disc.get_position()), 2.0f, Color(0.7f, 0.7f, 1.0f));
+
+                    glPushMatrix();
+
+                    glTranslatef(d_disc.get_position()[0] + z_offset, d_disc.get_position()[1] + z_offset, d_disc.get_position()[2] + z_offset);
+                    glScalef(scale, scale, scale);
+                    glRotatef(90, 1.0, 0.0, 0.0);
+                    draw_textured_quad(_move_tex);
+
+                    glPopMatrix();
                 }
                 for (Draggable_disc const& d_disc : d_box->get_rotation_handles())
                 {
-                    draw_sphere_ico(Eigen2OM(d_disc.get_position()), 2.0f, Color(1.0f, 0.7f, 0.7f));
+//                    draw_sphere_ico(Eigen2OM(d_disc.get_position()), 2.0f, Color(1.0f, 0.7f, 0.7f));
+                    glPushMatrix();
+
+                    glTranslatef(d_disc.get_position()[0] + z_offset, d_disc.get_position()[1] + z_offset, d_disc.get_position()[2] + z_offset);
+                    glScalef(scale, scale, scale);
+                    glRotatef(90, 1.0, 0.0, 0.0);
+                    draw_textured_quad(_rotate_tex);
+
+                    glPopMatrix();
                 }
                 for (auto iter : d_box->get_property_handles())
                 {
-                    glColor3f(0.8f, 0.8f, 0.8f);
-                    draw_box_from_center(iter.second.get_position(), Eigen::Vector3f(scale, scale, scale));
+//                    glColor3f(0.8f, 0.8f, 0.8f);
+//                    draw_box_from_center(iter.second.get_position(), Eigen::Vector3f(scale, scale, scale));
+
+                    Eigen::Vector3f const& p = iter.second.get_position();
+
+                    glPushMatrix();
+
+                    glTranslatef(p[0] + z_offset, p[1] - 0.03f, p[2] + z_offset);
+                    glScalef(0.9f, 0.9f, 0.9f);
+                    glRotatef(90.0f, 1.0f, 0.0f, 0.0f);
+                    draw_textured_quad(_slider_tex);
+
+                    glPopMatrix();
                 }
 
                 glPopMatrix();
@@ -1511,6 +1563,11 @@ private:
     QPoint _dragging_start;
     Eigen::Vector3f _dragging_start_3d;
     int _picked_index;
+
+    GLuint _rotate_tex;
+    GLuint _scale_tex;
+    GLuint _move_tex;
+    GLuint _slider_tex;
 
     StandardCamera * _my_camera;
 

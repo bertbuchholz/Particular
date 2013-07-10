@@ -83,7 +83,8 @@ public:
     Draggable(Level_element * level_element = nullptr) : Draggable(Eigen::Vector3f::Zero(), level_element)
     { }
 
-    Draggable(Eigen::Vector3f const& position, Level_element * level_element = nullptr) : _parent(nullptr), _position(position), _changed(false), _level_element(level_element)
+    Draggable(Eigen::Vector3f const& position, Level_element * level_element = nullptr) :
+        _parent(nullptr), _position(position), _changed(false), _level_element(level_element), _slider_movement_range(3.9f)
     { }
 
     virtual ~Draggable()
@@ -207,6 +208,8 @@ protected:
     bool _changed;
 
     Level_element * _level_element;
+
+    float _slider_movement_range;
 };
 
 class Draggable_point : public Draggable
@@ -543,10 +546,10 @@ public:
 
     void add_property_handle(std::string const& name, Eigen::Vector2f const& range, float const current_value)
     {
-        float const slider_range_3d = 10.0f;
+        float const slider_range_3d = _slider_movement_range * 2.0f;
         float const normalized_current_value = (current_value - range[0]) / (range[1] - range[0]);
 
-        Eigen::Vector3f const center_position(0.0f, -_extent_2[1], -3.0f * (_property_handles.size() + 1));
+        Eigen::Vector3f const center_position(0.0f, -_extent_2[1], -3.6f - 3.0f * _property_handles.size());
 
         assert(normalized_current_value >= 0.0f && normalized_current_value <= 1.0f);
 
@@ -577,8 +580,8 @@ public:
         Draggable_point const& radius_handle = iter_handle->second;
         Eigen::Vector2f const& radius_range = iter_range->second;
 
-        float radius = into_range(radius_handle.get_position()[0], -5.0f, 5.0f);
-        radius = (radius + 5.0f) / 10.0f * (radius_range[1] - radius_range[0]) + radius_range[0];
+        float radius = into_range(radius_handle.get_position()[0], -_slider_movement_range, _slider_movement_range);
+        radius = (radius + _slider_movement_range) / (2.0f * _slider_movement_range) * (radius_range[1] - radius_range[0]) + radius_range[0];
 
         b->set_radius(radius);
 
@@ -591,8 +594,8 @@ public:
         Draggable_point const& strength_handle = iter_handle->second;
         Eigen::Vector2f const& strength_range  = iter_range->second;
 
-        float strength = into_range(strength_handle.get_position()[0], -5.0f, 5.0f);
-        strength = (strength + 5.0f) / 10.0f * (strength_range[1] - strength_range[0]) + strength_range[0];
+        float strength = into_range(strength_handle.get_position()[0], -_slider_movement_range, _slider_movement_range);
+        strength = (strength + _slider_movement_range) / (2.0f * _slider_movement_range) * (strength_range[1] - strength_range[0]) + strength_range[0];
 
         b->set_strength(strength);
     }

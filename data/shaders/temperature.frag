@@ -4,6 +4,16 @@ uniform sampler2D scene_texture;
 uniform float time;
 uniform vec2 screen_size;
 
+vec3 screen(vec3 base, vec3 blend)
+{
+    return vec3(1.0) - ((vec3(1.0) - base) * (vec3(1.0) - blend));
+}
+
+float sign(float x)
+{
+    return x < 0.0 ? -1.0 : 1.0;
+}
+
 void main(void)
 {
     vec2 tex_coord = gl_TexCoord[0].st;
@@ -27,9 +37,20 @@ void main(void)
     if (mix_factor < 0.5)
     {
         float f = 1.2 * (0.5 - mix_factor);
-        color = texture2D(ice_texture, tex_coord) * f + color * (1.0 - f);
-//        color = texture2D(ice_texture, tex_coord);
-//        color.a = f;
+
+        vec2 ice_tex_size = vec2(498.0, 329.0);
+
+        float tex_value = length(texture2D(ice_texture, tex_coord).rgb);
+        float dx = length(texture2D(ice_texture, tex_coord + vec2(1.0 / ice_tex_size.x, 0.0)).rgb) - tex_value;
+        float dy = length(texture2D(ice_texture, tex_coord + vec2(0.0, 1.0 / ice_tex_size.y)).rgb) - tex_value;
+        vec2 refracted_coord = vec2(dx, dy) * f * 0.1;
+
+        vec4 scene_color = texture2D(scene_texture, screen_coords + refracted_coord);
+
+
+        color = texture2D(ice_texture, tex_coord) * f + scene_color * (1.0 - f);
+        color = scene_color;
+
     }
     else if (mix_factor > 0.5)
     {
@@ -48,14 +69,12 @@ void main(void)
         vec4 tint = vec4(1.0, 0.1, 0.1, f * 0.5) * (1.0 - f) + vec4(1.0, 0.7, 0.1, f * 0.5) * f;
 
         color = vec4(color.rgb * (1.0 - tint.a) + tint.rgb * tint.a, 1.0);
+//        color = vec4(color.rgb * (1.0 - sqrt(tint.a)) + screen(color.rgb, tint.rgb) * sqrt(tint.a), 1.0);
     }
     else
     {
-//        color.a = 0.0;
         color = texture2D(scene_texture, screen_coords);
     }
-
-//    vec4 color = gl_Color;
 
     gl_FragColor = color;
 }

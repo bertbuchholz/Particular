@@ -360,7 +360,7 @@ public:
 
         resize(size);
 
-        _level_element_draw_visitor.init();
+        _level_element_draw_visitor.init(context);
     }
 
     void resize(QSize const& size) override
@@ -651,25 +651,35 @@ public:
 
         _post_fbo->bind();
 
-//        QGLFramebufferObject::blitFramebuffer(_post_fbo.get(), QRect(QPoint(0, 0), _post_fbo->size()),
-//                                              _scene_fbo.get(), QRect(QPoint(0, 0), _scene_fbo->size()),
-//                                              GL_DEPTH_BUFFER_BIT);
-
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         glViewport(0.0f, 0.0f, camera->screenWidth(), camera->screenHeight());
 
-        _post_program->bind();
-        _post_program->setUniformValue("texture", 0);
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, _tmp_screen_texture[0], 0);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+        _blur_program->bind();
+        _blur_program->setUniformValue("texture", 0);
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, _scene_fbo->texture());
-        _post_program->setUniformValue("depth_texture", 1);
+        _blur_program->setUniformValue("depth_texture", 1);
         glActiveTexture(GL_TEXTURE1);
         glBindTexture(GL_TEXTURE_2D, _depth_tex);
-        _post_program->setUniformValue("clip_distances", QVector2D(camera->zNear(), camera->zFar()));
-        _post_program->setUniformValue("tex_size", screen_size);
+        _blur_program->setUniformValue("clip_distances", QVector2D(camera->zNear(), camera->zFar()));
+        _blur_program->setUniformValue("tex_size", screen_size);
+        _blur_program->setUniformValue("direction", QVector2D(1.0, 0.0));
+
         draw_quad_with_tex_coords();
-        _post_program->release();
+
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, _tmp_screen_texture[1], 0);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+        _blur_program->setUniformValue("texture", 0);
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, _tmp_screen_texture[0]);
+        _blur_program->setUniformValue("direction", QVector2D(0.0, 1.0));
+        draw_quad_with_tex_coords();
+
+        _blur_program->release();
 
         _post_fbo->release();
 
@@ -682,7 +692,7 @@ public:
 
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-        draw_temperature_mesh(_grid_mesh, level_data, _post_fbo->texture(), screen_size, time);
+        draw_temperature_mesh(_grid_mesh, level_data, _tmp_screen_texture[1], screen_size, time);
 
         _temperature_fbo->release();
 
@@ -696,12 +706,18 @@ public:
         _screen_quad_program->setUniformValue("texture", 0);
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, _temperature_fbo->texture());
+//        glBindTexture(GL_TEXTURE_2D, _tmp_screen_texture[1]);
         draw_quad_with_tex_coords();
         _screen_quad_program->release();
 
         glPopAttrib();
 
+        QGLFramebufferObject::blitFramebuffer(0, QRect(0, 0, screen_size.width(), screen_size.height()),
+                                              _scene_fbo.get(), QRect(0, 0, screen_size.width(), screen_size.height()),
+                                              GL_DEPTH_BUFFER_BIT);
+
         glEnable(GL_DEPTH_TEST);
+        glEnable(GL_TEXTURE_2D);
     }
 
 

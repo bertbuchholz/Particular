@@ -7,6 +7,7 @@
 #include <Eigen/Core>
 
 #include <Frame_buffer.h>
+#include <GL_utilities.h>
 #include <Draw_functions.h>
 
 #include "Atom.h"
@@ -80,23 +81,6 @@ inline GLuint create_single_channel_texture(Frame_buffer<float> const& frame)
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
     return texture_index;
-}
-
-inline QGLShaderProgram * init_program(QGLContext const* context, QString const& vertex_file, QString const& frag_file)
-{
-    QGLShaderProgram * program = new QGLShaderProgram(context);
-
-    program->addShaderFromSourceFile(QGLShader::Vertex, vertex_file);
-    std::cout << program->log().toStdString() << std::endl;
-
-    program->addShaderFromSourceFile(QGLShader::Fragment, frag_file);
-    std::cout << program->log().toStdString() << std::endl;
-
-    program->link();
-
-    std::cout << program->log().toStdString() << std::endl;
-
-    return program;
 }
 
 class GPU_force

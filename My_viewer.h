@@ -280,7 +280,8 @@ public:
 
         _icosphere = IcoSphere<OpenMesh::Vec3f, Color>(2);
 
-        _picking.init(context(), size()); // FIXME: needs to be resized when viewer changes
+//        _picking.init(context(), size()); // FIXME: needs to be resized when viewer changes
+        _picking.init(context());
 
         glEnable(GL_NORMALIZE);
         glEnable(GL_BLEND);
@@ -361,9 +362,9 @@ public:
 
 //        draw_brownian_elements();
 
-        draw_portals();
+//        draw_portals();
 
-        draw_molecule_releasers();
+//        draw_molecule_releasers();
 
 
         glDisable(GL_LIGHTING);
@@ -478,8 +479,10 @@ public:
 
             glPushMatrix();
 
-            glTranslatef(draggable->get_parent()->get_position()[0], draggable->get_parent()->get_position()[1], draggable->get_parent()->get_position()[2]);
-            glMultMatrixf(draggable->get_parent()->get_transform().data());
+            Draggable const* parent = draggable->get_parent();
+
+            glTranslatef(parent->get_position()[0], parent->get_position()[1], parent->get_position()[2]);
+            glMultMatrixf(parent->get_transform().data());
 
             _picking.set_index(i);
 
@@ -1501,7 +1504,7 @@ public:
         _core.add_brownian_element(e);
 
         _parameters["Molecule Renderer/type"]->set_value<std::string>("Shader Renderer");
-        change_renderer();
+//        change_renderer();
 
         update_draggable_to_level_element();
         update_active_draggables();

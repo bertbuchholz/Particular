@@ -583,6 +583,22 @@ public:
         }
     }
 
+    void draw_portals(Level_data const& level_data) const
+    {
+        for (Portal * element : level_data._portals)
+        {
+            element->accept(&_level_element_draw_visitor);
+        }
+    }
+
+    void draw_molecule_releasers(Level_data const& level_data) const
+    {
+        for (Molecule_releaser * element : level_data._molecule_releasers)
+        {
+            element->accept(&_level_element_draw_visitor);
+        }
+    }
+
     void draw_backdrop_quad() const
     {
         glPushMatrix();
@@ -646,6 +662,10 @@ public:
         draw_brownian_elements(level_data);
 
         draw_barriers(level_data);
+
+        draw_portals(level_data);
+
+        draw_molecule_releasers(level_data);
 
         _scene_fbo->release();
 

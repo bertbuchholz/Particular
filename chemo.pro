@@ -72,7 +72,8 @@ OTHER_FILES += TODO.txt \
     temperature.frag \
     data/shaders/temperature.frag \
     data/shaders/post.frag \
-    data/shaders/blur_1D.frag
+    data/shaders/blur_1D.frag \
+    data/shaders/test.frag
 
 HEADERS += \
     My_viewer.h \

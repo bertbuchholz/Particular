@@ -127,8 +127,28 @@ public:
         glTranslatef(b->get_position()[0], b->get_position()[1], b->get_position()[2]);
         glMultMatrixf(b->get_transform().data());
 
-        glColor3f(0.8f, 0.8f, 0.6f);
-        draw_box(b->get_box().min(), b->get_box().max());
+
+        _texture_program->bind();
+
+        glEnable(GL_TEXTURE_2D);
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, _molecule_releaser_tex);
+//        glColor4f(0.8f, 0.8f, 0.6f, 1.0f);
+        glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+        glPushMatrix();
+        glScalef(7.9f, 7.9f, 7.9f);
+
+        draw_mesh_immediate(_molecule_releaser_mesh);
+
+        glBindTexture(GL_TEXTURE_2D, 0);
+        _texture_program->release();
+
+        glPopMatrix();
+
+        glDisable(GL_TEXTURE_2D);
+
+//        draw_box(b->get_box().min(), b->get_box().max());
+
 
         if (b->is_selected())
         {
@@ -151,9 +171,9 @@ public:
         draw_arrow_z_plane(Eigen2OM(arrow_start), Eigen2OM(arrow_end));
         glPopMatrix();
 
-        glPopMatrix();
-
         glEnable(GL_LIGHTING);
+
+        glPopMatrix();
     }
 
     void visit(Brownian_box * b) const override
@@ -229,14 +249,37 @@ public:
         glPopMatrix();
     }
 
-    void init(QGLContext const* /* context */)
+    void init(QGLContext const* context)
     {
+
+        Frame_buffer<Color> molecule_releaser_tex_fb = convert<QColor_to_Color_converter, Color>(QImage("data/textures/molecule_releaser.png"));
+        _molecule_releaser_tex = create_texture(molecule_releaser_tex_fb);
+
         Frame_buffer<Color4> brownian_panel_tex_fb = convert<QRgb_to_Color4_converter, Color4>(QImage("data/textures/brownian_panel.png"));
         _brownian_panel_tex = create_texture(brownian_panel_tex_fb);
+
+        _molecule_releaser_mesh = load_mesh<MyMesh>("data/meshes/molecule_releaser.obj");
+
+        typename MyMesh::ConstVertexIter vIt(_molecule_releaser_mesh.vertices_begin()), vEnd(_molecule_releaser_mesh.vertices_end());
+
+        for (; vIt!=vEnd; ++vIt)
+        {
+            MyMesh::TexCoord2D const& coord = _molecule_releaser_mesh.texcoord2D(vIt.handle());
+
+            std::cout << vIt.handle() << " " << coord << std::endl;
+        }
+
+        _texture_program = std::unique_ptr<QGLShaderProgram>(init_program(context, "data/shaders/temperature.vert", "data/shaders/test.frag"));
+
     }
 
 private:
+    std::unique_ptr<QGLShaderProgram> _texture_program;
+
     GLuint _brownian_panel_tex;
+
+    MyMesh _molecule_releaser_mesh;
+    GLuint _molecule_releaser_tex;
 };
 
 

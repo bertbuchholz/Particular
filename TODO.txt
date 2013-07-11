@@ -37,7 +37,6 @@ Gaming part
 
 - "Noodles" with charges, folding and stretching depending on external charged particles, need to move the noodles through obstacles
 - Radius search for atoms, search per molecule, not atom
-- Molecular spray gun
 
 - Data collectors: data measurements over time for heat sources, molecular movement (speed?), molecules passing through certain areas/gates
 
@@ -45,7 +44,7 @@ Gaming part
 
 - Allow exposing the different measurements
 
-- Remove a molecule once it passed a gate
+- Remove a molecule once it passed a gate, add an effect when it does
 
 - Save individual scores and of other players, compare own score to others via variance, show own score on distribution curve of all players,
   show distribution of own scores
@@ -64,6 +63,10 @@ Gaming part
 - Portals with end conditions AND and OR (all ANDs must be true or at least one OR)
 
 - Values like gravity are not set after loading defaults but appear correctly in the GUI
+
+- Move UI elements out of the scene drawing to avoid them getting shaders
+
+- Find representation for portals, molecule releasers and heat elements
 
 Done:
 D - Store connections in molecules

@@ -2,6 +2,7 @@ uniform sampler2D texture;
 uniform sampler2D depth_texture;
 
 uniform vec2 clip_distances;
+uniform float focus_distance;
 uniform vec2 direction;
 uniform vec2 tex_size;
 
@@ -31,7 +32,7 @@ vec3 blur(vec2 pos, int num_steps)
 
     for (int u = -resolution; u <= resolution; ++u)
     {
-        float weight = wendland_2_1(abs(float(u) / float(resolution)));
+        float weight = wendland_2_1(abs(float(u) / float(resolution + 1)));
         result += texture2D(texture, pos + step * float(u)).rgb * weight;
         weight_sum += weight;
     }
@@ -43,12 +44,11 @@ void main(void)
 {
     vec2 tex_coord = gl_TexCoord[0].st;
 
-//    out_color = vec4(1.0);
-//    vec4 color = vec4(gl_FragCoord.x, gl_FragCoord.y, 0.0, 1.0);
-//    vec4 color = vec4(tex_coord.s, tex_coord.t, 0.0, 1.0);
     vec4 color = texture2D(texture, tex_coord);
 
-    float blur_strength = linearize_depth(texture2D(depth_texture, tex_coord).r);
+    float normalized_depth = linearize_depth(texture2D(depth_texture, tex_coord).r);
+    float normalized_focus_dist = (abs(focus_distance) - clip_distances.s) / (clip_distances.t - clip_distances.s);
+    float blur_strength = abs(normalized_focus_dist - normalized_depth) / (1.0 - normalized_focus_dist);
 
 //    color = vec4(vec3(depth), 1.0);
 

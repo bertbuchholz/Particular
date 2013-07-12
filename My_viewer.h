@@ -1472,7 +1472,7 @@ public:
                 {
                     int const sum = x + y + z;
 
-                    Eigen::Vector3f pos = Eigen::Vector3f(x, y, z) * resolution + grid_start;
+//                    Eigen::Vector3f pos = Eigen::Vector3f(x, y, z) * resolution + grid_start;
 
                     if ((sum % 2) == 0)
                     {

@@ -163,7 +163,7 @@ public:
         _user_editable = b;
     }
 
-    void animate(float const timestep)
+    virtual void animate(float const timestep)
     {
         if (_animations.empty()) return;
 
@@ -831,6 +831,12 @@ private:
     float _radius;
 };
 
+struct Particle
+{
+    Eigen::Vector3f position;
+    Eigen::Vector3f speed;
+};
+
 class Brownian_box : public Brownian_element
 {
 public:
@@ -843,6 +849,18 @@ public:
         set_position((min + max) * 0.5f);
 
         _box = Eigen::AlignedBox<float, 3>(min - get_position(), max - get_position());
+
+        int const num_particles = 100;
+
+        for (int i = 0; i < num_particles; ++i)
+        {
+            Particle p;
+            p.position = Eigen::Vector3f::Random().cwiseProduct(get_extent()) * 0.5f;
+            p.speed = Eigen::Vector3f::Random() * 0.1f;
+            p.speed *= (_strength + 50.0f) * 0.01f;
+
+            _particles.push_back(p);
+        }
     }
 
     float get_brownian_motion_factor(Eigen::Vector3f const& point) const override
@@ -905,6 +923,42 @@ public:
         _radius = radius;
     }
 
+    void animate(const float timestep) override
+    {
+        for (Particle & p : _particles)
+        {
+            p.position += p.speed * timestep;
+
+            float distance;
+            Eigen::Vector3f closest_point;
+
+            closest_point_to_box(_box, p.position, closest_point, distance);
+
+            if (distance > 4.0f) // can happen when downsizing the element
+            {
+                p.speed = p.speed.norm() * (closest_point - p.position).normalized();
+            }
+            else if (distance > 0.0001f)
+            {
+                if ((closest_point - p.position).dot(p.speed) < 0.0f)
+                {
+                    Eigen::Vector3f normal = (closest_point - p.position).normalized();
+                    p.speed = p.speed - 2.0f * (p.speed.dot(normal) * normal);
+                }
+            }
+            else
+            {
+                p.speed += Eigen::Vector3f::Random();
+                p.speed = p.speed.normalized() * (_strength + 50.0f) * 0.1f;
+            }
+        }
+    }
+
+    std::vector<Particle> const& get_particles() const
+    {
+        return _particles;
+    }
+
     void accept(Level_element_visitor const* visitor)
     {
         visitor->visit(this);
@@ -919,6 +973,8 @@ private:
     Eigen::AlignedBox<float, 3> _box;
     float _strength;
     float _radius;
+
+    std::vector<Particle> _particles;
 };
 
 

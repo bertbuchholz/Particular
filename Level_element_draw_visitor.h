@@ -190,7 +190,13 @@ public:
         glTranslatef(b->get_position()[0], b->get_position()[1], b->get_position()[2]);
         glMultMatrixf(b->get_transform().data());
 
-        draw_box(b->get_box().min(), b->get_box().max());
+//        draw_box(b->get_box().min(), b->get_box().max());
+        glBegin(GL_POINTS);
+        for (Particle const& p : b->get_particles())
+        {
+            glVertex3fv(p.position.data());
+        }
+        glEnd();
 
         glPushMatrix();
 

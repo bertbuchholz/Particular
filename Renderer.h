@@ -686,6 +686,7 @@ public:
         glBindTexture(GL_TEXTURE_2D, _depth_tex);
         _blur_program->setUniformValue("clip_distances", QVector2D(camera->zNear(), camera->zFar()));
         _blur_program->setUniformValue("tex_size", screen_size);
+        _blur_program->setUniformValue("focus_distance", float(camera->position()[1]));
         _blur_program->setUniformValue("direction", QVector2D(1.0, 0.0));
 
         draw_quad_with_tex_coords();

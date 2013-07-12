@@ -402,6 +402,11 @@ public:
             b->animate(time_step);
         }
 
+        for (Brownian_element * b : _level_data._brownian_elements)
+        {
+            b->animate(time_step);
+        }
+
 
         for (Molecule & m : _level_data._molecules)
         {

@@ -157,8 +157,10 @@ public:
     {
         Base::restore_parameters();
 
-        change_renderer();
-        change_core_settings();
+        setUpdatesEnabled(false);
+//        change_renderer();
+//        change_core_settings();
+        setUpdatesEnabled(true);
         update();
     }
 

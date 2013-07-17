@@ -11,7 +11,6 @@ BOOST_CLASS_EXPORT_GUID(Moving_box_barrier, "Moving_box_barrier")
 BOOST_CLASS_EXPORT_GUID(Molecule_releaser, "Molecule_releaser")
 BOOST_CLASS_EXPORT_GUID(Box_portal, "Box_portal")
 
-BOOST_CLASS_EXPORT_GUID(Molecule_count_condition, "Molecule_count_condition")
 BOOST_CLASS_EXPORT_GUID(Molecule_capture_condition, "Molecule_capture_condition")
 
 int main(int argc, char** argv)

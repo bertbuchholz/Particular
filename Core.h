@@ -43,6 +43,7 @@ public:
     Core() :
         _game_state(Game_state::Unstarted),
         _previous_game_state(Game_state::Unstarted),
+        _molecule_id_counter(0),
         _current_time(0.0f),
         _molecule_hash(Molecule_atom_hash(100, 4.0f))
     {
@@ -327,7 +328,6 @@ public:
         float _end_time;
     };
 
-
     void update(float const time_step)
     {
         _current_time += time_step;
@@ -361,7 +361,11 @@ public:
 
             elapsed_milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>
                     (timer_end-timer_start).count();
-            std::cout << "update_spatial_hash(): " << elapsed_milliseconds << std::endl;
+
+            if (elapsed_milliseconds > 15)
+            {
+                std::cout << "update_spatial_hash(): " << elapsed_milliseconds << std::endl;
+            }
         }
 
         if (time_debug)
@@ -377,7 +381,11 @@ public:
 
             elapsed_milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>
                     (timer_end-timer_start).count();
-            std::cout << "update_tree(): " << elapsed_milliseconds << std::endl;
+
+            if (elapsed_milliseconds > 15)
+            {
+                std::cout << "update_tree(): " << elapsed_milliseconds << std::endl;
+            }
         }
 
 
@@ -405,27 +413,40 @@ public:
         }
 
 
-        for (Molecule & m : _level_data._molecules)
+        auto molecule_iter = std::begin(_level_data._molecules);
+
+        while (molecule_iter != std::end(_level_data._molecules))
         {
-            if (!m._active) continue;
+            Molecule & m = *molecule_iter;
+
+            bool has_been_removed = false;
 
             for (Portal * p : _level_data._portals)
             {
-                if (p->contains(m._x))
+                if (p->contains(m._x) && !has_been_removed)
                 {
                     p->handle_molecule_entering();
-
-                    m._active = false;
 
                     Particle_system_element * p = new Particle_system_element;
                     p->init(m);
 
                     _level_data._particle_system_elements.push_back(p);
+
+                    _molecule_id_to_molecule_map.erase(m.get_id());
+
+                    molecule_iter = _level_data._molecules.erase(std::remove_if(_level_data._molecules.begin(), _level_data._molecules.end(), Compare_by_id(m.get_id())),
+                                                                 _level_data._molecules.end());
+
+
+                    has_been_removed = true;
                 }
             }
 
-            // tmp_states.push_back(m.to_state());
-            compute_force_and_torque(m);
+            if (!has_been_removed)
+            {
+                compute_force_and_torque(m);
+                ++molecule_iter;
+            }
         }
 
         if (time_debug)
@@ -435,7 +456,10 @@ public:
             elapsed_milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>
                     (timer_end-timer_start).count();
 
-            std::cout << "compute_force_and_torque(): " << elapsed_milliseconds << std::endl;
+            if (elapsed_milliseconds > 15)
+            {
+                std::cout << "compute_force_and_torque(): " << elapsed_milliseconds << std::endl;
+            }
         }
 
 
@@ -460,8 +484,6 @@ public:
         {
 //            Body_state & state = tmp_states[i];
 //            Molecule & molecule = _level_data._molecules[i];
-
-            if (!molecule._active) continue;
 
 //            state._x += molecule._v * time_step;
 
@@ -497,7 +519,10 @@ public:
             elapsed_milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>
                     (timer_end-timer_start).count();
 
-            std::cout << "update molecules: " << elapsed_milliseconds << std::endl;
+            if (elapsed_milliseconds > 15)
+            {
+                std::cout << "update molecules: " << elapsed_milliseconds << std::endl;
+            }
         }
 
         if (_game_state == Game_state::Running && check_is_finished())
@@ -530,7 +555,7 @@ public:
         return (end_state == End_condition::State::Finished);
     }
 
-    std::vector<Molecule> const& get_molecules() const
+    std::list<Molecule> const& get_molecules() const
     {
         return _level_data._molecules;
     }
@@ -557,8 +582,10 @@ public:
 
     void add_molecule(Molecule molecule)
     {
-        molecule.set_id(_level_data._molecules.size());
+        molecule.set_id(_molecule_id_counter);
         _level_data._molecules.push_back(molecule);
+        _molecule_id_to_molecule_map[_molecule_id_counter] = &_level_data._molecules.back();
+        ++_molecule_id_counter;
     }
 
     void update_spatial_hash()
@@ -567,8 +594,6 @@ public:
 
         for (Molecule const& m : _level_data._molecules)
         {
-            if (!m._active) continue;
-
             for (size_t i = 0; i < m._atoms.size(); ++i)
             {
                 _molecule_hash.add_point(m._atoms[i]._r, Molecule_atom_id(m.get_id(), i));
@@ -630,8 +655,6 @@ public:
 
         for (Molecule const& m : _level_data._molecules)
         {
-            if (!m._active) continue;
-
             for (Atom const& a : m._atoms)
             {
                 for (int i = 0; i < 3; ++i)
@@ -649,8 +672,6 @@ public:
 
         for (Molecule const& m : _level_data._molecules)
         {
-            if (!m._active) continue;
-
             for (Atom const& a : m._atoms)
             {
                 _tree.add_point(a._r, &a); // FIXME: possibly bad, when the vector containing a gets moved, then &a changes
@@ -790,15 +811,11 @@ public:
 
     boost::optional<Molecule const&> get_molecule(int const id) const
     {
-        // TODO: stupid brute force search, maybe better structure
-        for (Molecule const& m : _level_data._molecules)
-        {
-            if (!m._active) continue;
+        auto iter = _molecule_id_to_molecule_map.find(id);
 
-            if (m.get_id() == id)
-            {
-                return boost::optional<Molecule const&>(m);
-            }
+        if (iter != _molecule_id_to_molecule_map.end())
+        {
+            return boost::optional<Molecule const&>(*iter->second);
         }
 
         return boost::optional<Molecule const&>();
@@ -904,6 +921,7 @@ public:
         _level_data._molecule_releasers.clear();
         _level_data._particle_system_elements.clear();
         _molecule_external_forces.clear();
+        _molecule_id_to_molecule_map.clear();
         _external_forces.clear();
         _molecule_hash.clear();
     }
@@ -917,6 +935,7 @@ public:
         _molecule_external_forces.clear();
         _external_forces.clear();
         _molecule_hash.clear();
+        _molecule_id_to_molecule_map.clear();
 
         reset_level_elements();
 
@@ -1022,6 +1041,10 @@ private:
     std::unordered_map<std::string, External_force> _external_forces;
 
     std::vector<Molecule_external_force> _molecule_external_forces;
+
+    std::unordered_map<int, Molecule*> _molecule_id_to_molecule_map;
+
+    int _molecule_id_counter;
 
     Molecule_external_force _user_force;
 

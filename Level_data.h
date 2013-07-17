@@ -21,7 +21,7 @@ public:
         ar & _end_conditions;
     }
 
-    std::vector<Molecule> _molecules;
+    std::list<Molecule> _molecules;
 
     std::map<Plane, Plane_barrier*> _game_field_borders;
 

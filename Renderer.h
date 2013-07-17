@@ -64,7 +64,7 @@ public:
 
     void render(Level_data const& level_data, float const /* time */, StandardCamera const* = nullptr) const override
     {
-        std::vector<Molecule> const& molecules = level_data._molecules;
+        std::list<Molecule> const& molecules = level_data._molecules;
 
         glDisable(GL_LIGHTING);
 
@@ -73,8 +73,6 @@ public:
 
         for (Molecule const& molecule : molecules)
         {
-            if (!molecule._active) continue;
-
             draw_molecule(molecule);
         }
     }
@@ -166,14 +164,12 @@ public:
 
     void render(Level_data const& level_data, float const /* time */, StandardCamera const* = nullptr) const override
     {
-        std::vector<Molecule> const& molecules = level_data._molecules;
+        std::list<Molecule> const& molecules = level_data._molecules;
 
         glEnable(GL_LIGHTING);
 
         for (Molecule const& molecule : molecules)
         {
-            if (!molecule._active) continue;
-
             draw_molecule(molecule, _scale);
         }
     }
@@ -214,27 +210,25 @@ class Distance_renderer : Molecule_renderer
 public:
     void render(Level_data const& level_data, float const /* time */, StandardCamera const* camera) const override
     {
-        std::vector<Molecule> const& molecules = level_data._molecules;
+        std::list<Molecule> const& molecules = level_data._molecules;
 
         glLineWidth(2.0f);
 
-        std::vector< std::pair<float, int> > distance_indices;
+        std::vector< std::pair<float, Molecule const*> > distance_indices;
 
-        for (size_t i = 0; i < molecules.size(); ++i)
+        for (Molecule const& molecule : molecules)
         {
-            if (!molecules[i]._active) continue;
-
-            float const distance = (QGLV2Eigen(camera->position()) - molecules[i]._x).norm();
-            distance_indices.push_back(std::pair<float, int>(distance, i));
+            float const distance = (QGLV2Eigen(camera->position()) - molecule._x).norm();
+            distance_indices.push_back(std::pair<float, Molecule const*>(distance, &molecule));
         }
 
         std::sort(distance_indices.begin(), distance_indices.end());
         std::reverse(distance_indices.begin(), distance_indices.end());
 
         //for (Molecule const& molecule : molecules)
-        for (std::pair<float, int> const& distance_index : distance_indices)
+        for (std::pair<float, Molecule const*> const& distance_index : distance_indices)
         {
-            Molecule const& molecule = molecules[distance_index.second];
+            Molecule const& molecule = *distance_index.second;
             float const distance = distance_index.first;
 
 //            float const distance = (QGLV2Eigen(camera->position()) - molecule._x).norm();
@@ -599,7 +593,7 @@ public:
 
         glDisable(GL_TEXTURE_2D);
 
-        std::vector<Molecule> const& molecules = level_data._molecules;
+        std::list<Molecule> const& molecules = level_data._molecules;
 
         _molecule_program->bind();
         {
@@ -616,8 +610,6 @@ public:
 
             for (Molecule const& molecule : molecules)
             {
-                if (!molecule._active) continue;
-
                 draw_molecule(molecule, _scale);
             }
         }

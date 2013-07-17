@@ -509,7 +509,6 @@ public:
 
         ar & _connectivity;
 
-        ar & _active;
         ar & _accumulated_charge;
 
         ar & _id;
@@ -541,8 +540,6 @@ public:
     std::vector< std::vector<int> > _connectivity;
     float _accumulated_charge;
 
-    bool _active;
-
     Molecule()
     {
         std::cout << "Molecule() should not be used outside serialization" << std::endl;
@@ -550,12 +547,24 @@ public:
 
 private:
     Molecule(Eigen::Vector3f const& position) :
-        _x(position),
-        _active(true)
+        _x(position)
     { }
 
     int _id;
 };
+
+struct Compare_by_id
+{
+    Compare_by_id(int const id) : _id(id) { }
+
+    bool operator() (Molecule const& m) const
+    {
+        return (m.get_id() == _id);
+    }
+
+    int _id;
+};
+
 
 struct Force_indicator
 {

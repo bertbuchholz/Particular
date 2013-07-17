@@ -68,6 +68,8 @@ Gaming part
 
 - Find representation for portals, molecule releasers and heat elements
 
+- Add Resize, Translate and Rotate to the editable properties of an object for level design
+
 Done:
 D - Store connections in molecules
 D - Add renderers for different styles (ball, sticks etc.)

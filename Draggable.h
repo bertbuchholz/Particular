@@ -236,8 +236,10 @@ public:
                   std::vector< std::vector<Corner_type> > const& corner_types,
                   std::vector<Plane> const& position_types,
                   std::vector<Plane> const& rotation_types,
+                  Parameter_list const& properties = Parameter_list(),
                   Level_element * level_element = nullptr) :
         Draggable(level_element),
+        _properties(properties),
         _corner_types(corner_types),
         _position_types(position_types),
         _rotation_types(rotation_types)
@@ -255,10 +257,12 @@ public:
                   std::vector< std::vector<Corner_type> > const& corner_types,
                   std::vector<Plane> const& position_types,
                   std::vector<Plane> const& rotation_types,
+                  Parameter_list const& properties = Parameter_list(),
                   Level_element * level_element = nullptr) :
         Draggable(position, level_element),
         _extent_2(extent * 0.5f),
         _transform(transform),
+        _properties(properties),
         _corner_types(corner_types),
         _position_types(position_types),
         _rotation_types(rotation_types)
@@ -269,10 +273,12 @@ public:
     Draggable_box(Eigen::Vector3f const& position,
                   Eigen::Vector3f const& extent,
                   Eigen::Transform<float, 3, Eigen::Isometry> const& transform,
+                  Parameter_list const& properties = Parameter_list(),
                   Level_element * level_element = nullptr) :
         Draggable(position, level_element),
         _extent_2(extent * 0.5f),
-        _transform(transform)
+        _transform(transform),
+        _properties(properties)
     {
         _corner_types = {
             { Corner_type::Min, Corner_type::Min, Corner_type::Min },
@@ -298,8 +304,10 @@ public:
     }
 
     Draggable_box(Eigen::Vector3f const& min, Eigen::Vector3f const& max,
+                  Parameter_list const& properties = Parameter_list(),
                   Level_element * level_element = nullptr) :
-        Draggable(level_element)
+        Draggable(level_element),
+        _properties(properties)
     {
         _corner_types = {
             { Corner_type::Min, Corner_type::Min, Corner_type::Min },
@@ -468,6 +476,19 @@ public:
             }
         }
 
+        for (auto const p_iter : _property_handles)
+        {
+            Draggable_point const& p_handle = p_iter.second;
+            if (!p_handle.is_changed()) continue;
+
+            Parameter * p = _properties[p_iter.first];
+
+            float new_value = into_range(p_handle.get_position()[0], -_slider_movement_range, _slider_movement_range);
+            new_value = (new_value + _slider_movement_range) / (2.0f * _slider_movement_range) * (p->get_max<float>() - p->get_min<float>()) + p->get_min<float>();
+
+            p->set_value_no_update(new_value);
+        }
+
         set_position(get_position() + _transform * new_position);
         _extent_2 = new_extent;
         _transform = new_transform;
@@ -544,25 +565,25 @@ public:
         return _transform;
     }
 
-    void add_property_handle(std::string const& name, Eigen::Vector2f const& range, float const current_value)
-    {
-        float const slider_range_3d = _slider_movement_range * 2.0f;
-        float const normalized_current_value = (current_value - range[0]) / (range[1] - range[0]);
+//    void add_property_handle(std::string const& name, Eigen::Vector2f const& range, float const current_value)
+//    {
+//        float const slider_range_3d = _slider_movement_range * 2.0f;
+//        float const normalized_current_value = (current_value - range[0]) / (range[1] - range[0]);
 
-        Eigen::Vector3f const center_position(0.0f, -_extent_2[1], -3.6f - 3.0f * _property_handles.size());
+//        Eigen::Vector3f const center_position(0.0f, -_extent_2[1], -3.6f - 3.0f * _property_handles.size());
 
-        assert(normalized_current_value >= 0.0f && normalized_current_value <= 1.0f);
+//        assert(normalized_current_value >= 0.0f && normalized_current_value <= 1.0f);
 
-        Draggable_point p;
-        p.set_parent(this);
-        p.set_position(center_position + Eigen::Vector3f(normalized_current_value * slider_range_3d - slider_range_3d / 2.0f, 0.0f, 0.0f));
+//        Draggable_point p;
+//        p.set_parent(this);
+//        p.set_position(center_position + Eigen::Vector3f(normalized_current_value * slider_range_3d - slider_range_3d / 2.0f, 0.0f, 0.0f));
 
-//        p.add_constraint(new X_axis_constraint(p.get_position()));
-        p.add_constraint(new Range_constraint(center_position - Eigen::Vector3f(slider_range_3d / 2.0f, 0.0f, 0.0f), center_position + Eigen::Vector3f(slider_range_3d / 2.0f, 0.0f, 0.0f)));
+////        p.add_constraint(new X_axis_constraint(p.get_position()));
+//        p.add_constraint(new Range_constraint(center_position - Eigen::Vector3f(slider_range_3d / 2.0f, 0.0f, 0.0f), center_position + Eigen::Vector3f(slider_range_3d / 2.0f, 0.0f, 0.0f)));
 
-        _property_handles[name] = p;
-        _property_ranges[name] = range;
-    }
+//        _property_handles[name] = p;
+//        _property_ranges[name] = range;
+//    }
 
     void visit(Brownian_box * b) const override
     {
@@ -570,34 +591,7 @@ public:
         b->set_transform(_transform);
         b->set_position(get_position());
         b->set_size(_extent_2 * 2.0f);
-
-        auto iter_handle = _property_handles.find("radius");
-        auto iter_range = _property_ranges.find("radius");
-
-        assert(iter_handle != _property_handles.end());
-        assert(iter_range != _property_ranges.end());
-
-        Draggable_point const& radius_handle = iter_handle->second;
-        Eigen::Vector2f const& radius_range = iter_range->second;
-
-        float radius = into_range(radius_handle.get_position()[0], -_slider_movement_range, _slider_movement_range);
-        radius = (radius + _slider_movement_range) / (2.0f * _slider_movement_range) * (radius_range[1] - radius_range[0]) + radius_range[0];
-
-        b->set_radius(radius);
-
-        iter_handle = _property_handles.find("strength");
-        iter_range = _property_ranges.find("strength");
-
-        assert(iter_handle != _property_handles.end());
-        assert(iter_range != _property_ranges.end());
-
-        Draggable_point const& strength_handle = iter_handle->second;
-        Eigen::Vector2f const& strength_range  = iter_range->second;
-
-        float strength = into_range(strength_handle.get_position()[0], -_slider_movement_range, _slider_movement_range);
-        strength = (strength + _slider_movement_range) / (2.0f * _slider_movement_range) * (strength_range[1] - strength_range[0]) + strength_range[0];
-
-        b->set_strength(strength);
+        b->set_property_values(_properties);
     }
 
     void visit(Moving_box_barrier * b) const override
@@ -646,6 +640,7 @@ public:
         b->set_transform(_transform);
         b->set_position(get_position());
         b->set_size(_extent_2 * 2.0f);
+        b->set_property_values(_properties);
     }
 
 private:
@@ -671,6 +666,30 @@ private:
         {
             d.set_parent(this);
         }
+
+        int i = 0;
+
+        for (auto const prop_iter : _properties)
+        {
+            Parameter const* property = prop_iter.second;
+
+            float const slider_range_3d = _slider_movement_range * 2.0f;
+            float const normalized_current_value = (property->get_value<float>() - property->get_min<float>()) / (property->get_max<float>() - property->get_min<float>());
+
+            Eigen::Vector3f const center_position(0.0f, -_extent_2[1], -3.6f - 3.0f * i);
+
+            assert(normalized_current_value >= 0.0f && normalized_current_value <= 1.0f);
+
+            Draggable_point p;
+            p.set_parent(this);
+            p.set_position(center_position + Eigen::Vector3f(normalized_current_value * slider_range_3d - slider_range_3d / 2.0f, 0.0f, 0.0f));
+
+            p.add_constraint(new Range_constraint(center_position - Eigen::Vector3f(slider_range_3d / 2.0f, 0.0f, 0.0f), center_position + Eigen::Vector3f(slider_range_3d / 2.0f, 0.0f, 0.0f)));
+
+            _property_handles[property->get_name()] = p;
+
+            ++i;
+        }
     }
 
     Eigen::Vector3f _extent_2;
@@ -681,6 +700,8 @@ private:
     std::vector<Draggable_disc> _rotation_handles;
     std::unordered_map<std::string, Draggable_point> _property_handles;
     std::unordered_map<std::string, Eigen::Vector2f> _property_ranges;
+
+    Parameter_list _properties;
 
     std::vector< std::vector<Corner_type> > _corner_types;
     std::vector< Plane > _position_types;

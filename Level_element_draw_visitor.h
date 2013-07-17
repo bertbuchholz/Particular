@@ -16,6 +16,8 @@ public:
         {
             glDisable(GL_LIGHTING);
 
+            glLineWidth(3.0f);
+
             glPushMatrix();
 
             glTranslatef(b->get_position()[0], b->get_position()[1], b->get_position()[2]);
@@ -60,6 +62,7 @@ public:
         {
             glColor3f(1.0f, 1.0f, 0.7f);
             draw_box(b->get_box().min(), b->get_box().max(), 1.05f, true);
+            glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
         }
 
         glPopMatrix();
@@ -122,13 +125,15 @@ public:
 
     void visit(Molecule_releaser * b) const override
     {
+        glEnable(GL_LIGHTING);
+
         glPushMatrix();
 
         glTranslatef(b->get_position()[0], b->get_position()[1], b->get_position()[2]);
         glMultMatrixf(b->get_transform().data());
 
 
-        _texture_program->bind();
+//        _texture_program->bind();
 
         glEnable(GL_TEXTURE_2D);
         glActiveTexture(GL_TEXTURE0);
@@ -136,12 +141,13 @@ public:
 //        glColor4f(0.8f, 0.8f, 0.6f, 1.0f);
         glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
         glPushMatrix();
-        glScalef(7.9f, 7.9f, 7.9f);
+//        glScalef(7.9f, 7.9f, 7.9f);
+        glScalef(b->get_box().sizes()[0], b->get_box().sizes()[1] * 0.95f, b->get_box().sizes()[2]);
 
-        draw_mesh_immediate(_molecule_releaser_mesh);
+        draw_mesh(_molecule_releaser_mesh);
 
         glBindTexture(GL_TEXTURE_2D, 0);
-        _texture_program->release();
+//        _texture_program->release();
 
         glPopMatrix();
 
@@ -165,6 +171,7 @@ public:
         glDisable(GL_LIGHTING);
 
         glLineWidth(3.0f);
+        glColor3f(1.0f, 1.0f, 1.0f);
 
         glPushMatrix();
         glRotatef(90.0f, 1.0f, 0.0f, 0.0f);
@@ -190,6 +197,8 @@ public:
         glTranslatef(b->get_position()[0], b->get_position()[1], b->get_position()[2]);
         glMultMatrixf(b->get_transform().data());
 
+        glDisable(GL_LIGHTING);
+
 //        draw_box(b->get_box().min(), b->get_box().max());
         glBegin(GL_POINTS);
         for (Particle const& p : b->get_particles())
@@ -198,22 +207,10 @@ public:
         }
         glEnd();
 
-        glPushMatrix();
+        glEnable(GL_LIGHTING);
 
-        glEnable(GL_TEXTURE_2D);
-
-        glTranslatef(0.0f, -b->get_extent()[1] * 0.5f - 0.01f, -5.0f);
-        glScalef(8.24f, 1.0f, 3.47f);
-
-        glRotatef(90, 1.0, 0.0, 0.0);
-        glBindTexture(GL_TEXTURE_2D, _brownian_panel_tex);
-        glColor3f(1.0f, 1.0f, 1.0f);
-        draw_quad_with_tex_coords();
-        glBindTexture(GL_TEXTURE_2D, 0);
-
-        glDisable(GL_TEXTURE_2D);
-
-        glPopMatrix();
+        glColor4f(c[0], c[1], c[2], 0.4f);
+        draw_box(b->get_box().min(), b->get_box().max(), 1.0f, true);
 
         if (b->is_selected())
         {
@@ -222,6 +219,8 @@ public:
         }
 
         glPopMatrix();
+
+        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
     }
 
     void visit(Brownian_plane * p_element) const override
@@ -248,11 +247,36 @@ public:
 
         if (b->is_selected())
         {
-            glColor3f(1.0f, 1.0f, 0.7f);
+            glColor3f(0.3f, 1.0f, 0.4f);
             draw_box(b->get_box().min(), b->get_box().max(), 1.05f, true);
         }
 
         glPopMatrix();
+    }
+
+    void visit(Particle_system_element * system) const override
+    {
+        glDisable(GL_LIGHTING);
+
+        float const lifetime_percentage = system->get_life_percentage();
+
+        float alpha = 1.0f;
+
+        if (lifetime_percentage > 0.5f)
+        {
+            alpha = (1.0f - lifetime_percentage) * 2.0f;
+            alpha *= alpha;
+        }
+
+        glBegin(GL_POINTS);
+        for (Particle const& p : system->get_particles())
+        {
+//            glColor4f(1.0f, 0.7f, 0.6f, alpha);
+            Color4 color(p.color, alpha);
+            glColor4fv(color.data());
+            glVertex3fv(p.position.data());
+        }
+        glEnd();
     }
 
     void init(QGLContext const* context)
@@ -272,11 +296,11 @@ public:
         {
             MyMesh::TexCoord2D const& coord = _molecule_releaser_mesh.texcoord2D(vIt.handle());
 
-            std::cout << vIt.handle() << " " << coord << std::endl;
+            std::cout << vIt.handle() << " tex2d " << coord << std::endl;
+            std::cout << vIt.handle() << " normal " << _molecule_releaser_mesh.normal(vIt.handle()) << std::endl;
         }
 
         _texture_program = std::unique_ptr<QGLShaderProgram>(init_program(context, "data/shaders/temperature.vert", "data/shaders/test.frag"));
-
     }
 
 private:
@@ -286,6 +310,42 @@ private:
 
     MyMesh _molecule_releaser_mesh;
     GLuint _molecule_releaser_tex;
+};
+
+
+class Level_element_ui_draw_visitor : public Level_element_visitor
+{
+public:
+    void visit(Brownian_box * b) const override
+    {
+        glEnable(GL_TEXTURE_2D);
+
+        glPushMatrix();
+
+        glTranslatef(b->get_position()[0], b->get_position()[1], b->get_position()[2]);
+        glMultMatrixf(b->get_transform().data());
+
+        glTranslatef(0.0f, -b->get_extent()[1] * 0.5f - 0.01f, -5.0f);
+        glScalef(8.24f, 1.0f, 3.47f);
+
+        glRotatef(90, 1.0, 0.0, 0.0);
+        glBindTexture(GL_TEXTURE_2D, _brownian_panel_tex);
+        glColor3f(1.0f, 1.0f, 1.0f);
+        draw_quad_with_tex_coords();
+        glBindTexture(GL_TEXTURE_2D, 0);
+
+        glPopMatrix();
+    }
+
+    void init(QGLContext const* /* context */)
+    {
+        Frame_buffer<Color4> brownian_panel_tex_fb = convert<QRgb_to_Color4_converter, Color4>(QImage("data/textures/brownian_panel.png"));
+        _brownian_panel_tex = create_texture(brownian_panel_tex_fb);
+    }
+
+
+private:
+    GLuint _brownian_panel_tex;
 };
 
 

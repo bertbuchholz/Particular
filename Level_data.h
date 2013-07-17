@@ -29,8 +29,13 @@ public:
     std::vector<Portal*> _portals;
     std::vector<Brownian_element*> _brownian_elements;
     std::vector<Molecule_releaser*> _molecule_releasers;
+    std::vector<Particle_system_element*> _particle_system_elements;
+
+    std::vector<Level_element*> _level_elements;
 
     std::vector<End_condition*> _end_conditions;
+
+//    std::unordered_map< Element_type, std::vector<> >
 };
 
 

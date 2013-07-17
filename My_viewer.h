@@ -72,7 +72,15 @@ public:
         _parameters.add_parameter(new Parameter("draw_handles", true, update));
 
         std::vector<std::string> particle_types { "O2", "H2O", "SDS", "Na", "Cl", "Dipole",
-                                                  "Plane_barrier", "Box_barrier", "Brownian_box", "Box_portal", "Blow_barrier", "Moving_box_barrier", "Molecule_releaser" };
+                                                  "Plane_barrier",
+                                                  "Box_barrier",
+                                                  "Brownian_box",
+                                                  "Box_portal",
+                                                  "Blow_barrier",
+                                                  "Moving_box_barrier",
+                                                  "Molecule_releaser",
+                                                  "Atom_cannon",
+                                                  "Charged_barrier" };
 
         _parameters.add_parameter(new Parameter("particle_type", 0, particle_types, update));
 
@@ -745,6 +753,9 @@ public:
 
             std::string const element_type = _parameters["particle_type"]->get_value<std::string>();
 
+            float front_pos = _core.get_level_data()._game_field_borders[Level_data::Plane::Neg_Y]->get_position()[1];
+            float back_pos  = _core.get_level_data()._game_field_borders[Level_data::Plane::Pos_Y]->get_position()[1];
+
             if (Molecule::molecule_exists(element_type))
             {
                 _core.add_molecule(Molecule::create(element_type, intersect_pos));
@@ -754,21 +765,21 @@ public:
                 float const strength = 10000.0f;
                 float const radius   = 2.0f;
 
-                _core.add_barrier(new Box_barrier(Eigen::Vector3f(-10.0f, -20.0f, -10.0f) + intersect_pos, Eigen::Vector3f(10.0f, 20.0f, 10.0f) + intersect_pos, strength, radius));
+                _core.add_barrier(new Box_barrier(Eigen::Vector3f(-10.0f, front_pos, -10.0f) + intersect_pos, Eigen::Vector3f(10.0f, back_pos, 10.0f) + intersect_pos, strength, radius));
             }
             else if (element_type == std::string("Moving_box_barrier"))
             {
                 float const strength = 10000.0f;
                 float const radius   = 2.0f;
 
-                _core.add_barrier(new Moving_box_barrier(Eigen::Vector3f(-10.0f, -20.0f, -10.0f) + intersect_pos, Eigen::Vector3f(10.0f, 20.0f, 10.0f) + intersect_pos, strength, radius));
+                _core.add_barrier(new Moving_box_barrier(Eigen::Vector3f(-10.0f, front_pos, -10.0f) + intersect_pos, Eigen::Vector3f(10.0f, back_pos, 10.0f) + intersect_pos, strength, radius));
             }
             else if (element_type == std::string("Blow_barrier"))
             {
                 float const strength = 10000.0f;
                 float const radius   = 2.0f;
 
-                Blow_barrier * e = new Blow_barrier(Eigen::Vector3f(-10.0f, -20.0f, -10.0f) + intersect_pos, Eigen::Vector3f(10.0f, 20.0f, 10.0f) + intersect_pos,
+                Blow_barrier * e = new Blow_barrier(Eigen::Vector3f(-10.0f, front_pos, -10.0f) + intersect_pos, Eigen::Vector3f(10.0f, back_pos, 10.0f) + intersect_pos,
                                                                    Blow_barrier::Axis::X, 30.0f,
                                                                    strength, radius);
                 e->set_user_editable(true);
@@ -786,20 +797,33 @@ public:
                 float const strength = 10.0f;
                 float const radius   = 25.0f;
 
-                Brownian_box * e = new Brownian_box(Eigen::Vector3f(-10.0f, -20.0f, -10.0f) + intersect_pos, Eigen::Vector3f(10.0f, 20.0f, 10.0f) + intersect_pos, strength, radius);
+                Brownian_box * e = new Brownian_box(Eigen::Vector3f(-10.0f, front_pos, -10.0f) + intersect_pos, Eigen::Vector3f(10.0f, back_pos, 10.0f) + intersect_pos, strength, radius);
                 e->set_user_editable(true);
                 e->set_persistent(false);
                 _core.add_brownian_element(e);
             }
             else if (element_type == std::string("Box_portal"))
             {
-                _core.add_portal(new Box_portal(Eigen::Vector3f(-10.0f, -20.0f, -10.0f) + intersect_pos, Eigen::Vector3f(10.0f, 20.0f, 10.0f) + intersect_pos));
+                _core.add_portal(new Box_portal(Eigen::Vector3f(-10.0f, front_pos, -10.0f) + intersect_pos, Eigen::Vector3f(10.0f, back_pos, 10.0f) + intersect_pos));
             }
             else if (element_type == std::string("Molecule_releaser"))
             {
-                Molecule_releaser * m = new Molecule_releaser(Eigen::Vector3f(-10.0f, -20.0f, -10.0f) + intersect_pos, Eigen::Vector3f(10.0f, 20.0f, 10.0f) + intersect_pos, 1.0f, 1.0f);
+                Molecule_releaser * m = new Molecule_releaser(Eigen::Vector3f(-10.0f, front_pos, -10.0f) + intersect_pos, Eigen::Vector3f(10.0f, back_pos, 10.0f) + intersect_pos, 1.0f, 1.0f);
                 m->set_exemplar(Molecule::create_water(Eigen::Vector3f::Zero()));
                 _core.add_molecule_releaser(m);
+            }
+            else if (element_type == std::string("Atom_cannon"))
+            {
+                Atom_cannon * m = new Atom_cannon(Eigen::Vector3f(-10.0f, front_pos, -10.0f) + intersect_pos, Eigen::Vector3f(10.0f, back_pos, 10.0f) + intersect_pos, 1.0f, 1.0f, 10.0f, 0.0f);
+                _core.add_molecule_releaser(m);
+            }
+            else if (element_type == std::string("Charged_barrier"))
+            {
+                float const strength = 10000.0f;
+                float const radius   = 2.0f;
+
+                Charged_barrier * b = new Charged_barrier(Eigen::Vector3f(-10.0f, front_pos, -10.0f) + intersect_pos, Eigen::Vector3f(10.0f, 20.0f, 10.0f) + intersect_pos, strength, radius, 10.0f);
+                _core.add_barrier(b);
             }
 
             update_draggable_to_level_element();
@@ -1034,7 +1058,7 @@ public:
 
     void keyPressEvent(QKeyEvent *event) override
     {
-        if (event->key() == Qt::Key_Delete && _ui_state == Ui_state::Level_editor)
+        if ((event->key() == Qt::Key_Backspace || event->key() == Qt::Key_Delete) && _ui_state == Ui_state::Level_editor)
         {
             delete_selected_element();
         }
@@ -1089,10 +1113,23 @@ public:
 
         Level_element * element = _draggable_to_level_element[parent];
 
+        QMenu menu;
+
+        QWidgetAction * action_persistent = new QWidgetAction(this);
+        QCheckBox * persistent_checkbox = new QCheckBox("Persistent");
+        persistent_checkbox->setChecked(element->is_persistent());
+        action_persistent->setDefaultWidget(persistent_checkbox);
+
+        QWidgetAction * action_user_editable = new QWidgetAction(this);
+        QCheckBox * user_editable_checkbox = new QCheckBox("User editable");
+        user_editable_checkbox->setChecked(element->is_user_editable());
+        action_user_editable->setDefaultWidget(user_editable_checkbox);
+
+        menu.addAction(action_persistent);
+        menu.addAction(action_user_editable);
+
         if (Moving_box_barrier * b = dynamic_cast<Moving_box_barrier *>(element))
         {
-            QMenu menu;
-
             QWidgetAction * action_duration = new QWidgetAction(this);
             FloatSlider * slider = new FloatSlider(0.1f, 10.0f, b->get_animation().get_duration());
 //            action_duration->setDefaultWidget(slider);
@@ -1122,8 +1159,6 @@ public:
         }
         else if (Molecule_releaser * m = dynamic_cast<Molecule_releaser *>(element))
         {
-            QMenu menu;
-
             QWidgetAction * action_num_max_molecules = new QWidgetAction(this);
 
             QSpinBox * spinbox_num_max_molecules = new QSpinBox();
@@ -1150,7 +1185,7 @@ public:
             QDoubleSpinBox * spinbox_first_release = new QDoubleSpinBox();
             {
                 spinbox_first_release->setRange(0.0f, 10000.0f);
-                spinbox_first_release->setValue(m->get_interval());
+                spinbox_first_release->setValue(m->get_first_release());
 
                 action_first_release->setDefaultWidget(new Widget_text_combination("First release", spinbox_first_release));
             }
@@ -1171,8 +1206,6 @@ public:
         }
         else if (Portal * m = dynamic_cast<Portal*>(element))
         {
-            QMenu menu;
-
             QWidgetAction * action_num_min_captured_molecules = new QWidgetAction(this);
 
             QSpinBox * spinbox_num_min_captured_molecules = new QSpinBox();
@@ -1222,18 +1255,21 @@ public:
             delete action_num_min_captured_molecules;
             delete action_type;
         }
+        else
+        {
+            menu.exec(QCursor::pos());
+        }
+
+        element->set_persistent(persistent_checkbox->isChecked());
+        element->set_user_editable(user_editable_checkbox->isChecked());
+
+        delete action_persistent;
+        delete action_user_editable;
     }
 
     void do_physics_timestep()
     {
         update_physics();
-
-//        std::cout << __PRETTY_FUNCTION__ << std::endl;
-
-//        for (Molecule const& m : _core.get_molecules())
-//        {
-//            std::cout << "x: " << m._x << " F: " << m._force << " v: " << m._v << std::endl;
-//        }
 
         update();
     }
@@ -1265,7 +1301,7 @@ public:
         for (auto const& d : _draggable_to_level_element)
         {
             std::vector<Draggable*> const draggables = d.first->get_draggables();
-            std::copy (draggables.begin(), draggables.end(), std::back_inserter(_active_draggables));
+            std::copy(draggables.begin(), draggables.end(), std::back_inserter(_active_draggables));
         }
     }
 
@@ -1278,48 +1314,20 @@ public:
 
         _draggable_to_level_element.clear();
 
-        for (Brownian_element * e : _core.get_brownian_elements())
+        for (Level_element * e : _core.get_level_data()._level_elements)
         {
             if (_ui_state == Ui_state::Level_editor || (_ui_state != Ui_state::Level_editor && e->is_user_editable()))
             {
                 if (Brownian_box const* b = dynamic_cast<Brownian_box const*>(e))
                 {
-                    Draggable_box * draggable = new Draggable_box(b->get_position(), b->get_extent(), b->get_transform());
-                    draggable->add_property_handle("radius", Eigen::Vector2f(5.0f, 100.0f), b->get_radius());
-                    draggable->add_property_handle("strength", Eigen::Vector2f(-50.0f, 50.0f), b->get_strength());
+                    Draggable_box * draggable = new Draggable_box(b->get_position(), b->get_extent(), b->get_transform(), b->get_parameters());
+//                    draggable->add_property_handle("radius", Eigen::Vector2f(5.0f, 100.0f), b->get_radius());
+//                    draggable->add_property_handle("strength", Eigen::Vector2f(-50.0f, 50.0f), b->get_strength());
                     _draggable_to_level_element[draggable] = e;
                 }
-            }
-        }
-
-        for (Barrier * e : _core.get_barriers())
-        {
-            if (_ui_state == Ui_state::Level_editor || (_ui_state != Ui_state::Level_editor && e->is_user_editable()))
-            {
-//                if (Plane_barrier const* b = dynamic_cast<Plane_barrier const*>(e))
-//                {
-//                    Eigen::Vector3f extent = Eigen::Vector3f::Zero();
-
-//                    if (b->get_extent())
-//                    {
-//                        extent = Eigen::Vector3f(b->get_extent().get()[0], b->get_extent().get()[1], 0.0f);
-//                    }
-
-//                    Draggable_box * draggable = new Draggable_box(b->get_position() - extent * 0.5f,
-//                                                                  b->get_position() + extent * 0.5f,
-//                    {
-//                                                                      { Draggable_box::Corner_type::Min, Draggable_box::Corner_type::Min, Draggable_box::Corner_type::Min },
-//                                                                      { Draggable_box::Corner_type::Max, Draggable_box::Corner_type::Min, Draggable_box::Corner_type::Min },
-//                                                                  },
-//                    { Draggable_box::Plane::Neg_Y }, { Draggable_box::Plane::Neg_Y } );
-
-//                    draggable->set_transform(b->get_transform());
-
-//                    _draggable_to_level_element[draggable] = e;
-//                }
-                if (Moving_box_barrier * b = dynamic_cast<Moving_box_barrier*>(e))
+                else if (Moving_box_barrier * b = dynamic_cast<Moving_box_barrier*>(e))
                 {
-                    Draggable_box * draggable = new Draggable_box(b->get_position(), b->get_extent(), b->get_transform(), b);
+                    Draggable_box * draggable = new Draggable_box(b->get_position(), b->get_extent(), b->get_transform(), b->get_parameters(), b);
                     b->add_observer(draggable);
                     _draggable_to_level_element[draggable] = e;
                 }
@@ -1333,27 +1341,16 @@ public:
                     Draggable_box * draggable = new Draggable_box(b->get_position(), b->get_extent(), b->get_transform());
                     _draggable_to_level_element[draggable] = e;
                 }
-            }
-        }
-
-        for (Portal * p : _core.get_portals())
-        {
-            if (_ui_state == Ui_state::Level_editor || (_ui_state != Ui_state::Level_editor && p->is_user_editable()))
-            {
-                if (Box_portal const* b = dynamic_cast<Box_portal const*>(p))
+                else if (Box_portal const* b = dynamic_cast<Box_portal const*>(e))
                 {
                     Draggable_box * draggable = new Draggable_box(b->get_position(), b->get_extent(), b->get_transform());
-                    _draggable_to_level_element[draggable] = p;
+                    _draggable_to_level_element[draggable] = e;
                 }
-            }
-        }
-
-        for (Molecule_releaser * m : _core.get_molecule_releasers())
-        {
-            if (_ui_state == Ui_state::Level_editor || (_ui_state != Ui_state::Level_editor && m->is_user_editable()))
-            {
-                Draggable_box * draggable = new Draggable_box(m->get_position(), m->get_extent(), m->get_transform());
-                _draggable_to_level_element[draggable] = m;
+                else if (Molecule_releaser const* m = dynamic_cast<Molecule_releaser const*>(e)) // TODO: if Atom_cannon is added, must be before this entry
+                {
+                    Draggable_box * draggable = new Draggable_box(m->get_position(), m->get_extent(), m->get_transform(), m->get_parameters());
+                    _draggable_to_level_element[draggable] = e;
+                }
             }
         }
     }
@@ -1400,28 +1397,16 @@ public:
 
         _core.add_external_force("gravity", gravity);
 
-        Eigen::AlignedBox<float, 3> play_box(Eigen::Vector3f(-40.0f, -20.0f, 0.0f), Eigen::Vector3f(60.0f, 20.0f, 40.0f));
+//        Eigen::AlignedBox<float, 3> play_box(Eigen::Vector3f(-40.0f, -20.0f, 0.0f), Eigen::Vector3f(60.0f, 20.0f, 40.0f));
 
-        _core.set_game_field_borders(play_box.min(), play_box.max());
+//        _core.set_game_field_borders(play_box.min(), play_box.max());
 
-//        Eigen::Vector3f play_box_center(play_box.center());
-//        Eigen::Vector3f play_box_extent((play_box.max() - play_box.min()));
-
-//        float const strength = 100.0f;
-//        float const radius   = 5.0f;
-
-//        for (int axis = 0; axis < 3; ++axis)
-//        {
-//            for (int sign = -1; sign <= 2; sign += 2)
-//            {
-//                Eigen::Vector3f normal = Eigen::Vector3f::Zero();
-//                normal[axis] = -1.0f * sign;
-//                int const first_axis = (axis + 1) % 3;
-//                int const second_axis = (axis + 2) % 3;
-//                Eigen::Vector2f extent(play_box_extent[first_axis > second_axis ? second_axis : first_axis], play_box_extent[first_axis < second_axis ? second_axis : first_axis]);
-//                _core.add_barrier(new Plane_barrier(play_box_center - normal * play_box_extent[axis] * 0.5f, normal, strength, radius, extent));
-//            }
-//        }
+        _parameters["game_field_left"]->set_value(-40.0f);
+        _parameters["game_field_right"]->set_value(40.0f);
+        _parameters["game_field_front"]->set_value(-20.0f);
+        _parameters["game_field_back"]->set_value(20.0f);
+        _parameters["game_field_bottom"]->set_value(0.0f);
+        _parameters["game_field_top"]->set_value(40.0f);
 
 //        _core.add_barrier(new Box_barrier(Eigen::Vector3f(-10.0f, -20.0f, 0.0f), Eigen::Vector3f(10.0f, 20.0f, 20.0f), strength, radius));
 

@@ -214,10 +214,10 @@ public:
         force_i = apply_forces_from_vector(receiver_atom, get_atoms_from_tree(receiver_atom));
 
 
-        for (Barrier const* b : _level_data._barriers)
-        {
-            force_i += b->calc_force(receiver_atom);
-        }
+//        for (Barrier const* b : _level_data._barriers)
+//        {
+//            force_i += b->calc_force(receiver_atom);
+//        }
 
         assert(!std::isnan(force_i[0]));
 
@@ -239,6 +239,11 @@ public:
             receiver._torque += (receiver_atom._r - receiver._x).cross(force_i);
         }
 
+        for (Barrier const* b : _level_data._barriers)
+        {
+            receiver._force += b->calc_force(receiver);
+        }
+
         receiver._force += -_translation_damping * receiver._v;
         receiver._torque += -_rotation_damping * receiver._omega;
 
@@ -256,7 +261,7 @@ public:
         receiver._force  += std::max(0.0f, brownian_translation_factor) * Eigen::Vector3f::Random().normalized();
         receiver._torque += std::max(0.0f, brownian_rotation_factor)    * Eigen::Vector3f::Random().normalized();
 
-        for (auto f : _external_forces)
+        for (auto const& f : _external_forces)
         {
             receiver._force += f.second._force * receiver._mass * _mass_factor; // FIXME: using mass here only true if "force" is actually an acceleration (F = m * a)
 //            receiver._torque += (f._origin - receiver._x).cross(f._force);
@@ -381,21 +386,8 @@ public:
             timer_start = std::chrono::system_clock::now();
         }
 
-        for (Molecule & m : _level_data._molecules)
-        {
-            if (!m._active) continue;
-
-            for (Portal * p : _level_data._portals)
-            {
-                if (p->contains(m._x))
-                {
-                    p->handle_molecule_entering();
-
-                    m._active = false;
-                }
-            }
-        }
-
+        _level_data._particle_system_elements.erase(std::remove_if(_level_data._particle_system_elements.begin(), _level_data._particle_system_elements.end(), Particle_system_element::check_if_dead()),
+                                        _level_data._particle_system_elements.end());
 
         for (Barrier * b : _level_data._barriers)
         {
@@ -407,10 +399,30 @@ public:
             b->animate(time_step);
         }
 
+        for (Particle_system_element * p : _level_data._particle_system_elements)
+        {
+            p->animate(time_step);
+        }
+
 
         for (Molecule & m : _level_data._molecules)
         {
             if (!m._active) continue;
+
+            for (Portal * p : _level_data._portals)
+            {
+                if (p->contains(m._x))
+                {
+                    p->handle_molecule_entering();
+
+                    m._active = false;
+
+                    Particle_system_element * p = new Particle_system_element;
+                    p->init(m);
+
+                    _level_data._particle_system_elements.push_back(p);
+                }
+            }
 
             // tmp_states.push_back(m.to_state());
             compute_force_and_torque(m);
@@ -443,10 +455,11 @@ public:
             timer_start = std::chrono::system_clock::now();
         }
 
-        for (size_t i = 0; i < _level_data._molecules.size(); ++i)
+//        for (size_t i = 0; i < _level_data._molecules.size(); ++i)
+        for (Molecule & molecule : _level_data._molecules)
         {
 //            Body_state & state = tmp_states[i];
-            Molecule & molecule = _level_data._molecules[i];
+//            Molecule & molecule = _level_data._molecules[i];
 
             if (!molecule._active) continue;
 
@@ -523,6 +536,11 @@ public:
     }
 
     Level_data const& get_level_data() const
+    {
+        return _level_data;
+    }
+
+    Level_data & get_level_data()
     {
         return _level_data;
     }
@@ -645,21 +663,25 @@ public:
     void add_barrier(Barrier * barrier)
     {
         _level_data._barriers.push_back(barrier);
+        _level_data._level_elements.push_back(barrier);
     }
 
     void add_brownian_element(Brownian_element * element)
     {
         _level_data._brownian_elements.push_back(element);
+        _level_data._level_elements.push_back(element);
     }
 
     void add_portal(Portal * portal)
     {
         _level_data._portals.push_back(portal);
+        _level_data._level_elements.push_back(portal);
     }
 
     void add_molecule_releaser(Molecule_releaser * molecule_releaser)
     {
         _level_data._molecule_releasers.push_back(molecule_releaser);
+        _level_data._level_elements.push_back(molecule_releaser);
     }
 
     std::vector<Force_indicator> const& get_force_indicators() const
@@ -711,8 +733,8 @@ public:
     {
         for (auto const& e : _level_data._game_field_borders)
         {
-            Barrier * b = e.second;
-            _level_data._barriers.erase(std::remove(_level_data._barriers.begin(), _level_data._barriers.end(), b), _level_data._barriers.end());
+            Level_element * b = e.second;
+            delete_level_element(b);
             delete b;
         }
 
@@ -739,7 +761,7 @@ public:
                 int const sign_axis_to_enum = axis + ((sign < 0) ? 0 : 3);
                 Level_data::Plane const plane = Level_data::Plane(sign_axis_to_enum);
                 _level_data._game_field_borders[plane] = b;
-                _level_data._barriers.push_back(b);
+                add_barrier(b);
             }
         }
     }
@@ -788,29 +810,36 @@ public:
         _level_data._barriers.erase(std::remove(_level_data._barriers.begin(), _level_data._barriers.end(), level_element), _level_data._barriers.end());
         _level_data._portals.erase(std::remove(_level_data._portals.begin(), _level_data._portals.end(), level_element), _level_data._portals.end());
         _level_data._brownian_elements.erase(std::remove(_level_data._brownian_elements.begin(), _level_data._brownian_elements.end(), level_element), _level_data._brownian_elements.end());
+
+        _level_data._level_elements.erase(std::remove(_level_data._level_elements.begin(), _level_data._level_elements.end(), level_element), _level_data._level_elements.end());
     }
 
     void reset_level_elements()
     {
-        for (Level_element * e : _level_data._barriers)
+        for (Level_element * e : _level_data._level_elements)
         {
             e->reset();
         }
 
-        for (Level_element * e : _level_data._brownian_elements)
-        {
-            e->reset();
-        }
+//        for (Level_element * e : _level_data._barriers)
+//        {
+//            e->reset();
+//        }
 
-        for (Level_element * e : _level_data._portals)
-        {
-            e->reset();
-        }
+//        for (Level_element * e : _level_data._brownian_elements)
+//        {
+//            e->reset();
+//        }
 
-        for (Level_element * e : _level_data._molecule_releasers)
-        {
-            e->reset();
-        }
+//        for (Level_element * e : _level_data._portals)
+//        {
+//            e->reset();
+//        }
+
+//        for (Level_element * e : _level_data._molecule_releasers)
+//        {
+//            e->reset();
+//        }
     }
 
     void start_level()
@@ -855,6 +884,11 @@ public:
 
         _level_data._molecule_releasers.erase(std::remove_if(_level_data._molecule_releasers.begin(), _level_data._molecule_releasers.end(), is_not_persistent),
                                              _level_data._molecule_releasers.end());
+
+        _level_data._level_elements.erase(std::remove_if(_level_data._level_elements.begin(), _level_data._level_elements.end(), is_not_persistent),
+                                             _level_data._level_elements.end());
+
+        _level_data._particle_system_elements.clear();
     }
 
     void clear()
@@ -865,8 +899,10 @@ public:
         _level_data._barriers.clear();
         _level_data._brownian_elements.clear();
         _level_data._portals.clear();
+        _level_data._level_elements.clear();
         _level_data._game_field_borders.clear();
         _level_data._molecule_releasers.clear();
+        _level_data._particle_system_elements.clear();
         _molecule_external_forces.clear();
         _external_forces.clear();
         _molecule_hash.clear();
@@ -975,14 +1011,6 @@ signals:
     void game_state_changed();
 
 private:
-//    std::vector<Molecule> _molecules;
-
-//    std::vector<Barrier*> _game_field_borders;
-
-//    std::vector<Barrier*> _barriers;
-//    std::vector<Portal*> _portals;
-//    std::vector<Brownian_element*> _brownian_elements;
-
     Level_data _level_data;
 
     Game_state _game_state;

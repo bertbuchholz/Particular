@@ -13,6 +13,7 @@
 
 #include <Parameter.h>
 #include <Utilities.h>
+#include <Color.h>
 
 #include "Eigen_Matrix_serializer.h"
 
@@ -36,7 +37,9 @@ inline Eigen::Matrix3f star_matrix(Eigen::Vector3f const& v)
 class Atom
 {
 public:
-    enum class Type { Charge, H, O, C, S, N, Na, Cl };
+    enum class Type { Charge = 0, H, O, C, S, N, Na, Cl };
+
+    static std::vector<Color> atom_colors; // Type to Color mapping
 
     static float get_atom_mass(float const weight_per_mol)
     {
@@ -402,6 +405,8 @@ public:
             center_of_mass += a._mass * a._r_0;
 
             _I_body += a._mass * ((a._r_0.dot(a._r_0) * identity) - (a._r_0 * a._r_0.transpose()));
+
+            _accumulated_charge += a._charge;
         }
 
         if (_I_body.isZero())
@@ -505,6 +510,7 @@ public:
         ar & _connectivity;
 
         ar & _active;
+        ar & _accumulated_charge;
 
         ar & _id;
     }
@@ -533,6 +539,7 @@ public:
     Eigen::Vector3f _torque; /* omega(t) */
 
     std::vector< std::vector<int> > _connectivity;
+    float _accumulated_charge;
 
     bool _active;
 

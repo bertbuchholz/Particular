@@ -361,6 +361,7 @@ public:
         resize(size);
 
         _level_element_draw_visitor.init(context);
+        _level_element_ui_draw_visitor.init(context);
     }
 
     void resize(QSize const& size) override
@@ -395,39 +396,10 @@ public:
     {
         float radius = scale * atom._radius;
 
-        QVector4D color(1.0f, 1.0f, 1.0f, 1.0f);
+        Color4 color(Atom::atom_colors[int(atom._type)], alpha);
 
-        if (atom._type == Atom::Type::H)
+        if (atom._type == Atom::Type::Charge)
         {
-            color = QVector4D(1.0f, 1.0f, 1.0f, alpha);
-        }
-        else if (atom._type == Atom::Type::O)
-        {
-            color = QVector4D(0.9f, 0.2f, 0.2f, alpha);
-        }
-        else if (atom._type == Atom::Type::C)
-        {
-            color = QVector4D(0.3f, 0.3f, 0.4f, alpha);
-        }
-        else if (atom._type == Atom::Type::S)
-        {
-            color = QVector4D(0.8f, 0.7f, 0.2f, alpha);
-        }
-        else if (atom._type == Atom::Type::N)
-        {
-            color = QVector4D(0.8f, 0.3f, 0.8f, alpha);
-        }
-        else if (atom._type == Atom::Type::Na)
-        {
-            color = QVector4D(0.8f, 0.3f, 0.8f, alpha);
-        }
-        else if (atom._type == Atom::Type::Cl)
-        {
-            color = QVector4D(0.5f, 0.8f, 0.3f, alpha);
-        }
-        else if (atom._type == Atom::Type::Charge)
-        {
-            color = QVector4D(0.3f, 0.2f, 0.7f, alpha);
             radius = 0.3f;
         }
 
@@ -437,7 +409,7 @@ public:
 
         glUniformMatrix4fv(_molecule_program->uniformLocation("m_model"), 1, GL_FALSE, glm::value_ptr(model_matrix));
 
-        _molecule_program->setUniformValue("color", color);
+        glUniform4fv(_molecule_program->uniformLocation("color"), 1, color.data());
 
         draw_mesh(_sphere_mesh);
     }
@@ -567,35 +539,27 @@ public:
         }
     }
 
-    void draw_brownian_elements(Level_data const& level_data) const
+    void draw_level_elements(Level_data const& level_data) const
     {
-        for (Brownian_element * element : level_data._brownian_elements)
+        for (Level_element * element : level_data._level_elements)
         {
             element->accept(&_level_element_draw_visitor);
         }
     }
 
-    void draw_barriers(Level_data const& level_data) const
+    void draw_particle_systems(Level_data const& level_data) const
     {
-        for (Barrier * barrier : level_data._barriers)
-        {
-            barrier->accept(&_level_element_draw_visitor);
-        }
-    }
-
-    void draw_portals(Level_data const& level_data) const
-    {
-        for (Portal * element : level_data._portals)
+        for (Particle_system_element * element : level_data._particle_system_elements)
         {
             element->accept(&_level_element_draw_visitor);
         }
     }
 
-    void draw_molecule_releasers(Level_data const& level_data) const
+    void draw_elements_ui(Level_data const& level_data) const
     {
-        for (Molecule_releaser * element : level_data._molecule_releasers)
+        for (Level_element * element : level_data._level_elements)
         {
-            element->accept(&_level_element_draw_visitor);
+            element->accept(&_level_element_ui_draw_visitor);
         }
     }
 
@@ -659,13 +623,12 @@ public:
         }
         _molecule_program->release();
 
-        draw_brownian_elements(level_data);
+        draw_level_elements(level_data);
 
-        draw_barriers(level_data);
+        glDisable(GL_LIGHTING);
+        glEnable(GL_BLEND);
 
-        draw_portals(level_data);
-
-        draw_molecule_releasers(level_data);
+        draw_particle_systems(level_data);
 
         _scene_fbo->release();
 
@@ -733,12 +696,15 @@ public:
 
         glPopAttrib();
 
+        // put the depth buffer from the scene drawing onto the direct FB
         QGLFramebufferObject::blitFramebuffer(0, QRect(0, 0, screen_size.width(), screen_size.height()),
                                               _scene_fbo.get(), QRect(0, 0, screen_size.width(), screen_size.height()),
                                               GL_DEPTH_BUFFER_BIT);
 
         glEnable(GL_DEPTH_TEST);
         glEnable(GL_TEXTURE_2D);
+
+        draw_elements_ui(level_data);
     }
 
 
@@ -790,6 +756,7 @@ private:
     std::unique_ptr<QGLFramebufferObject> _temperature_fbo;
 
     Level_element_draw_visitor _level_element_draw_visitor;
+    Level_element_ui_draw_visitor _level_element_ui_draw_visitor;
 };
 
 REGISTER_CLASS_WITH_PARAMETERS(Molecule_renderer, Shader_renderer);

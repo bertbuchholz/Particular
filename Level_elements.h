@@ -5,9 +5,11 @@
 #include <boost/serialization/optional.hpp>
 
 #include <Geometry_utils.h>
+#include <Low_discrepancy_sequences.h>
 
 #include "Atom.h"
 #include "End_condition.h"
+#include "Particle_system.h"
 
 #include "Visitor.h"
 //#include "Barrier_draw_visitor.h"
@@ -241,6 +243,23 @@ public:
         _selected = s;
     }
 
+    void add_property(Parameter const* parameter)
+    {
+        _properties.add_parameter(parameter->get_name(), new Parameter(*parameter));
+    }
+
+    virtual void set_property_values(Parameter_list const& /* properties */) {}
+
+    Parameter_list const& get_parameters() const
+    {
+        return _properties;
+    }
+
+    Parameter_list & get_parameters()
+    {
+        return _properties;
+    }
+
     template<class Archive>
     void serialize(Archive & ar, const unsigned int /* version */)
     {
@@ -250,6 +269,7 @@ public:
         ar & _animations;
         ar & _persistent;
         ar & _selected;
+        ar & _properties;
     }
 
 protected:
@@ -265,6 +285,8 @@ protected:
     bool _persistent;
 
     bool _selected;
+
+    Parameter_list _properties;
 };
 
 class Barrier : public Level_element
@@ -272,7 +294,8 @@ class Barrier : public Level_element
 public:
     virtual ~Barrier() {}
 
-    Eigen::Vector3f virtual calc_force(Atom const& a) const = 0;
+    Eigen::Vector3f virtual calc_force(Atom const& /* a */) const { return Eigen::Vector3f::Zero(); }
+    Eigen::Vector3f virtual calc_force(Molecule const& /* m */) const { return Eigen::Vector3f::Zero(); }
 
     template<class Archive>
     void serialize(Archive & ar, const unsigned int /* version */)
@@ -315,6 +338,17 @@ public:
         return falloff_function(signed_distance) * normal;
     }
 
+    Eigen::Vector3f virtual calc_force(Molecule const& m) const
+    {
+        Eigen::Vector3f const& normal = get_transform().linear().col(2);
+        Eigen::Vector3f const local_pos = m._x - get_position();
+
+        float const signed_distance = normal.dot(local_pos);
+
+        return falloff_function(signed_distance) * normal;
+    }
+
+
     boost::optional<Eigen::Vector2f> const& get_extent() const
     {
         return _extent;
@@ -325,7 +359,7 @@ public:
         _extent = extent;
     }
 
-    void accept(Level_element_visitor const* visitor)
+    void accept(Level_element_visitor const* visitor) override
     {
         visitor->visit(this);
     }
@@ -352,7 +386,6 @@ private:
         }
     }
 
-//    Eigen::Hyperplane<float, 3> _plane;
     float _strength;
     float _radius;
     boost::optional<Eigen::Vector2f> _extent;
@@ -448,7 +481,7 @@ public:
         _first_release = first_release;
     }
 
-    void accept(Level_element_visitor const* visitor)
+    void accept(Level_element_visitor const* visitor) override
     {
         visitor->visit(this);
     }
@@ -474,7 +507,7 @@ public:
         ar & _exemplar;
     }
 
-private:
+protected:
     Eigen::AlignedBox<float, 3> _box;
     float _first_release;
     float _last_release;
@@ -483,6 +516,67 @@ private:
     int _num_released_molecules;
     Molecule _exemplar;
 };
+
+
+class Atom_cannon : public Molecule_releaser
+{
+public:
+    Atom_cannon() {}
+
+    Atom_cannon(Eigen::Vector3f const& min, Eigen::Vector3f const& max, float const first_release, float const interval, float const speed, float const charge) :
+        Molecule_releaser(min, max, first_release, interval),
+        _speed(speed),
+        _charge(charge)
+    {
+        add_property(new Parameter("charge", 0.0f, -1.0f, 1.0f));
+        add_property(new Parameter("speed", 1.0f, 0.5f, 100.0f));
+    }
+
+    void set_property_values(Parameter_list const& properties) override
+    {
+        _charge = properties["charge"]->get_value<float>();
+        _speed = properties["speed"]->get_value<float>();
+    }
+
+    Molecule release(float const time) override
+    {
+        _last_release = time;
+
+        Molecule m = Molecule::create_charged_chlorine(Eigen::Vector3f::Zero()); // FIXME: make it a "Particle" or generic type molecule
+
+        m._atoms[0]._charge = _charge;
+
+        Eigen::Vector3f const random_pos = Eigen::Vector3f::Random();
+
+        Eigen::Vector3f const local_pos = _box.center() - Eigen::Vector3f(_box.sizes()[0] * 0.4f, random_pos[1] * 0.4f * _box.sizes()[1], 0.0f);
+
+        Eigen::Vector3f const aim_pos = _box.center() + Eigen::Vector3f(
+                    _box.sizes()[0] * 0.5f,
+                local_pos[1],
+                random_pos[2] * 0.4f * _box.sizes()[2]);
+
+        m._x = get_transform() * local_pos + get_position();
+//        m._v = get_transform() * (aim_pos - local_pos).normalized() * _speed; // start with an initial speed
+        m._P = get_transform() * (aim_pos - local_pos).normalized() * _speed; // start with an initial speed
+
+        ++_num_released_molecules;
+
+        return m;
+    }
+
+    template<class Archive>
+    void serialize(Archive & ar, const unsigned int /* version */)
+    {
+        ar & boost::serialization::base_object<Molecule_releaser>(*this);
+        ar & _speed;
+        ar & _charge;
+    }
+
+private:
+    float _speed;
+    float _charge;
+};
+
 
 class Portal : public Level_element
 {
@@ -570,7 +664,7 @@ public:
         return get_transform() * _box.max() + get_position();
     }
 
-    void accept(Level_element_visitor const* visitor)
+    void accept(Level_element_visitor const* visitor) override
     {
         visitor->visit(this);
     }
@@ -619,6 +713,10 @@ public:
 
     Eigen::Vector3f calc_force(Atom const& a) const override
     {
+        float const distance_to_center = (a._r - get_position()).norm();
+
+        if (distance_to_center > _box_radius + _radius) return Eigen::Vector3f(0.0f, 0.0f, 0.0f);
+
         Eigen::Vector3f const local_pos = get_transform().inverse() * (a._r - get_position());
 
         Eigen::Vector3f closest_point;
@@ -641,6 +739,29 @@ public:
         return falloff_function(distance) * (get_transform() * (local_pos - closest_point).normalized());
     }
 
+    Eigen::Vector3f calc_force(Molecule const& m) const override
+    {
+        float const distance_to_center = (m._x - get_position()).norm();
+
+        if (distance_to_center > _box_radius + _radius) return Eigen::Vector3f(0.0f, 0.0f, 0.0f);
+
+        Eigen::Vector3f const local_pos = get_transform().inverse() * (m._x - get_position());
+
+        Eigen::Vector3f closest_point;
+        float distance;
+
+        closest_point_to_box(_box, local_pos, closest_point, distance);
+
+//        distance -= m._radius;
+
+        if (distance < 0.000001f)
+        {
+            return _strength * (get_transform() * local_pos.normalized());
+        }
+
+        return falloff_function(distance) * (get_transform() * (local_pos - closest_point).normalized());
+    }
+
     Eigen::AlignedBox<float, 3> const& get_box() const
     {
         return _box;
@@ -650,6 +771,8 @@ public:
     {
         _box.min() = -extent * 0.5f;
         _box.max() =  extent * 0.5f;
+
+        _box_radius = (_box.max() - _box.min()).norm() * 0.5f;
     }
 
     Eigen::Vector3f get_extent() const
@@ -667,7 +790,7 @@ public:
         return get_transform() * _box.max() + get_position();
     }
 
-    void accept(Level_element_visitor const* visitor)
+    void accept(Level_element_visitor const* visitor) override
     {
         visitor->visit(this);
     }
@@ -680,6 +803,7 @@ public:
         ar & _box.max();
         ar & _strength;
         ar & _radius;
+        ar & _box_radius;
     }
 
 protected:
@@ -698,7 +822,47 @@ protected:
     Eigen::AlignedBox<float, 3> _box;
     float _strength;
     float _radius;
+    float _box_radius;
 };
+
+
+class Charged_barrier : public Box_barrier
+{
+public:
+    Charged_barrier() {}
+
+    Charged_barrier(Eigen::Vector3f const& min, Eigen::Vector3f const& max, float const strength, float const radius, float const charge) :
+        Box_barrier(min, max, strength, radius), _charge(charge)
+    { }
+
+    Eigen::Vector3f calc_force(Molecule const& m) const override
+    {
+        Eigen::Vector3f const local_pos = get_transform().inverse() * (m._x - get_position());
+
+        Eigen::Vector3f closest_point;
+        float distance;
+
+        closest_point_to_box(_box, local_pos, closest_point, distance);
+
+        if (distance < 0.000001f)
+        {
+            return _strength * (get_transform() * local_pos.normalized());
+        }
+
+        return (falloff_function(distance) + _charge * m._accumulated_charge) * (get_transform() * (local_pos - closest_point).normalized());
+    }
+
+    template<class Archive>
+    void serialize(Archive & ar, const unsigned int /* version */)
+    {
+        ar & boost::serialization::base_object<Box_barrier>(*this);
+        ar & _charge;
+    }
+
+private:
+    float _charge;
+};
+
 
 class Moving_box_barrier : public Box_barrier
 {
@@ -716,7 +880,7 @@ public:
         return _animations[0];
     }
 
-    void accept(Level_element_visitor const* visitor)
+    void accept(Level_element_visitor const* visitor) override
     {
         visitor->visit(this);
     }
@@ -770,7 +934,7 @@ public:
 //        return falloff_function(_box.exteriorDistance(local_pos)) * (a._r - get_position()).normalized();
     }
 
-    void accept(Level_element_visitor const* visitor)
+    void accept(Level_element_visitor const* visitor) override
     {
         visitor->visit(this);
     }
@@ -815,7 +979,7 @@ public:
         return _strength;
     }
 
-    void accept(Level_element_visitor const* visitor)
+    void accept(Level_element_visitor const* visitor) override
     {
         visitor->visit(this);
     }
@@ -831,11 +995,6 @@ private:
     float _radius;
 };
 
-struct Particle
-{
-    Eigen::Vector3f position;
-    Eigen::Vector3f speed;
-};
 
 class Brownian_box : public Brownian_element
 {
@@ -861,6 +1020,9 @@ public:
 
             _particles.push_back(p);
         }
+
+        add_property(new Parameter("radius", 10.0f, 5.0f, 100.0f));
+        add_property(new Parameter("strength", 0.0f, -50.0f, 50.0f));
     }
 
     float get_brownian_motion_factor(Eigen::Vector3f const& point) const override
@@ -952,14 +1114,52 @@ public:
                 p.speed = p.speed.normalized() * (_strength + 50.0f) * 0.1f;
             }
         }
+
+//        _particles2.animate(std::bind(&Brownian_box::p_function, this, std::placeholders::_1, std::placeholders::_2), timestep);
     }
+
+//    void p_function(Particle & p, float const timestep)
+//    {
+//        p.position += p.speed * timestep;
+
+//        float distance;
+//        Eigen::Vector3f closest_point;
+
+//        closest_point_to_box(_box, p.position, closest_point, distance);
+
+//        if (distance > 4.0f) // can happen when downsizing the element
+//        {
+//            p.speed = p.speed.norm() * (closest_point - p.position).normalized();
+//        }
+//        else if (distance > 0.0001f)
+//        {
+//            if ((closest_point - p.position).dot(p.speed) < 0.0f)
+//            {
+//                Eigen::Vector3f normal = (closest_point - p.position).normalized();
+//                p.speed = p.speed - 2.0f * (p.speed.dot(normal) * normal);
+//            }
+//        }
+//        else
+//        {
+//            p.speed += Eigen::Vector3f::Random();
+//            p.speed = p.speed.normalized() * (_strength + 50.0f) * 0.1f;
+//        }
+//    }
 
     std::vector<Particle> const& get_particles() const
     {
         return _particles;
     }
 
-    void accept(Level_element_visitor const* visitor)
+
+    void set_property_values(Parameter_list const& properties) override
+    {
+        _strength = properties["strength"]->get_value<float>();
+        _radius   = properties["radius"]->get_value<float>();
+    }
+
+
+    void accept(Level_element_visitor const* visitor) override
     {
         visitor->visit(this);
     }
@@ -976,6 +1176,96 @@ private:
 
     std::vector<Particle> _particles;
 };
+
+
+class Particle_system_element : Level_element
+{
+public:
+    Particle_system_element() : _age(0.0f), _life_time(1.0f)
+    { }
+
+    struct check_if_dead
+    {
+        bool operator()(Particle_system_element const* p) const
+        {
+            return p->is_dead();
+        }
+    };
+
+    void init(Molecule const& m)
+    {
+        int const num_particles = 100;
+
+        Halton halton2(2);
+        Halton halton3(3);
+        Halton halton5(5);
+
+        _particles.resize(num_particles);
+
+        for (int i = 0; i < num_particles; ++i)
+        {
+            Atom const& a = m._atoms[std::min(int(m._atoms.size() - 1), int(halton2.getNext() * m._atoms.size()))];
+
+            float const theta = 2.0f * std::acos(std::sqrt(1.0f - halton3.getNext()));
+            float const phi = 2.0f * M_PI * halton5.getNext();
+
+            Eigen::Vector3f pos(std::sin(theta) * std::cos(phi),
+                                std::sin(theta) * std::sin(phi),
+                                std::cos(theta));
+
+            pos *= a._radius;
+            pos += a._r;
+
+            Eigen::Vector3f const speed = Eigen::Vector3f::Random() * 10.0f;
+
+            Particle p;
+            p.position = pos;
+            p.speed = speed;
+            p.color = Atom::atom_colors[int(a._type)];
+
+            _particles[i] = p;
+        }
+    }
+
+    void animate(const float timestep) override
+    {
+        _age += timestep;
+
+        for (Particle & p : _particles)
+        {
+            p.position += p.speed * timestep;
+            p.speed += Eigen::Vector3f::Random() * timestep;
+//            p.speed = p.speed.normalized();
+        }
+    }
+
+    bool is_dead() const
+    {
+        return _age > _life_time;
+    }
+
+    float get_life_percentage()
+    {
+        return _age / _life_time;
+    }
+
+    std::vector<Particle> const& get_particles() const
+    {
+        return _particles;
+    }
+
+    void accept(Level_element_visitor const* visitor) override
+    {
+        visitor->visit(this);
+    }
+
+private:
+    std::vector<Particle> _particles;
+
+    float _age;
+    float _life_time;
+};
+
 
 
 #endif // LEVEL_ELEMENTS_H

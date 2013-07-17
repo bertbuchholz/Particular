@@ -91,4 +91,5 @@ HEADERS += \
     Eigen_Matrix_serializer.h \
     State.h \
     End_condition.h \
-    Level_data.h
+    Level_data.h \
+    Particle_system.h

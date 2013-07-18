@@ -676,9 +676,9 @@ private:
             float const slider_range_3d = _slider_movement_range * 2.0f;
             float const normalized_current_value = (property->get_value<float>() - property->get_min<float>()) / (property->get_max<float>() - property->get_min<float>());
 
-            Eigen::Vector3f const center_position(0.0f, -_extent_2[1], -3.6f - 3.0f * i);
-
             assert(normalized_current_value >= 0.0f && normalized_current_value <= 1.0f);
+
+            Eigen::Vector3f const center_position(0.0f, -_extent_2[1], -3.6f - 3.0f * i);
 
             Draggable_point p;
             p.set_parent(this);

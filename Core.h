@@ -168,7 +168,7 @@ public:
                 float const dist = (receiver_atom._r - node->get_averaged_data()._r).norm();
                 float const dist_to_cell_center = (receiver_atom._r - node->get_center()).norm();
 
-                bool too_close_to_cell = dist_to_cell_center < 1.5f * node->get_radius();
+                bool const too_close_to_cell = dist_to_cell_center < 1.5f * node->get_radius();
 
                 if (too_close_to_cell ||
                         node->is_point_in(receiver_atom._r) ||
@@ -215,6 +215,7 @@ public:
         force_i = apply_forces_from_vector(receiver_atom, get_atoms_from_tree(receiver_atom));
 
 
+        // per atom force application, replaced by per molecule application
 //        for (Barrier const* b : _level_data._barriers)
 //        {
 //            force_i += b->calc_force(receiver_atom);
@@ -344,9 +345,6 @@ public:
                 add_molecule(m->release(_current_time));
             }
         }
-
-        update_spatial_hash();
-
 
         if (time_debug)
         {

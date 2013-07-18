@@ -80,7 +80,8 @@ public:
                                                   "Moving_box_barrier",
                                                   "Molecule_releaser",
                                                   "Atom_cannon",
-                                                  "Charged_barrier" };
+                                                  "Charged_barrier",
+                                                  "Tractor_barrier" };
 
         _parameters.add_parameter(new Parameter("particle_type", 0, particle_types, update));
 
@@ -823,6 +824,14 @@ public:
                 Charged_barrier * b = new Charged_barrier(Eigen::Vector3f(-10.0f, front_pos, -10.0f) + intersect_pos, Eigen::Vector3f(10.0f, 20.0f, 10.0f) + intersect_pos, strength, radius, 10.0f);
                 _core.add_barrier(b);
             }
+            else if (element_type == std::string("Tractor_barrier"))
+            {
+                float const strength = 10000.0f;
+                float const radius   = 2.0f;
+
+                Tractor_barrier * b = new Tractor_barrier(Eigen::Vector3f(-10.0f, front_pos, -10.0f) + intersect_pos, Eigen::Vector3f(10.0f, 20.0f, 10.0f) + intersect_pos, strength, radius, 10.0f);
+                _core.add_barrier(b);
+            }
 
             update_draggable_to_level_element();
             update_active_draggables();
@@ -1319,8 +1328,6 @@ public:
                 if (Brownian_box const* b = dynamic_cast<Brownian_box const*>(e))
                 {
                     Draggable_box * draggable = new Draggable_box(b->get_position(), b->get_extent(), b->get_transform(), b->get_parameters());
-//                    draggable->add_property_handle("radius", Eigen::Vector2f(5.0f, 100.0f), b->get_radius());
-//                    draggable->add_property_handle("strength", Eigen::Vector2f(-50.0f, 50.0f), b->get_strength());
                     _draggable_to_level_element[draggable] = e;
                 }
                 else if (Moving_box_barrier * b = dynamic_cast<Moving_box_barrier*>(e))
@@ -1331,7 +1338,7 @@ public:
                 }
                 else if (Box_barrier const* b = dynamic_cast<Box_barrier const*>(e))
                 {
-                    Draggable_box * draggable = new Draggable_box(b->get_position(), b->get_extent(), b->get_transform());
+                    Draggable_box * draggable = new Draggable_box(b->get_position(), b->get_extent(), b->get_transform(), b->get_parameters());
                     _draggable_to_level_element[draggable] = e;
                 }
                 else if (Blow_barrier const* b = dynamic_cast<Blow_barrier const*>(e))

@@ -711,33 +711,33 @@ public:
         _box = Eigen::AlignedBox<float, 3>(min - get_position(), max - get_position());
     }
 
-    Eigen::Vector3f calc_force(Atom const& a) const override
-    {
-        float const distance_to_center = (a._r - get_position()).norm();
+//    Eigen::Vector3f calc_force(Atom const& a) const override
+//    {
+//        float const distance_to_center = (a._r - get_position()).norm();
 
-        if (distance_to_center > _box_radius + _radius) return Eigen::Vector3f(0.0f, 0.0f, 0.0f);
+//        if (distance_to_center > _box_radius + _radius) return Eigen::Vector3f(0.0f, 0.0f, 0.0f);
 
-        Eigen::Vector3f const local_pos = get_transform().inverse() * (a._r - get_position());
+//        Eigen::Vector3f const local_pos = get_transform().inverse() * (a._r - get_position());
 
-        Eigen::Vector3f closest_point;
-        float distance;
+//        Eigen::Vector3f closest_point;
+//        float distance;
 
-        closest_point_to_box(_box, local_pos, closest_point, distance);
+//        closest_point_to_box(_box, local_pos, closest_point, distance);
 
-        distance -= a._radius;
+//        distance -= a._radius;
 
-//        return (get_transform() * local_pos.normalized()) * _strength * std::pow(1.0f / distance, 12.0f);
+////        return (get_transform() * local_pos.normalized()) * _strength * std::pow(1.0f / distance, 12.0f);
 
-        if (distance < 0.000001f)
-        {
-            return _strength * (get_transform() * local_pos.normalized()); // FIXME: maybe change it to make it orthogonal to the box walls
-//            return Eigen::Vector3f(0.0f, 0.0f, 0.0f);
-        }
+//        if (distance < 0.000001f)
+//        {
+//            return _strength * (get_transform() * local_pos.normalized()); // FIXME: maybe change it to make it orthogonal to the box walls
+////            return Eigen::Vector3f(0.0f, 0.0f, 0.0f);
+//        }
 
-//        return falloff_function(_box.exteriorDistance(a._r)) * (a._r - _box.center()).normalized();
-//        return falloff_function(_box.exteriorDistance(local_pos)) * (a._r - get_position()).normalized();
-        return falloff_function(distance) * (get_transform() * (local_pos - closest_point).normalized());
-    }
+////        return falloff_function(_box.exteriorDistance(a._r)) * (a._r - _box.center()).normalized();
+////        return falloff_function(_box.exteriorDistance(local_pos)) * (a._r - get_position()).normalized();
+//        return falloff_function(distance) * (get_transform() * (local_pos - closest_point).normalized());
+//    }
 
     Eigen::Vector3f calc_force(Molecule const& m) const override
     {
@@ -861,6 +861,57 @@ public:
 
 private:
     float _charge;
+};
+
+
+class Tractor_barrier : public Box_barrier
+{
+public:
+    Tractor_barrier() {}
+
+    Tractor_barrier(Eigen::Vector3f const& min, Eigen::Vector3f const& max, float const strength, float const radius, float const charge) :
+        Box_barrier(min, max, strength, radius), _charge(charge)
+    {
+        add_property(new Parameter("charge", 0.0f, -1.0f, 1.0f));
+        add_property(new Parameter("tractor_strength", 1.0f, 0.0f, 10.0f));
+        add_property(new Parameter("radius", 1.0f, 0.5f, 100.0f));
+
+        set_property_values(_properties);
+    }
+
+    Eigen::Vector3f calc_force(Molecule const& m) const override
+    {
+        Eigen::Vector3f const local_pos = get_transform().inverse() * (m._x - get_position());
+
+        float const distance = std::abs(local_pos[0] - (_box.max()[0] - _box.min()[0]) * 0.5f);
+
+        if (distance < 0.000001f)
+        {
+            return _strength * (get_transform() * local_pos.normalized());
+        }
+
+        float const direction = _charge > 0.0f ? 1.0f : -1.0f;
+
+        return (_tractor_strength * falloff_function(distance) * direction) * (get_transform() * Eigen::Vector3f::UnitX());
+    }
+
+    void set_property_values(Parameter_list const& properties) override
+    {
+        _tractor_strength = properties["tractor_strength"]->get_value<float>();
+        _radius   = properties["radius"]->get_value<float>();
+        _charge   = properties["charge"]->get_value<float>();
+    }
+
+    template<class Archive>
+    void serialize(Archive & ar, const unsigned int /* version */)
+    {
+        ar & boost::serialization::base_object<Box_barrier>(*this);
+        ar & _charge;
+    }
+
+private:
+    float _charge;
+    float _tractor_strength;
 };
 
 

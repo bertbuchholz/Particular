@@ -44,14 +44,10 @@ Gaming part
 
 - Allow exposing the different measurements
 
-- Remove a molecule once it passed a gate, add an effect when it does
-
 - Save individual scores and of other players, compare own score to others via variance, show own score on distribution curve of all players,
   show distribution of own scores
 
 - Test same level configuration to check for simulation stability
-
-- Make elements' properties editable (temperature, radius)
 
 - Levels, end conditions
 - Screens (intro screen with menu, general level screen, end screen etc.)
@@ -62,13 +58,13 @@ Gaming part
 
 - Portals with end conditions AND and OR (all ANDs must be true or at least one OR)
 
-- Values like gravity are not set after loading defaults but appear correctly in the GUI
-
-- Move UI elements out of the scene drawing to avoid them getting shaders
-
 - Find representation for portals, molecule releasers and heat elements
 
 - Add Resize, Translate and Rotate to the editable properties of an object for level design
+
+- Add lifetime to molecules
+
+- Forcefield
 
 Done:
 D - Store connections in molecules
@@ -81,3 +77,7 @@ D - Store state
 D - Control the LJ potential force
 D - object that slowly releases molecules
 D - Highlight selected
+D - Move UI elements out of the scene drawing to avoid them getting shaders
+D - Values like gravity are not set after loading defaults but appear correctly in the GUI
+D - Make elements' properties editable (temperature, radius)
+D - Remove a molecule once it passed a gate, add an effect when it does

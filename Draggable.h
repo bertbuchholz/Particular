@@ -147,7 +147,7 @@ public:
         _parent = p;
     }
 
-    virtual std::vector<Draggable *> get_draggables()
+    virtual std::vector<Draggable *> get_draggables(Level_element::Edit_type const /* edit_type */)
     {
         return std::vector<Draggable *>();
     }
@@ -527,28 +527,40 @@ public:
         return get_position() + _extent_2;
     }
 
-    std::vector<Draggable*> get_draggables() override
+    std::vector<Draggable*> get_draggables(Level_element::Edit_type const edit_type) override
     {
         std::vector<Draggable*> result;
 
-        for (Draggable_point & d : _size_handles)
+        if (int(edit_type) & int(Level_element::Edit_type::Scale))
         {
-            result.push_back(&d);
+            for (Draggable_point & d : _size_handles)
+            {
+                result.push_back(&d);
+            }
         }
 
-        for (Draggable_disc & d : _position_handles)
+        if (int(edit_type) & int(Level_element::Edit_type::Translate))
         {
-            result.push_back(&d);
+            for (Draggable_disc & d : _position_handles)
+            {
+                result.push_back(&d);
+            }
         }
 
-        for (Draggable_disc & d : _rotation_handles)
+        if (int(edit_type) & int(Level_element::Edit_type::Rotate))
         {
-            result.push_back(&d);
+            for (Draggable_disc & d : _rotation_handles)
+            {
+                result.push_back(&d);
+            }
         }
 
-        for (auto & iter : _property_handles)
+        if (int(edit_type) & int(Level_element::Edit_type::Property))
         {
-            result.push_back(&iter.second);
+            for (auto & iter : _property_handles)
+            {
+                result.push_back(&iter.second);
+            }
         }
 
         return result;

@@ -407,6 +407,8 @@ public:
             {
                 std::vector<Draggable_point> const& corners = d_box->get_corners();
 
+                Level_element::Edit_type edit_type = d.second->is_user_editable();
+
 //                draw_box(d_box->get_min(), d_box->get_max());
 
                 glPushMatrix();
@@ -414,63 +416,75 @@ public:
                 glTranslatef(d_box->get_position()[0], d_box->get_position()[1], d_box->get_position()[2]);
                 glMultMatrixf(d_box->get_transform().data());
 
-                for (Draggable_point const& p : corners)
+                if (_ui_state == Ui_state::Level_editor || (int(edit_type) & int(Level_element::Edit_type::Scale)))
                 {
-//                    glColor3f(0.7f, 0.7f, 0.7f);
-//                    draw_box_from_center(p.get_position(), Eigen::Vector3f(scale, scale, scale));
+                    for (Draggable_point const& p : corners)
+                    {
+                        //                    glColor3f(0.7f, 0.7f, 0.7f);
+                        //                    draw_box_from_center(p.get_position(), Eigen::Vector3f(scale, scale, scale));
 
-                    glPushMatrix();
+                        glPushMatrix();
 
-                    glTranslatef(p.get_position()[0] + z_offset, p.get_position()[1] + z_offset, p.get_position()[2] + z_offset);
-                    glScalef(scale, scale, scale);
-                    glRotatef(90, 1.0, 0.0, 0.0);
-                    draw_textured_quad(_scale_tex);
+                        glTranslatef(p.get_position()[0] + z_offset, p.get_position()[1] + z_offset, p.get_position()[2] + z_offset);
+                        glScalef(scale, scale, scale);
+                        glRotatef(90, 1.0, 0.0, 0.0);
+                        draw_textured_quad(_scale_tex);
 
-                    glPopMatrix();
+                        glPopMatrix();
+                    }
                 }
 
-                for (Draggable_disc const& d_disc : d_box->get_position_points())
+                if (_ui_state == Ui_state::Level_editor || (int(edit_type) & int(Level_element::Edit_type::Translate)))
                 {
-//                    draw_sphere_ico(Eigen2OM(d_disc.get_position()), 2.0f, Color(0.7f, 0.7f, 1.0f));
+                    for (Draggable_disc const& d_disc : d_box->get_position_points())
+                    {
+                        //                    draw_sphere_ico(Eigen2OM(d_disc.get_position()), 2.0f, Color(0.7f, 0.7f, 1.0f));
 
-                    glPushMatrix();
+                        glPushMatrix();
 
-                    glTranslatef(d_disc.get_position()[0] + z_offset, d_disc.get_position()[1] + z_offset, d_disc.get_position()[2] + z_offset);
-                    glScalef(scale, scale, scale);
-                    glRotatef(90, 1.0, 0.0, 0.0);
-                    draw_textured_quad(_move_tex);
+                        glTranslatef(d_disc.get_position()[0] + z_offset, d_disc.get_position()[1] + z_offset, d_disc.get_position()[2] + z_offset);
+                        glScalef(scale, scale, scale);
+                        glRotatef(90, 1.0, 0.0, 0.0);
+                        draw_textured_quad(_move_tex);
 
-                    glPopMatrix();
+                        glPopMatrix();
+                    }
                 }
 
-                for (Draggable_disc const& d_disc : d_box->get_rotation_handles())
+                if (_ui_state == Ui_state::Level_editor || (int(edit_type) & int(Level_element::Edit_type::Rotate)))
                 {
-//                    draw_sphere_ico(Eigen2OM(d_disc.get_position()), 2.0f, Color(1.0f, 0.7f, 0.7f));
-                    glPushMatrix();
+                    for (Draggable_disc const& d_disc : d_box->get_rotation_handles())
+                    {
+                        //                    draw_sphere_ico(Eigen2OM(d_disc.get_position()), 2.0f, Color(1.0f, 0.7f, 0.7f));
+                        glPushMatrix();
 
-                    glTranslatef(d_disc.get_position()[0] + z_offset, d_disc.get_position()[1] + z_offset, d_disc.get_position()[2] + z_offset);
-                    glScalef(scale, scale, scale);
-                    glRotatef(90, 1.0, 0.0, 0.0);
-                    draw_textured_quad(_rotate_tex);
+                        glTranslatef(d_disc.get_position()[0] + z_offset, d_disc.get_position()[1] + z_offset, d_disc.get_position()[2] + z_offset);
+                        glScalef(scale, scale, scale);
+                        glRotatef(90, 1.0, 0.0, 0.0);
+                        draw_textured_quad(_rotate_tex);
 
-                    glPopMatrix();
+                        glPopMatrix();
+                    }
                 }
 
-                for (auto iter : d_box->get_property_handles())
+                if (_ui_state == Ui_state::Level_editor || (int(edit_type) & int(Level_element::Edit_type::Property)))
                 {
-//                    glColor3f(0.8f, 0.8f, 0.8f);
-//                    draw_box_from_center(iter.second.get_position(), Eigen::Vector3f(scale, scale, scale));
+                    for (auto iter : d_box->get_property_handles())
+                    {
+                        //                    glColor3f(0.8f, 0.8f, 0.8f);
+                        //                    draw_box_from_center(iter.second.get_position(), Eigen::Vector3f(scale, scale, scale));
 
-                    Eigen::Vector3f const& p = iter.second.get_position();
+                        Eigen::Vector3f const& p = iter.second.get_position();
 
-                    glPushMatrix();
+                        glPushMatrix();
 
-                    glTranslatef(p[0] + z_offset, p[1] - 0.03f, p[2] + z_offset);
-                    glScalef(0.9f, 0.9f, 0.9f);
-                    glRotatef(90.0f, 1.0f, 0.0f, 0.0f);
-                    draw_textured_quad(_slider_tex);
+                        glTranslatef(p[0] + z_offset, p[1] - 0.03f, p[2] + z_offset);
+                        glScalef(0.9f, 0.9f, 0.9f);
+                        glRotatef(90.0f, 1.0f, 0.0f, 0.0f);
+                        draw_textured_quad(_slider_tex);
 
-                    glPopMatrix();
+                        glPopMatrix();
+                    }
                 }
 
                 glPopMatrix();
@@ -783,7 +797,7 @@ public:
                 Blow_barrier * e = new Blow_barrier(Eigen::Vector3f(-10.0f, front_pos, -10.0f) + intersect_pos, Eigen::Vector3f(10.0f, back_pos, 10.0f) + intersect_pos,
                                                                    Blow_barrier::Axis::X, 30.0f,
                                                                    strength, radius);
-                e->set_user_editable(true);
+                e->set_user_editable(Level_element::Edit_type::All);
                 _core.add_barrier(e);
             }
             else if (element_type == std::string("Plane_barrier"))
@@ -799,7 +813,7 @@ public:
                 float const radius   = 25.0f;
 
                 Brownian_box * e = new Brownian_box(Eigen::Vector3f(-10.0f, front_pos, -10.0f) + intersect_pos, Eigen::Vector3f(10.0f, back_pos, 10.0f) + intersect_pos, strength, radius);
-                e->set_user_editable(true);
+                e->set_user_editable(Level_element::Edit_type::All);
                 e->set_persistent(false);
                 _core.add_brownian_element(e);
             }
@@ -1128,13 +1142,31 @@ public:
         persistent_checkbox->setChecked(element->is_persistent());
         action_persistent->setDefaultWidget(persistent_checkbox);
 
-        QWidgetAction * action_user_editable = new QWidgetAction(this);
-        QCheckBox * user_editable_checkbox = new QCheckBox("User editable");
-        user_editable_checkbox->setChecked(element->is_user_editable());
-        action_user_editable->setDefaultWidget(user_editable_checkbox);
+        QWidgetAction * action_user_translate = new QWidgetAction(this);
+        QCheckBox * user_translate_checkbox = new QCheckBox("Translate");
+        user_translate_checkbox->setChecked(int(element->is_user_editable()) & int(Level_element::Edit_type::Translate));
+        action_user_translate->setDefaultWidget(user_translate_checkbox);
+
+        QWidgetAction * action_user_scale = new QWidgetAction(this);
+        QCheckBox * user_scale_checkbox = new QCheckBox("Scale");
+        user_scale_checkbox->setChecked(int(element->is_user_editable()) & int(Level_element::Edit_type::Scale));
+        action_user_scale->setDefaultWidget(user_scale_checkbox);
+
+        QWidgetAction * action_user_rotate = new QWidgetAction(this);
+        QCheckBox * user_rotate_checkbox = new QCheckBox("Rotate");
+        user_rotate_checkbox->setChecked(int(element->is_user_editable()) & int(Level_element::Edit_type::Rotate));
+        action_user_rotate->setDefaultWidget(user_rotate_checkbox);
+
+        QWidgetAction * action_user_property = new QWidgetAction(this);
+        QCheckBox * user_property_checkbox = new QCheckBox("Property");
+        user_property_checkbox->setChecked(int(element->is_user_editable()) & int(Level_element::Edit_type::Property));
+        action_user_property->setDefaultWidget(user_property_checkbox);
 
         menu.addAction(action_persistent);
-        menu.addAction(action_user_editable);
+        menu.addAction(action_user_rotate);
+        menu.addAction(action_user_scale);
+        menu.addAction(action_user_translate);
+        menu.addAction(action_user_property);
 
         if (Moving_box_barrier * b = dynamic_cast<Moving_box_barrier *>(element))
         {
@@ -1269,10 +1301,21 @@ public:
         }
 
         element->set_persistent(persistent_checkbox->isChecked());
-        element->set_user_editable(user_editable_checkbox->isChecked());
+
+        int edit_type = int(Level_element::Edit_type::None);
+
+        if (user_rotate_checkbox->isChecked()) edit_type |= int(Level_element::Edit_type::Rotate);
+        if (user_translate_checkbox->isChecked()) edit_type |= int(Level_element::Edit_type::Translate);
+        if (user_scale_checkbox->isChecked()) edit_type |= int(Level_element::Edit_type::Scale);
+        if (user_property_checkbox->isChecked()) edit_type |= int(Level_element::Edit_type::Property);
+
+        element->set_user_editable(Level_element::Edit_type(edit_type));
 
         delete action_persistent;
-        delete action_user_editable;
+        delete action_user_rotate;
+        delete action_user_scale;
+        delete action_user_translate;
+        delete action_user_property;
     }
 
     void do_physics_timestep()
@@ -1308,7 +1351,14 @@ public:
 
         for (auto const& d : _draggable_to_level_element)
         {
-            std::vector<Draggable*> const draggables = d.first->get_draggables();
+            Level_element::Edit_type edit_type = Level_element::Edit_type::All;
+
+            if (_ui_state != Ui_state::Level_editor)
+            {
+                edit_type = d.second->is_user_editable();
+            }
+
+            std::vector<Draggable*> const draggables = d.first->get_draggables(edit_type);
             std::copy(draggables.begin(), draggables.end(), std::back_inserter(_active_draggables));
         }
     }
@@ -1324,7 +1374,7 @@ public:
 
         for (Level_element * e : _core.get_level_data()._level_elements)
         {
-            if (_ui_state == Ui_state::Level_editor || (_ui_state != Ui_state::Level_editor && e->is_user_editable()))
+//            if (_ui_state == Ui_state::Level_editor || (_ui_state != Ui_state::Level_editor && e->is_user_editable()))
             {
                 if (Brownian_box const* b = dynamic_cast<Brownian_box const*>(e))
                 {
@@ -1490,7 +1540,7 @@ public:
 
 
         Brownian_box * e = new Brownian_box(Eigen::Vector3f(-10.0f, -20.0f, -10.0f), Eigen::Vector3f(10.0f, 20.0f, 10.0f), 10.0f, 25.0f);
-        e->set_user_editable(true);
+        e->set_user_editable(Level_element::Edit_type::All);
         e->set_persistent(false);
         _core.add_brownian_element(e);
 

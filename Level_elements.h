@@ -127,9 +127,11 @@ private:
 class Level_element
 {
 public:
+    enum class Edit_type { None = 0, Rotate = 0b1, Translate = 0b10, Scale = 0b100, Property = 0b1000, All = 0b1111  };
+
     virtual ~Level_element() {}
 
-    Level_element() : _user_editable(false), _persistent(true), _selected(false)
+    Level_element() : _user_editable(Edit_type::None), _persistent(true), _selected(false)
     { }
 
     virtual void accept(Level_element_visitor const* visitor) = 0;
@@ -155,12 +157,12 @@ public:
         _transform = transform;
     }
 
-    bool is_user_editable() const
+    Edit_type is_user_editable() const
     {
         return _user_editable;
     }
 
-    void set_user_editable(bool const b)
+    void set_user_editable(Edit_type const b)
     {
         _user_editable = b;
     }
@@ -276,7 +278,7 @@ protected:
     Eigen::Vector3f _position;
     Eigen::Transform<float, 3, Eigen::Isometry> _transform;
 
-    bool _user_editable;
+    Edit_type _user_editable;
 
     std::vector<Animation> _animations;
 
@@ -870,7 +872,7 @@ public:
     Tractor_barrier() {}
 
     Tractor_barrier(Eigen::Vector3f const& min, Eigen::Vector3f const& max, float const strength) :
-        Box_barrier(min, max, strength, 0.0f), _last_created_particle(0.0f)
+        Box_barrier(min, max, strength, 0.0f), _last_created_particle(0.0f), _rotation_angle(0.0f)
     {
         add_property(new Parameter("tractor_strength", 2.0f, -10.0f, 10.0f));
         add_property(new Parameter("radius", 5.0f, 5.0f, 100.0f));

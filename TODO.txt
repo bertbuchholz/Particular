@@ -60,11 +60,6 @@ Gaming part
 
 - Find representation for portals, molecule releasers and heat elements
 
-- Add Resize, Translate and Rotate to the editable properties of an object for level design
-
-- Add lifetime to molecules
-
-- Forcefield
 
 Done:
 D - Store connections in molecules
@@ -81,3 +76,6 @@ D - Move UI elements out of the scene drawing to avoid them getting shaders
 D - Values like gravity are not set after loading defaults but appear correctly in the GUI
 D - Make elements' properties editable (temperature, radius)
 D - Remove a molecule once it passed a gate, add an effect when it does
+D - Forcefield (Tractor_barrier)
+D - Add Resize, Translate and Rotate to the editable properties of an object for level design
+

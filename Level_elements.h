@@ -759,7 +759,7 @@ public:
             return _strength * (get_transform() * local_pos.normalized());
         }
 
-        return falloff_function(distance) * (get_transform() * (local_pos - closest_point).normalized());
+        return _strength * falloff_function(distance) * (get_transform() * (local_pos - closest_point).normalized());
     }
 
     Eigen::AlignedBox<float, 3> const& get_box() const
@@ -811,11 +811,11 @@ protected:
     {
         if (distance > 0)
         {
-            return _strength * wendland_2_1(std::min(1.0f, (distance / _radius)));
+            return wendland_2_1(std::min(1.0f, (distance / _radius)));
         }
         else
         {
-            return _strength;
+            return 1.0f;
         }
     }
 
@@ -849,7 +849,7 @@ public:
             return _strength * (get_transform() * local_pos.normalized());
         }
 
-        return (falloff_function(distance) + _charge * m._accumulated_charge) * (get_transform() * (local_pos - closest_point).normalized());
+        return (_strength * falloff_function(distance) + _charge * m._accumulated_charge) * (get_transform() * (local_pos - closest_point).normalized());
     }
 
     template<class Archive>
@@ -869,12 +869,11 @@ class Tractor_barrier : public Box_barrier
 public:
     Tractor_barrier() {}
 
-    Tractor_barrier(Eigen::Vector3f const& min, Eigen::Vector3f const& max, float const strength, float const radius, float const charge) :
-        Box_barrier(min, max, strength, radius), _charge(charge)
+    Tractor_barrier(Eigen::Vector3f const& min, Eigen::Vector3f const& max, float const strength) :
+        Box_barrier(min, max, strength, 0.0f), _last_created_particle(0.0f)
     {
-        add_property(new Parameter("charge", 0.0f, -1.0f, 1.0f));
-        add_property(new Parameter("tractor_strength", 1.0f, 0.0f, 10.0f));
-        add_property(new Parameter("radius", 1.0f, 0.5f, 100.0f));
+        add_property(new Parameter("tractor_strength", 2.0f, -10.0f, 10.0f));
+        add_property(new Parameter("radius", 5.0f, 5.0f, 100.0f));
 
         set_property_values(_properties);
     }
@@ -883,6 +882,8 @@ public:
     {
         Eigen::Vector3f const local_pos = get_transform().inverse() * (m._x - get_position());
 
+        if (local_pos[2] > _box.max()[2] || local_pos[2] < _box.min()[2]) return Eigen::Vector3f::Zero();
+
         float const distance = std::abs(local_pos[0] - (_box.max()[0] - _box.min()[0]) * 0.5f);
 
         if (distance < 0.000001f)
@@ -890,28 +891,94 @@ public:
             return _strength * (get_transform() * local_pos.normalized());
         }
 
-        float const direction = _charge > 0.0f ? 1.0f : -1.0f;
+        return (_tractor_strength * falloff_function(distance)) * (get_transform() * Eigen::Vector3f::UnitX());
+    }
 
-        return (_tractor_strength * falloff_function(distance) * direction) * (get_transform() * Eigen::Vector3f::UnitX());
+    static bool is_dead(Particle const& p)
+    {
+        return p.age > 0.99f;
+    }
+
+    void animate(const float timestep) override
+    {
+        _particles.erase(std::remove_if(_particles.begin(), _particles.end(), Tractor_barrier::is_dead), _particles.end());
+
+        float const area_measure = sqrt(_box.sizes()[1] * _box.sizes()[2]);
+
+        float const max_speed = _tractor_strength * 2.0f;
+
+        if (_last_created_particle > 10.0f / (area_measure * std::abs(_tractor_strength)))
+        {
+            _last_created_particle = 0.0f;
+
+            Particle p;
+            p.age = 0.0f;
+            p.color = Color(1.0f, 0.3f, 0.05f);
+
+            float const direction = _tractor_strength >= 0.0f ? 1.0f : -1.0f;
+            p.position = Eigen::Vector3f::Random();
+            p.position[0] = -direction * (_radius * 0.95f + _box.sizes()[0] * 0.5f);
+            p.position[1] *= _box.sizes()[1] * 0.5f;
+            p.position[2] *= _box.sizes()[2] * 0.5f;
+            p.speed = Eigen::Vector3f(max_speed, 0.0f, 0.0f);
+
+            _particles.push_back(p);
+        }
+
+        _last_created_particle += timestep;
+
+        for (Particle & p : _particles)
+        {
+            float const distance = std::abs(p.position[0]);
+
+            const float falloff = std::min(1.0f, (distance / (_radius + _box.sizes()[0] * 0.5f)));
+            p.age = falloff;
+
+            float const diff = max_speed - p.speed[0];
+            p.speed[0] += diff * timestep;
+
+            p.position += p.speed * timestep;
+        }
+
+        _rotation_angle += 5.0f * _tractor_strength * timestep;
+    }
+
+    float get_rotation_angle() const
+    {
+        return _rotation_angle;
+    }
+
+    std::list<Particle> const& get_particles()
+    {
+        return _particles;
     }
 
     void set_property_values(Parameter_list const& properties) override
     {
         _tractor_strength = properties["tractor_strength"]->get_value<float>();
         _radius   = properties["radius"]->get_value<float>();
-        _charge   = properties["charge"]->get_value<float>();
+    }
+
+    void accept(Level_element_visitor const* visitor) override
+    {
+        visitor->visit(this);
     }
 
     template<class Archive>
     void serialize(Archive & ar, const unsigned int /* version */)
     {
         ar & boost::serialization::base_object<Box_barrier>(*this);
-        ar & _charge;
+        ar & _tractor_strength;
     }
 
 private:
-    float _charge;
     float _tractor_strength;
+
+    float _last_created_particle;
+
+    float _rotation_angle;
+
+    std::list<Particle> _particles;
 };
 
 
@@ -978,7 +1045,7 @@ public:
         }
         else
         {
-            return falloff_function(distance) * (get_transform() * (local_pos - closest_point).normalized());
+            return _strength * falloff_function(distance) * (get_transform() * (local_pos - closest_point).normalized());
         }
 
 //        return falloff_function(_box.exteriorDistance(a._r)) * (a._r - _box.center()).normalized();

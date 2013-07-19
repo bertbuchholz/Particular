@@ -6,6 +6,7 @@ class Box_portal;
 class Plane_barrier;
 class Box_barrier;
 class Blow_barrier;
+class Tractor_barrier;
 class Moving_box_barrier;
 
 class Molecule_releaser;
@@ -22,6 +23,7 @@ public:
     virtual void visit(Plane_barrier *) const {}
     virtual void visit(Box_barrier *) const {}
     virtual void visit(Blow_barrier *) const {}
+    virtual void visit(Tractor_barrier *) const {}
     virtual void visit(Moving_box_barrier *) const {}
 
     virtual void visit(Molecule_releaser *) const {}

@@ -12,6 +12,7 @@ struct Particle
     Eigen::Vector3f position;
     Eigen::Vector3f speed;
     Color color;
+    float age; // between 0 and 1
 };
 
 class Particle_system

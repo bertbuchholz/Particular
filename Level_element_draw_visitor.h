@@ -235,6 +235,50 @@ public:
                  Eigen::Vector3f(p_element->get_plane().normal()), 20.0f, c);
     }
 
+    void visit(Tractor_barrier * b) const override
+    {
+        glPushMatrix();
+
+        glTranslatef(b->get_position()[0], b->get_position()[1], b->get_position()[2]);
+        glMultMatrixf(b->get_transform().data());
+
+        glDisable(GL_LIGHTING);
+
+//        draw_box(b->get_box().min(), b->get_box().max());
+        glBegin(GL_POINTS);
+        for (Particle const& p : b->get_particles())
+        {
+            Color4 color(p.color, 1.0f - p.age);
+            glColor4fv(color.data());
+            glVertex3fv(p.position.data());
+        }
+        glEnd();
+
+        glEnable(GL_LIGHTING);
+
+        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+
+        glColor3f(0.3f, 0.3f, 0.3f);
+//        draw_box(b->get_box().min(), b->get_box().max(), 1.0f, true);
+
+        glPushMatrix();
+        glScalef(b->get_box().sizes()[0], b->get_box().sizes()[1] * 0.95f, b->get_box().sizes()[2]);
+        glRotatef(b->get_rotation_angle(), 1.0f, 0.0f, 0.0f);
+        glRotatef(90, 0.0f, 1.0f, 0.0f);
+        draw_mesh(_tractor_circle_mesh);
+        glPopMatrix();
+
+        if (b->is_selected())
+        {
+            glColor3f(1.0f, 1.0f, 0.7f);
+            draw_box(b->get_box().min(), b->get_box().max(), 1.05f, true);
+        }
+
+        glPopMatrix();
+
+        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+    }
+
     void visit(Box_portal * b) const override
     {
         glPushMatrix();
@@ -290,15 +334,17 @@ public:
 
         _molecule_releaser_mesh = load_mesh<MyMesh>("data/meshes/molecule_releaser.obj");
 
-        typename MyMesh::ConstVertexIter vIt(_molecule_releaser_mesh.vertices_begin()), vEnd(_molecule_releaser_mesh.vertices_end());
+//        typename MyMesh::ConstVertexIter vIt(_molecule_releaser_mesh.vertices_begin()), vEnd(_molecule_releaser_mesh.vertices_end());
 
-        for (; vIt!=vEnd; ++vIt)
-        {
-            MyMesh::TexCoord2D const& coord = _molecule_releaser_mesh.texcoord2D(vIt.handle());
+//        for (; vIt!=vEnd; ++vIt)
+//        {
+//            MyMesh::TexCoord2D const& coord = _molecule_releaser_mesh.texcoord2D(vIt.handle());
 
-            std::cout << vIt.handle() << " tex2d " << coord << std::endl;
-            std::cout << vIt.handle() << " normal " << _molecule_releaser_mesh.normal(vIt.handle()) << std::endl;
-        }
+//            std::cout << vIt.handle() << " tex2d " << coord << std::endl;
+//            std::cout << vIt.handle() << " normal " << _molecule_releaser_mesh.normal(vIt.handle()) << std::endl;
+//        }
+
+        _tractor_circle_mesh = load_mesh<MyMesh>("data/meshes/tractor_circle.obj");
 
         _texture_program = std::unique_ptr<QGLShaderProgram>(init_program(context, "data/shaders/temperature.vert", "data/shaders/test.frag"));
     }
@@ -310,6 +356,8 @@ private:
 
     MyMesh _molecule_releaser_mesh;
     GLuint _molecule_releaser_tex;
+
+    MyMesh _tractor_circle_mesh;
 };
 
 
@@ -337,15 +385,40 @@ public:
         glPopMatrix();
     }
 
+    void visit(Tractor_barrier * b) const override
+    {
+        glEnable(GL_TEXTURE_2D);
+
+        glPushMatrix();
+
+        glTranslatef(b->get_position()[0], b->get_position()[1], b->get_position()[2]);
+        glMultMatrixf(b->get_transform().data());
+
+        glTranslatef(0.0f, -b->get_extent()[1] * 0.5f - 0.01f, -5.0f);
+        glScalef(8.24f, 1.0f, 3.47f);
+
+        glRotatef(90, 1.0, 0.0, 0.0);
+        glBindTexture(GL_TEXTURE_2D, _tractor_panel_tex);
+        glColor3f(1.0f, 1.0f, 1.0f);
+        draw_quad_with_tex_coords();
+        glBindTexture(GL_TEXTURE_2D, 0);
+
+        glPopMatrix();
+    }
+
     void init(QGLContext const* /* context */)
     {
         Frame_buffer<Color4> brownian_panel_tex_fb = convert<QRgb_to_Color4_converter, Color4>(QImage("data/textures/brownian_panel.png"));
         _brownian_panel_tex = create_texture(brownian_panel_tex_fb);
+
+        Frame_buffer<Color4> tractor_panel_tex_fb = convert<QRgb_to_Color4_converter, Color4>(QImage("data/textures/tractor_panel.png"));
+        _tractor_panel_tex = create_texture(tractor_panel_tex_fb);
     }
 
 
 private:
     GLuint _brownian_panel_tex;
+    GLuint _tractor_panel_tex;
 };
 
 

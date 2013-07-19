@@ -565,26 +565,6 @@ public:
         return _transform;
     }
 
-//    void add_property_handle(std::string const& name, Eigen::Vector2f const& range, float const current_value)
-//    {
-//        float const slider_range_3d = _slider_movement_range * 2.0f;
-//        float const normalized_current_value = (current_value - range[0]) / (range[1] - range[0]);
-
-//        Eigen::Vector3f const center_position(0.0f, -_extent_2[1], -3.6f - 3.0f * _property_handles.size());
-
-//        assert(normalized_current_value >= 0.0f && normalized_current_value <= 1.0f);
-
-//        Draggable_point p;
-//        p.set_parent(this);
-//        p.set_position(center_position + Eigen::Vector3f(normalized_current_value * slider_range_3d - slider_range_3d / 2.0f, 0.0f, 0.0f));
-
-////        p.add_constraint(new X_axis_constraint(p.get_position()));
-//        p.add_constraint(new Range_constraint(center_position - Eigen::Vector3f(slider_range_3d / 2.0f, 0.0f, 0.0f), center_position + Eigen::Vector3f(slider_range_3d / 2.0f, 0.0f, 0.0f)));
-
-//        _property_handles[name] = p;
-//        _property_ranges[name] = range;
-//    }
-
     void visit(Brownian_box * b) const override
     {
         std::cout << __PRETTY_FUNCTION__ << std::endl;
@@ -600,6 +580,7 @@ public:
         b->set_transform(_transform);
         b->set_position(get_position());
         b->set_size(_extent_2 * 2.0f);
+        b->set_property_values(_properties);
     }
 
     void visit(Box_barrier * b) const override
@@ -608,6 +589,7 @@ public:
         b->set_transform(_transform);
         b->set_position(get_position());
         b->set_size(_extent_2 * 2.0f);
+        b->set_property_values(_properties);
     }
 
     void visit(Blow_barrier * b) const override
@@ -616,6 +598,7 @@ public:
         b->set_transform(_transform);
         b->set_position(get_position());
         b->set_size(_extent_2 * 2.0f);
+        b->set_property_values(_properties);
     }
 
     void visit(Box_portal * b) const override
@@ -624,6 +607,7 @@ public:
         b->set_transform(_transform);
         b->set_position(get_position());
         b->set_size(_extent_2 * 2.0f);
+        b->set_property_values(_properties);
     }
 
     void visit(Plane_barrier * b) const override
@@ -632,11 +616,20 @@ public:
         b->set_transform(_transform);
         b->set_position(get_position());
         b->set_extent(Eigen::Vector2f(_extent_2[0] * 2.0f, _extent_2[1] * 2.0f));
+        b->set_property_values(_properties);
     }
 
     void visit(Molecule_releaser * b) const override
     {
         std::cout << __PRETTY_FUNCTION__ << std::endl;
+        b->set_transform(_transform);
+        b->set_position(get_position());
+        b->set_size(_extent_2 * 2.0f);
+        b->set_property_values(_properties);
+    }
+
+    void visit(Tractor_barrier * b) const override
+    {
         b->set_transform(_transform);
         b->set_position(get_position());
         b->set_size(_extent_2 * 2.0f);

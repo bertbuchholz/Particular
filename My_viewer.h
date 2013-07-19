@@ -414,7 +414,6 @@ public:
                 glTranslatef(d_box->get_position()[0], d_box->get_position()[1], d_box->get_position()[2]);
                 glMultMatrixf(d_box->get_transform().data());
 
-
                 for (Draggable_point const& p : corners)
                 {
 //                    glColor3f(0.7f, 0.7f, 0.7f);
@@ -429,6 +428,7 @@ public:
 
                     glPopMatrix();
                 }
+
                 for (Draggable_disc const& d_disc : d_box->get_position_points())
                 {
 //                    draw_sphere_ico(Eigen2OM(d_disc.get_position()), 2.0f, Color(0.7f, 0.7f, 1.0f));
@@ -442,6 +442,7 @@ public:
 
                     glPopMatrix();
                 }
+
                 for (Draggable_disc const& d_disc : d_box->get_rotation_handles())
                 {
 //                    draw_sphere_ico(Eigen2OM(d_disc.get_position()), 2.0f, Color(1.0f, 0.7f, 0.7f));
@@ -454,6 +455,7 @@ public:
 
                     glPopMatrix();
                 }
+
                 for (auto iter : d_box->get_property_handles())
                 {
 //                    glColor3f(0.8f, 0.8f, 0.8f);
@@ -827,9 +829,8 @@ public:
             else if (element_type == std::string("Tractor_barrier"))
             {
                 float const strength = 10000.0f;
-                float const radius   = 2.0f;
 
-                Tractor_barrier * b = new Tractor_barrier(Eigen::Vector3f(-10.0f, front_pos, -10.0f) + intersect_pos, Eigen::Vector3f(10.0f, 20.0f, 10.0f) + intersect_pos, strength, radius, 10.0f);
+                Tractor_barrier * b = new Tractor_barrier(Eigen::Vector3f(-10.0f, front_pos, -10.0f) + intersect_pos, Eigen::Vector3f(10.0f, 20.0f, 10.0f) + intersect_pos, strength);
                 _core.add_barrier(b);
             }
 

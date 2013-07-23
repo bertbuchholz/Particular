@@ -13,6 +13,15 @@ struct Particle
     Eigen::Vector3f speed;
     Color color;
     float age; // between 0 and 1
+
+    template<class Archive>
+    void serialize(Archive & ar, const unsigned int /* version */)
+    {
+        ar & position;
+        ar & speed;
+        ar & color;
+        ar & age;
+    }
 };
 
 class Particle_system

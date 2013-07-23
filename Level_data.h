@@ -18,6 +18,8 @@ public:
         ar & _barriers;
         ar & _portals;
         ar & _molecule_releasers;
+        ar & _brownian_elements;
+        ar & _level_elements;
         ar & _end_conditions;
     }
 
@@ -32,10 +34,9 @@ public:
     std::vector<Particle_system_element*> _particle_system_elements;
 
     std::vector<Level_element*> _level_elements;
+//    std::vector< std::unique_ptr<Level_element> > _level_elements;
 
     std::vector<End_condition*> _end_conditions;
-
-//    std::unordered_map< Element_type, std::vector<> >
 };
 
 

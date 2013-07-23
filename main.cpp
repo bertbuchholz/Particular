@@ -7,9 +7,11 @@
 
 BOOST_CLASS_EXPORT_GUID(Box_barrier, "Box_barrier")
 BOOST_CLASS_EXPORT_GUID(Plane_barrier, "Plane_barrier")
-BOOST_CLASS_EXPORT_GUID(Moving_box_barrier, "Moving_box_barrier")
+//BOOST_CLASS_EXPORT_GUID(Moving_box_barrier, "Moving_box_barrier")
 BOOST_CLASS_EXPORT_GUID(Molecule_releaser, "Molecule_releaser")
 BOOST_CLASS_EXPORT_GUID(Box_portal, "Box_portal")
+BOOST_CLASS_EXPORT_GUID(Brownian_box, "Brownian_box")
+BOOST_CLASS_EXPORT_GUID(Tractor_barrier, "Tractor_barrier")
 
 BOOST_CLASS_EXPORT_GUID(Molecule_capture_condition, "Molecule_capture_condition")
 

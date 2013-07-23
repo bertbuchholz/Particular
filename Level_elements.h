@@ -3,6 +3,7 @@
 
 #include <QVariantAnimation>
 #include <boost/serialization/optional.hpp>
+#include <boost/serialization/list.hpp>
 
 #include <Geometry_utils.h>
 #include <Low_discrepancy_sequences.h>
@@ -296,8 +297,8 @@ class Barrier : public Level_element
 public:
     virtual ~Barrier() {}
 
-    Eigen::Vector3f virtual calc_force(Atom const& /* a */) const { return Eigen::Vector3f::Zero(); }
-    Eigen::Vector3f virtual calc_force(Molecule const& /* m */) const { return Eigen::Vector3f::Zero(); }
+    Eigen::Vector3f virtual calc_force_on_atom(Atom const& /* a */) const { return Eigen::Vector3f::Zero(); }
+    Eigen::Vector3f virtual calc_force_on_molecule(Molecule const& /* m */) const { return Eigen::Vector3f::Zero(); }
 
     template<class Archive>
     void serialize(Archive & ar, const unsigned int /* version */)
@@ -330,7 +331,7 @@ public:
         set_position(position);
     }
 
-    Eigen::Vector3f calc_force(Atom const& a) const override
+    Eigen::Vector3f calc_force_on_atom(Atom const& a) const override
     {
         Eigen::Vector3f const& normal = get_transform().linear().col(2);
         Eigen::Vector3f const local_pos = a._r - get_position();
@@ -340,7 +341,7 @@ public:
         return falloff_function(signed_distance) * normal;
     }
 
-    Eigen::Vector3f virtual calc_force(Molecule const& m) const
+    Eigen::Vector3f calc_force_on_molecule(Molecule const& m) const override
     {
         Eigen::Vector3f const& normal = get_transform().linear().col(2);
         Eigen::Vector3f const local_pos = m._x - get_position();
@@ -741,7 +742,7 @@ public:
 //        return falloff_function(distance) * (get_transform() * (local_pos - closest_point).normalized());
 //    }
 
-    Eigen::Vector3f calc_force(Molecule const& m) const override
+    Eigen::Vector3f calc_force_on_molecule(Molecule const& m) const override
     {
         float const distance_to_center = (m._x - get_position()).norm();
 
@@ -837,7 +838,7 @@ public:
         Box_barrier(min, max, strength, radius), _charge(charge)
     { }
 
-    Eigen::Vector3f calc_force(Molecule const& m) const override
+    Eigen::Vector3f calc_force_on_molecule(Molecule const& m) const override
     {
         Eigen::Vector3f const local_pos = get_transform().inverse() * (m._x - get_position());
 
@@ -880,7 +881,7 @@ public:
         set_property_values(_properties);
     }
 
-    Eigen::Vector3f calc_force(Molecule const& m) const override
+    Eigen::Vector3f calc_force_on_molecule(Molecule const& m) const override
     {
         Eigen::Vector3f const local_pos = get_transform().inverse() * (m._x - get_position());
 
@@ -971,6 +972,8 @@ public:
     {
         ar & boost::serialization::base_object<Box_barrier>(*this);
         ar & _tractor_strength;
+
+        ar & _particles;
     }
 
 private:
@@ -1023,7 +1026,7 @@ public:
         _blow_distance(blow_distance)
     { }
 
-    Eigen::Vector3f calc_force(Atom const& a) const override
+    Eigen::Vector3f calc_force_on_atom(Atom const& a) const override
     {
         Eigen::Vector3f const local_pos = get_transform().inverse() * (a._r - get_position());
 
@@ -1075,6 +1078,12 @@ public:
     virtual ~Brownian_element() {}
 
     virtual float get_brownian_motion_factor(Eigen::Vector3f const& point) const = 0;
+
+    template<class Archive>
+    void serialize(Archive & ar, const unsigned int /* version */)
+    {
+        ar & boost::serialization::base_object<Level_element>(*this);
+    }
 };
 
 class Brownian_plane : public Brownian_element
@@ -1119,6 +1128,8 @@ private:
 class Brownian_box : public Brownian_element
 {
 public:
+    Brownian_box() {}
+
     Brownian_box(Eigen::Vector3f const& min, Eigen::Vector3f const& max, float const strength, float const radius) :
 //        _box(Eigen::AlignedBox<float, 3>(min, max)),
         _strength(strength), _radius(radius)
@@ -1284,6 +1295,18 @@ public:
         visitor->visit(this);
     }
 
+    template<class Archive>
+    void serialize(Archive & ar, const unsigned int /* version */)
+    {
+        ar & boost::serialization::base_object<Brownian_element>(*this);
+        ar & _box.min();
+        ar & _box.max();
+        ar & _strength;
+        ar & _radius;
+
+        ar & _particles;
+    }
+
 private:
     float falloff_function(float const distance) const
     {
@@ -1298,7 +1321,7 @@ private:
 };
 
 
-class Particle_system_element : Level_element
+class Particle_system_element : public Level_element
 {
 public:
     Particle_system_element() : _age(0.0f), _life_time(1.0f)

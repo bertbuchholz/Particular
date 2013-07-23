@@ -243,7 +243,7 @@ public:
 
         for (Barrier const* b : _level_data._barriers)
         {
-            receiver._force += b->calc_force(receiver);
+            receiver._force += b->calc_force_on_molecule(receiver);
         }
 
         receiver._force += -_translation_damping * receiver._v;
@@ -395,21 +395,15 @@ public:
         _level_data._particle_system_elements.erase(std::remove_if(_level_data._particle_system_elements.begin(), _level_data._particle_system_elements.end(), Particle_system_element::check_if_dead()),
                                         _level_data._particle_system_elements.end());
 
-        for (Barrier * b : _level_data._barriers)
+        for (Level_element * e : _level_data._particle_system_elements)
         {
-            b->animate(time_step);
+            e->animate(time_step);
         }
 
-        for (Brownian_element * b : _level_data._brownian_elements)
+        for (Level_element * e : _level_data._level_elements)
         {
-            b->animate(time_step);
+            e->animate(time_step);
         }
-
-        for (Particle_system_element * p : _level_data._particle_system_elements)
-        {
-            p->animate(time_step);
-        }
-
 
         auto molecule_iter = std::begin(_level_data._molecules);
 
@@ -434,7 +428,6 @@ public:
 
                     molecule_iter = _level_data._molecules.erase(std::remove_if(_level_data._molecules.begin(), _level_data._molecules.end(), Compare_by_id(m.get_id())),
                                                                  _level_data._molecules.end());
-
 
                     has_been_removed = true;
                 }
@@ -835,26 +828,6 @@ public:
         {
             e->reset();
         }
-
-//        for (Level_element * e : _level_data._barriers)
-//        {
-//            e->reset();
-//        }
-
-//        for (Level_element * e : _level_data._brownian_elements)
-//        {
-//            e->reset();
-//        }
-
-//        for (Level_element * e : _level_data._portals)
-//        {
-//            e->reset();
-//        }
-
-//        for (Level_element * e : _level_data._molecule_releasers)
-//        {
-//            e->reset();
-//        }
     }
 
     void start_level()

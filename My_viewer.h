@@ -72,15 +72,15 @@ public:
         _parameters.add_parameter(new Parameter("draw_handles", true, update));
 
         std::vector<std::string> particle_types { "O2", "H2O", "SDS", "Na", "Cl", "Dipole",
-                                                  "Plane_barrier",
+//                                                  "Plane_barrier",
                                                   "Box_barrier",
                                                   "Brownian_box",
                                                   "Box_portal",
-                                                  "Blow_barrier",
-                                                  "Moving_box_barrier",
+//                                                  "Blow_barrier",
+//                                                  "Moving_box_barrier",
                                                   "Molecule_releaser",
                                                   "Atom_cannon",
-                                                  "Charged_barrier",
+//                                                  "Charged_barrier",
                                                   "Tractor_barrier" };
 
         _parameters.add_parameter(new Parameter("particle_type", 0, particle_types, update));

@@ -84,7 +84,7 @@ public:
     { }
 
     Draggable(Eigen::Vector3f const& position, Level_element * level_element = nullptr) :
-        _parent(nullptr), _position(position), _changed(false), _level_element(level_element), _slider_movement_range(3.9f)
+        _parent(nullptr), _position(position), _changed(false), _level_element(level_element), _draggable(true), _slider_movement_range(3.9f), _visible(true)
     { }
 
     virtual ~Draggable()
@@ -94,6 +94,8 @@ public:
             _level_element->remove_observer(this);
         }
     }
+
+    virtual void animate(float const /* timestep */) {}
 
     virtual void update()
     {
@@ -198,6 +200,23 @@ public:
         set_position(_level_element->get_position());
     }
 
+    bool is_draggable() const
+    {
+        return _draggable;
+    }
+
+    bool is_visible() const
+    {
+        return _visible;
+    }
+
+    void set_visible(bool const v)
+    {
+        _visible = v;
+    }
+
+    virtual void clicked() { }
+
 protected:
     Draggable * _parent;
 
@@ -209,7 +228,12 @@ protected:
 
     Level_element * _level_element;
 
+    bool _draggable;
+
     float _slider_movement_range;
+
+    bool _visible;
+
 };
 
 class Draggable_point : public Draggable
@@ -222,6 +246,163 @@ class Draggable_disc : public Draggable
 
 };
 
+class Draggable_label : public Draggable
+{
+public:
+    Draggable_label(Eigen::Vector3f const& position, Eigen::Vector2f const& size, std::string const& text) :
+        Draggable(position), _texture(0), _extent(size), _text(text), _alpha(1.0f)
+    {
+        _draggable = false;
+    }
+
+    std::vector<Draggable *> get_draggables(Level_element::Edit_type const /* edit_type */) override
+    {
+        std::vector<Draggable *> elements;
+
+        elements.push_back(this);
+
+        return elements;
+    }
+
+    GLuint get_texture() const
+    {
+        return _texture;
+    }
+
+    void set_texture(GLuint texture)
+    {
+        _texture = texture;
+    }
+
+    std::string const& get_text()
+    {
+        return _text;
+    }
+
+    Eigen::Vector2f const& get_extent() const
+    {
+        return _extent;
+    }
+
+    float get_alpha() const
+    {
+        return _alpha;
+    }
+
+    void set_alpha(float const alpha)
+    {
+        _alpha = alpha;
+    }
+
+private:
+    GLuint _texture;
+
+    Eigen::Vector2f _extent;
+
+    std::string _text;
+
+    float _alpha;
+};
+
+
+class Draggable_button : public Draggable_label
+{
+public:
+    Draggable_button(Eigen::Vector3f const& position, Eigen::Vector2f const& size, std::string const& text, std::function<void(void)> callback) :
+        Draggable_label(position, size, text), _callback(callback)
+    { }
+
+    void clicked() override
+    {
+        if (_callback) _callback();
+    }
+
+private:
+    std::function<void(void)> _callback;
+};
+
+class Draggable_statistics : public Draggable_label
+{
+public:
+    Draggable_statistics(Eigen::Vector3f const& position, Eigen::Vector2f const& size, std::string const& text) :
+        Draggable_label(position, size, text), _animation_start(0.0f), _animation_duration(10.0f)
+    { }
+
+    void animate(const float timestep)
+    {
+        _current_time += timestep;
+    }
+
+    float get_normalized_time() const
+    {
+        return into_range((_current_time - _animation_start) / _animation_duration, 0.0f, 1.0f);
+    }
+
+private:
+    std::string _x_label;
+    std::string _y_label;
+
+    float _current_time;
+    float _animation_start;
+    float _animation_duration;
+
+    std::vector<float> _values;
+};
+
+//class Draggable_statistics : public Draggable
+//{
+//public:
+//    Draggable_statistics(Eigen::Vector3f const& position, Eigen::Vector2f const& size, std::string const& text) :
+//        Draggable(position), _texture(0), _extent(size), _text(text), _animation_duration(3.0f)
+//    {
+//        _draggable = false;
+//    }
+
+//    std::vector<Draggable *> get_draggables(Level_element::Edit_type const /* edit_type */) override
+//    {
+//        std::vector<Draggable *> elements;
+
+//        elements.push_back(this);
+
+//        return elements;
+//    }
+
+//    Eigen::Vector2f const& get_extent() const
+//    {
+//        return _extent;
+//    }
+
+//    void start_animation()
+//    {
+//        _current_time = 0.0f;
+//    }
+
+//    virtual void animate(float const timestep)
+//    {
+//        float normalized_time = _current_time / _animation_duration;
+
+//        if (normalized_time < 0.1f)
+//        {
+//            float const alpha = normalized_time / 0.1f;
+
+//            _main_label.set_alpha(alpha);
+//        }
+//        else if (normalized_time >= 0.1f && normalized_time < 0.2f)
+//        {
+
+//        }
+//     }
+
+//private:
+//    Eigen::Vector2f _extent;
+
+//    Draggable_label _main_label;
+//    std::vector<Draggable_label> _axes_labels;
+
+//    float _current_time;
+
+//    float _animation_duration;
+//};
 
 class Draggable_box : public Draggable
 {

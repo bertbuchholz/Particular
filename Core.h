@@ -12,6 +12,7 @@
 
 #include <Registry_parameters.h>
 
+#include "unique_ptr_serialization.h"
 #include "GPU_force.h"
 #include "Atom.h"
 #include "Atomic_force.h"
@@ -20,6 +21,7 @@
 #include "Level_elements.h"
 #include "Level_data.h"
 #include "End_condition.h"
+#include "Sensor_data.h"
 
 class Core : public QObject
 {
@@ -45,6 +47,7 @@ public:
         _previous_game_state(Game_state::Unstarted),
         _molecule_id_counter(0),
         _current_time(0.0f),
+        _last_sensor_check(0.0f),
         _molecule_hash(Molecule_atom_hash(100, 4.0f))
     {
         Eigen::Vector2f grid_start(-10.0f, -10.0f);
@@ -102,6 +105,11 @@ public:
             {
                 for (Atom const* sender_atom : node->get_data())
                 {
+                    if (!(sender_atom->_parent_id >= 0))
+                    {
+                        std::cout << sender_atom << " " << sender_atom->_parent_id << std::endl;
+                    }
+
                     assert(sender_atom->_parent_id >= 0);
 
                     if (sender_atom->_parent_id == receiver_atom._parent_id) continue;
@@ -156,6 +164,11 @@ public:
             {
                 for (Atom const* sender_atom : node->get_data())
                 {
+                    if (!(sender_atom->_parent_id >= 0))
+                    {
+                        std::cout << sender_atom << " " << sender_atom->_parent_id << std::endl;
+                    }
+
                     assert(sender_atom->_parent_id >= 0);
 
                     if (sender_atom->_parent_id == receiver_atom._parent_id) continue;
@@ -221,7 +234,13 @@ public:
 //            force_i += b->calc_force(receiver_atom);
 //        }
 
-        assert(!std::isnan(force_i[0]));
+        if (std::isnan(force_i[0]))
+        {
+            std::cout << __PRETTY_FUNCTION__ << " isnan, atom: " << &receiver_atom << std::endl;
+            force_i = Eigen::Vector3f::Zero();
+        }
+
+//        assert(!std::isnan(force_i[0]));
 
         return force_i;
     }
@@ -329,6 +348,43 @@ public:
         float _end_time;
     };
 
+    void check_molecules_in_portals()
+    {
+        auto molecule_iter = std::begin(_level_data._molecules);
+
+        while (molecule_iter != std::end(_level_data._molecules))
+        {
+            Molecule & m = *molecule_iter;
+
+            bool has_been_removed = false;
+
+            for (Portal * p : _level_data._portals)
+            {
+                if (p->contains(m._x) && !has_been_removed)
+                {
+                    p->handle_molecule_entering();
+
+                    Particle_system_element * p = new Particle_system_element;
+                    p->init(m);
+
+                    _level_data._particle_system_elements.push_back(p);
+
+                    _molecule_id_to_molecule_map.erase(m.get_id());
+
+                    molecule_iter = _level_data._molecules.erase(std::remove_if(_level_data._molecules.begin(), _level_data._molecules.end(), Compare_by_id(m.get_id())),
+                                                                 _level_data._molecules.end());
+
+                    has_been_removed = true;
+                }
+            }
+
+            if (!has_been_removed)
+            {
+                ++molecule_iter;
+            }
+        }
+    }
+
     void update(float const time_step)
     {
         _current_time += time_step;
@@ -337,6 +393,8 @@ public:
 
         int elapsed_milliseconds;
         std::chrono::time_point<std::chrono::system_clock> timer_start, timer_end;
+
+        check_molecules_in_portals();
 
         for (Molecule_releaser * m : _level_data._molecule_releasers)
         {
@@ -386,12 +444,6 @@ public:
             }
         }
 
-
-        if (time_debug)
-        {
-            timer_start = std::chrono::system_clock::now();
-        }
-
         _level_data._particle_system_elements.erase(std::remove_if(_level_data._particle_system_elements.begin(), _level_data._particle_system_elements.end(), Particle_system_element::check_if_dead()),
                                         _level_data._particle_system_elements.end());
 
@@ -400,44 +452,19 @@ public:
             e->animate(time_step);
         }
 
-        for (Level_element * e : _level_data._level_elements)
+        for (boost::shared_ptr<Level_element> const& e : _level_data._level_elements)
         {
             e->animate(time_step);
         }
 
-        auto molecule_iter = std::begin(_level_data._molecules);
-
-        while (molecule_iter != std::end(_level_data._molecules))
+        if (time_debug)
         {
-            Molecule & m = *molecule_iter;
+            timer_start = std::chrono::system_clock::now();
+        }
 
-            bool has_been_removed = false;
-
-            for (Portal * p : _level_data._portals)
-            {
-                if (p->contains(m._x) && !has_been_removed)
-                {
-                    p->handle_molecule_entering();
-
-                    Particle_system_element * p = new Particle_system_element;
-                    p->init(m);
-
-                    _level_data._particle_system_elements.push_back(p);
-
-                    _molecule_id_to_molecule_map.erase(m.get_id());
-
-                    molecule_iter = _level_data._molecules.erase(std::remove_if(_level_data._molecules.begin(), _level_data._molecules.end(), Compare_by_id(m.get_id())),
-                                                                 _level_data._molecules.end());
-
-                    has_been_removed = true;
-                }
-            }
-
-            if (!has_been_removed)
-            {
-                compute_force_and_torque(m);
-                ++molecule_iter;
-            }
+        for (Molecule & m : _level_data._molecules)
+        {
+            compute_force_and_torque(m);
         }
 
         if (time_debug)
@@ -452,7 +479,6 @@ public:
                 std::cout << "compute_force_and_torque(): " << elapsed_milliseconds << std::endl;
             }
         }
-
 
         _molecule_external_forces.erase(std::remove_if(_molecule_external_forces.begin(), _molecule_external_forces.end(), Check_duration(_current_time)),
                         _molecule_external_forces.end());
@@ -470,24 +496,8 @@ public:
             timer_start = std::chrono::system_clock::now();
         }
 
-//        for (size_t i = 0; i < _level_data._molecules.size(); ++i)
         for (Molecule & molecule : _level_data._molecules)
         {
-//            Body_state & state = tmp_states[i];
-//            Molecule & molecule = _level_data._molecules[i];
-
-//            state._x += molecule._v * time_step;
-
-//            Eigen::Quaternion<float> omega_quaternion(0.0f, molecule._omega[0], molecule._omega[1], molecule._omega[2]);
-//            Eigen::Quaternion<float> q_dot = scale(omega_quaternion * molecule._q, 0.5f);
-//            state._q = add(state._q, scale(q_dot, time_step));
-
-//            state._P += molecule._force * time_step;
-
-//            state._L += molecule._torque * time_step;
-
-//            molecule.from_state(state);
-
             molecule._x += molecule._v * time_step;
 
             Eigen::Quaternion<float> omega_quaternion(0.0f, molecule._omega[0], molecule._omega[1], molecule._omega[2]);
@@ -516,10 +526,44 @@ public:
             }
         }
 
+        if (_current_time - _last_sensor_check > 1.0f)
+        {
+            _last_sensor_check = _current_time;
+            _sensor_data.push_back(do_sensor_check());
+        }
+
         if (_game_state == Game_state::Running && check_is_finished())
         {
             set_new_game_state(Game_state::Finished);
         }
+    }
+
+    Sensor_data do_sensor_check()
+    {
+        Sensor_data data;
+
+        data.num_collected_molecules = 0;
+        data.num_released_molecules = 0;
+        data.average_temperature = 0.0f;
+        data.energy_consumption = 0.0f;
+
+        for (Portal const* p : _level_data._portals)
+        {
+            Molecule_capture_condition const& condition = p->get_condition();
+            data.num_collected_molecules += condition.get_num_captured_molecules();
+        }
+
+        for (Molecule_releaser const* p : _level_data._molecule_releasers)
+        {
+            data.num_released_molecules += p->get_num_released_molecules();
+        }
+
+        for (Brownian_element const* p : _level_data._brownian_elements)
+        {
+            // data.energy_consumption += std::abs(p->get_strength()) * radius // TODO: get the data
+        }
+
+        return data;
     }
 
     bool check_is_finished() const
@@ -653,6 +697,8 @@ public:
                     min[i] = std::min(a._r[i], min[i]);
                     max[i] = std::max(a._r[i], max[i]);
                 }
+
+//                assert(a._parent_id >= 0); // debug check
             }
         }
 
@@ -666,34 +712,54 @@ public:
             for (Atom const& a : m._atoms)
             {
                 _tree.add_point(a._r, &a); // FIXME: possibly bad, when the vector containing a gets moved, then &a changes
+
+//                if (!(a._parent_id >= 0))
+//                {
+//                    std::cout << &a << " " << a._parent_id << std::endl;
+//                }
+
+//                assert(a._parent_id >= 0);
             }
         }
 
         My_tree::average_data(&_tree, Atom_averager());
+
+        // TODO: debug check, costly, REMOVE
+//        std::vector<My_tree const*> leafs;
+//        _tree.get_Leafs(leafs);
+
+//        for (My_tree const* l : leafs)
+//        {
+//            for (Atom const* a : l->get_data())
+//            {
+
+//            }
+//        }
+
     }
 
     void add_barrier(Barrier * barrier)
     {
         _level_data._barriers.push_back(barrier);
-        _level_data._level_elements.push_back(barrier);
+        _level_data._level_elements.push_back(boost::shared_ptr<Level_element>(barrier));
     }
 
     void add_brownian_element(Brownian_element * element)
     {
         _level_data._brownian_elements.push_back(element);
-        _level_data._level_elements.push_back(element);
+        _level_data._level_elements.push_back(boost::shared_ptr<Level_element>(element));
     }
 
     void add_portal(Portal * portal)
     {
         _level_data._portals.push_back(portal);
-        _level_data._level_elements.push_back(portal);
+        _level_data._level_elements.push_back(boost::shared_ptr<Level_element>(portal));
     }
 
     void add_molecule_releaser(Molecule_releaser * molecule_releaser)
     {
         _level_data._molecule_releasers.push_back(molecule_releaser);
-        _level_data._level_elements.push_back(molecule_releaser);
+        _level_data._level_elements.push_back(boost::shared_ptr<Level_element>(molecule_releaser));
     }
 
     std::vector<Force_indicator> const& get_force_indicators() const
@@ -747,7 +813,6 @@ public:
         {
             Level_element * b = e.second;
             delete_level_element(b);
-            delete b;
         }
 
         _level_data._game_field_borders.clear();
@@ -819,12 +884,17 @@ public:
         _level_data._portals.erase(std::remove(_level_data._portals.begin(), _level_data._portals.end(), level_element), _level_data._portals.end());
         _level_data._brownian_elements.erase(std::remove(_level_data._brownian_elements.begin(), _level_data._brownian_elements.end(), level_element), _level_data._brownian_elements.end());
 
-        _level_data._level_elements.erase(std::remove(_level_data._level_elements.begin(), _level_data._level_elements.end(), level_element), _level_data._level_elements.end());
+        _level_data._level_elements.erase(std::remove_if(_level_data._level_elements.begin(), _level_data._level_elements.end(), Ptr_contains_predicate<Level_element>(level_element)), _level_data._level_elements.end());
+
+        assert(_level_data._level_elements.size() == _level_data._barriers.size() +
+               _level_data._brownian_elements.size() +
+               _level_data._portals.size() +
+               _level_data._molecule_releasers.size());
     }
 
     void reset_level_elements()
     {
-        for (Level_element * e : _level_data._level_elements)
+        for (boost::shared_ptr<Level_element> const& e : _level_data._level_elements)
         {
             e->reset();
         }
@@ -832,6 +902,8 @@ public:
 
     void start_level()
     {
+        std::cout << __PRETTY_FUNCTION__ << std::endl;
+
         reset_level();
 
         set_new_game_state(Game_state::Running);
@@ -855,14 +927,25 @@ public:
         return _previous_game_state;
     }
 
+
+    std::vector<Sensor_data> const& get_sensor_data() const
+    {
+        return _sensor_data;
+    }
+
     static bool is_not_persistent(Level_element const* e)
     {
         return !e->is_persistent();
     }
 
+    static bool is_not_persistent_boost_shared_ptr(boost::shared_ptr<Level_element> const& e)
+    {
+        return is_not_persistent(e.get());
+    }
+
     void delete_non_persistent_objects()
     {
-        _level_data._barriers.erase(std::remove_if(_level_data._barriers.begin(), _level_data._barriers.end(), is_not_persistent), _level_data._barriers.end());
+        _level_data._barriers.erase(std::remove_if(_level_data._barriers.begin(), _level_data._barriers.end(), Core::is_not_persistent), _level_data._barriers.end());
 
         _level_data._brownian_elements.erase(std::remove_if(_level_data._brownian_elements.begin(), _level_data._brownian_elements.end(), is_not_persistent),
                                              _level_data._brownian_elements.end());
@@ -873,8 +956,13 @@ public:
         _level_data._molecule_releasers.erase(std::remove_if(_level_data._molecule_releasers.begin(), _level_data._molecule_releasers.end(), is_not_persistent),
                                              _level_data._molecule_releasers.end());
 
-        _level_data._level_elements.erase(std::remove_if(_level_data._level_elements.begin(), _level_data._level_elements.end(), is_not_persistent),
+        _level_data._level_elements.erase(std::remove_if(_level_data._level_elements.begin(), _level_data._level_elements.end(), is_not_persistent_boost_shared_ptr),
                                              _level_data._level_elements.end());
+
+        assert(_level_data._level_elements.size() == _level_data._barriers.size() +
+               _level_data._brownian_elements.size() +
+               _level_data._portals.size() +
+               _level_data._molecule_releasers.size());
 
         _level_data._particle_system_elements.clear();
     }
@@ -911,6 +999,7 @@ public:
         reset_level_elements();
 
         _current_time = 0.0f;
+        _last_sensor_check = 0.0f;
     }
 
     void save_state(std::string const& file_name) const
@@ -1031,6 +1120,9 @@ private:
     float _mass_factor;
 
     float _current_time;
+    float _last_sensor_check;
+
+    std::vector<Sensor_data> _sensor_data;
 
     bool _do_constrain_forces;
     float _max_force;

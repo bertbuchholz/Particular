@@ -340,14 +340,8 @@ public:
             Point const& point = _points[i];
             Data const* data = _data[i];
 
-            for (int j = 0; j < _childrenCount; ++j)
-            {
-                if (_children[j].is_point_in(point))
-                {
-                    _children[j].add_point(point, data);
-                    break;
-                }
-            }
+            int const child_index = get_child_index_containing_point(point, get_split_pos());
+            _children[child_index].add_point(point, data);
         }
 
         for (unsigned int i = 0; i < _children.size(); ++i)

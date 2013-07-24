@@ -38,10 +38,10 @@ public:
     enum class Mouse_state { None, Init_drag_handle, Init_drag_molecule, Dragging_molecule, Dragging_handle };
     enum class Selection { None, Level_element, Molecule };
     enum class Ui_state { Level_editor, Playing };
-    enum class Level_state { Before_start, Running, After_finish };
+    enum class Level_state { Main_menu, Before_start, Running, After_finish, Statistics };
 
     My_viewer() :
-        _mouse_state(Mouse_state::None), _selection(Selection::None), _selected_level_element(nullptr)
+        _mouse_state(Mouse_state::None), _selection(Selection::None), _selected_level_element(nullptr), _level_state(Level_state::Before_start)
     {
         std::function<void(void)> update = std::bind(static_cast<void (My_viewer::*)()>(&My_viewer::update), this);
 
@@ -98,6 +98,8 @@ public:
         _parameters.add_parameter(Parameter::create_button("Do physics timestep", std::bind(&My_viewer::do_physics_timestep, this)));
 
         Parameter_registry<Molecule_renderer>::create_single_select_instance(&_parameters, "Molecule Renderer", std::bind(&My_viewer::change_renderer, this));
+
+        setup_ui_elements();
 
         change_renderer();
         change_core_settings();
@@ -163,13 +165,31 @@ public:
 
     void start_level()
     {
+//        assert(_level_state == Level_state::Before_start);
+
         if (!animationIsStarted())
         {
             startAnimation();
         }
 
         _core.start_level();
-        _parameters["Toggle simulation"]->set_value(true);
+        set_simulation_state(true);
+
+        update();
+    }
+
+    void load_next_level()
+    {
+//        assert(_level_state == Level_state::Before_start);
+
+        _level_state = Level_state::Before_start;
+
+        set_simulation_state(false);
+
+        // TODO: load level file
+
+        reset_level();
+
         update();
     }
 
@@ -245,7 +265,6 @@ public:
         {
             _ui_state = Ui_state::Playing;
 
-
             Game_camera_constraint * camera_constraint = new Game_camera_constraint;
             camera_constraint->setTranslationConstraint(qglviewer::AxisPlaneConstraint::PLANE, qglviewer::Vec(0.0f, 1.0f, 0.0f));
 
@@ -308,6 +327,8 @@ public:
         _move_tex = bindTexture(QImage("data/textures/move.png"));
         _scale_tex = bindTexture(QImage("data/textures/scale.png"));
         _slider_tex = bindTexture(QImage("data/textures/slider.png"));
+
+        generate_ui_textures();
 
         startAnimation();
     }
@@ -377,6 +398,11 @@ public:
         glDisable(GL_LIGHTING);
         draw_draggables();
 
+        for (Targeted_particle_system const& s : _particle_systems[int(_level_state)])
+        {
+            draw_particle_system(s);
+        }
+
 //        draw_indicators();
 
 //        draw_user_force();
@@ -395,6 +421,8 @@ public:
 
     void draw_draggables() // FIXME: use visitors or change it so that draggables can only have a single type of handles (Draggable_point)
     {
+        glDisable(GL_DEPTH_TEST);
+
         float const scale = 1.5f;
 
         glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
@@ -490,6 +518,96 @@ public:
                 glPopMatrix();
             }
         }
+
+
+        if (_ui_state != Ui_state::Level_editor)
+        {
+            start_normalized_screen_coordinates();
+
+            for (boost::shared_ptr<Draggable_button> const& button : _buttons[int(_level_state)])
+            {
+                draw_button(button.get(), false);
+            }
+
+            for (boost::shared_ptr<Draggable_label> const& label : _labels[int(_level_state)])
+            {
+                draw_label(label.get());
+            }
+
+            for (Draggable_statistics const& stat : _statistics[int(_level_state)])
+            {
+                draw_statistic(stat);
+            }
+
+            stop_normalized_screen_coordinates();
+        }
+
+        glEnable(GL_DEPTH_TEST);
+    }
+
+    void start_normalized_screen_coordinates()
+    {
+        glMatrixMode(GL_PROJECTION);
+        glPushMatrix();
+        glLoadIdentity();
+
+        glOrtho(0.0f, 1.0f, 0.0f, 1.0, 0.0f, -1.0f);
+
+        glMatrixMode(GL_MODELVIEW);
+        glPushMatrix();
+        glLoadIdentity();
+    }
+
+    void stop_normalized_screen_coordinates()
+    {
+        glMatrixMode(GL_PROJECTION);
+        glPopMatrix();
+        glMatrixMode(GL_MODELVIEW);
+        glPopMatrix();
+    }
+
+    void draw_button(Draggable_button const* b, bool const for_picking)
+    {
+        glPushMatrix();
+
+        glTranslatef(b->get_position()[0], b->get_position()[1], b->get_position()[2]);
+
+        glScalef(b->get_extent()[0] * 0.5f, b->get_extent()[1] * 0.5f, 1.0f);
+
+        if (for_picking)
+        {
+            draw_quad_with_tex_coords();
+        }
+        else
+        {
+            draw_textured_quad(b->get_texture());
+        }
+
+        glPopMatrix();
+    }
+
+    void draw_label(Draggable_label const* b)
+    {
+        glPushMatrix();
+
+        glTranslatef(b->get_position()[0], b->get_position()[1], b->get_position()[2]);
+        glScalef(b->get_extent()[0] * 0.5f, b->get_extent()[1] * 0.5f, 1.0f);
+
+        draw_textured_quad(b->get_texture());
+
+        glPopMatrix();
+    }
+
+    void draw_statistic(Draggable_statistics const& b)
+    {
+        glPushMatrix();
+
+        glTranslatef(b.get_position()[0], b.get_position()[1], b.get_position()[2]);
+        glScalef(b.get_extent()[0] * 0.5f, b.get_extent()[1] * 0.5f, 1.0f);
+
+        draw_textured_quad(b.get_texture());
+
+        glPopMatrix();
     }
 
     void draw_draggables_for_picking()
@@ -517,9 +635,47 @@ public:
             {
                 draw_sphere_ico(Eigen2OM(d_point->get_position()), 2.0f);
             }
+            else if (Draggable_button const* d_button = dynamic_cast<Draggable_button const*>(draggable))
+            {
+                start_normalized_screen_coordinates();
+                draw_button(d_button, true);
+                stop_normalized_screen_coordinates();
+            }
 
             glPopMatrix();
         }
+    }
+
+    void draw_particle_system(Targeted_particle_system const& system)
+    {
+        glMatrixMode(GL_PROJECTION);
+        glPushMatrix();
+        glLoadIdentity();
+
+        glOrtho(0.0f, 1.0f, 0.0f, 1.0, 1.0f, -1.0f);
+
+        glMatrixMode(GL_MODELVIEW);
+        glPushMatrix();
+        glLoadIdentity();
+
+        glTranslatef(0.5f, 0.5f, 0.0f);
+
+        glScalef(0.5f, 0.5f, 1.0f);
+
+        glBegin(GL_POINTS);
+
+        for (Targeted_particle const& p : system.get_particles())
+        {
+            glColor3fv(p.color.data());
+            glVertex3fv(p.position.data());
+        }
+
+        glEnd();
+
+        glMatrixMode(GL_PROJECTION);
+        glPopMatrix();
+        glMatrixMode(GL_MODELVIEW);
+        glPopMatrix();
     }
 
     void draw_portals()
@@ -976,7 +1132,7 @@ public:
 
             handled = true;
         }
-        else if (_mouse_state == Mouse_state::Init_drag_handle)
+        else if (_mouse_state == Mouse_state::Init_drag_handle && _active_draggables[_picked_index]->is_draggable())
         {
             if (_picked_index != -1 && (_dragging_start - event->pos()).manhattanLength() > 0)
             {
@@ -1053,12 +1209,18 @@ public:
             {
                 _selection = Selection::Level_element;
                 Draggable * parent = _active_draggables[_picked_index]->get_parent();
-                _selected_level_element = _draggable_to_level_element[parent];
-                _selected_level_element->set_selected(true);
+                parent->clicked();
 
-                if (event->button() == Qt::RightButton)
+                auto iter = _draggable_to_level_element.find(parent);
+                if (iter != _draggable_to_level_element.end())
                 {
-                    show_context_menu_for_element();
+                    _selected_level_element = iter->second;
+                    _selected_level_element->set_selected(true);
+
+                    if (event->button() == Qt::RightButton && _ui_state == Ui_state::Level_editor)
+                    {
+                        show_context_menu_for_element();
+                    }
                 }
             }
         }
@@ -1083,6 +1245,11 @@ public:
         if ((event->key() == Qt::Key_Backspace || event->key() == Qt::Key_Delete) && _ui_state == Ui_state::Level_editor)
         {
             delete_selected_element();
+        }
+        else if (event->key() == Qt::Key_F8)
+        {
+            _particle_systems[int(_level_state)].push_back(Targeted_particle_system(3.0f));
+            _particle_systems[int(_level_state)].back().generate("Blubber");
         }
         else
         {
@@ -1342,6 +1509,11 @@ public:
             f._end_time = _core.get_current_time() + 0.1f;
         }
 
+        for (Targeted_particle_system & p : _particle_systems[int(_level_state)])
+        {
+            p.animate(animationPeriod() / 1000.0f);
+        }
+
         Base::animate();
     }
 
@@ -1361,6 +1533,17 @@ public:
             std::vector<Draggable*> const draggables = d.first->get_draggables(edit_type);
             std::copy(draggables.begin(), draggables.end(), std::back_inserter(_active_draggables));
         }
+
+        if (_ui_state != Ui_state::Level_editor)
+        {
+            for (boost::shared_ptr<Draggable_button> const& button : _buttons[int(_level_state)])
+            {
+                Draggable_button * b = button.get();
+
+                std::vector<Draggable*> const draggables = b->get_draggables(Level_element::Edit_type::None);
+                std::copy(draggables.begin(), draggables.end(), std::back_inserter(_active_draggables));
+            }
+        }
     }
 
     void update_draggable_to_level_element()
@@ -1372,10 +1555,12 @@ public:
 
         _draggable_to_level_element.clear();
 
-        for (Level_element * e : _core.get_level_data()._level_elements)
+        if (_level_state == Level_state::Running || _ui_state == Ui_state::Level_editor)
         {
-//            if (_ui_state == Ui_state::Level_editor || (_ui_state != Ui_state::Level_editor && e->is_user_editable()))
+            for (boost::shared_ptr<Level_element> const& element : _core.get_level_data()._level_elements)
             {
+                Level_element * e = element.get();
+
                 if (Brownian_box const* b = dynamic_cast<Brownian_box const*>(e))
                 {
                     Draggable_box * draggable = new Draggable_box(b->get_position(), b->get_extent(), b->get_transform(), b->get_parameters());
@@ -1557,7 +1742,245 @@ public:
     {
         _molecule_renderer->resize(ev->size());
 
+        generate_ui_textures();
+
         Base::resizeEvent(ev);
+    }
+
+    void generate_ui_textures()
+    {
+        for (auto & iter : _buttons)
+        {
+            for (boost::shared_ptr<Draggable_button> const& button : iter.second)
+            {
+                generate_button_texture(button.get());
+            }
+        }
+
+        for (auto & iter : _labels)
+        {
+            for (boost::shared_ptr<Draggable_label> const& label : iter.second)
+            {
+                generate_label_texture(label.get());
+            }
+        }
+
+        for (auto & iter : _statistics)
+        {
+            for (Draggable_statistics & stat : iter.second)
+            {
+                generate_statistics_texture(stat);
+            }
+        }
+    }
+
+    QSize adapt_bounding_size(QSize b_size, QSize const& target_size) const
+    {
+        float const width_ratio = target_size.width() / float(b_size.width());
+        float const height_ratio = target_size.height() / float(b_size.height());
+
+        if (width_ratio < height_ratio)
+        {
+            b_size.setWidth(b_size.width() * width_ratio);
+            b_size.setHeight(b_size.height() * width_ratio);
+        }
+        else
+        {
+            b_size.setWidth(b_size.width() * height_ratio);
+            b_size.setHeight(b_size.height() * height_ratio);
+        }
+
+        return b_size;
+    }
+
+    float get_scale(QSize const& b_size, QSize const& target_size) const
+    {
+        float const width_ratio = target_size.width() / float(b_size.width());
+        float const height_ratio = target_size.height() / float(b_size.height());
+
+        return std::min(width_ratio, height_ratio);
+    }
+
+    void generate_button_texture(Draggable_button * b)
+    {
+        std::cout << __PRETTY_FUNCTION__ << " constructing button texture" << std::endl;
+
+        QSize const pixel_size(width() * b->get_extent()[0], height() * b->get_extent()[1]);
+
+        QImage img(pixel_size, QImage::Format_ARGB32);
+        img.fill(QColor(0, 0, 0, 0));
+
+        QPainter p;
+        p.begin(&img);
+        p.setRenderHint(QPainter::Antialiasing);
+        p.setCompositionMode(QPainter::CompositionMode_SourceOver);
+
+        QPen pen;
+        pen.setWidth(5);
+        pen.setColor(QColor(20, 133, 204));
+        p.setPen(pen);
+
+        p.setBrush(QBrush(QColor(76, 153, 204, 120)));
+
+        p.drawRoundedRect(QRect(5, 5, pixel_size.width() - 10, pixel_size.height() - 10), pixel_size.width() * 0.1f, pixel_size.width() * 0.1f);
+
+        QFont font;
+        font.setWeight(QFont::Bold);
+        font.setPointSizeF(10.0f);
+        p.setFont(font);
+
+        p.setPen(QColor(255, 255, 255));
+
+        QSize text_size(pixel_size.width() * 0.8f, pixel_size.height() * 0.8f);
+
+        QSize b_size = p.boundingRect(QRect(QPoint(0, 0), text_size), Qt::AlignCenter, QString::fromStdString(b->get_text())).size();
+
+        font.setPointSizeF(10.0f * get_scale(b_size, text_size));
+        p.setFont(font);
+
+        p.drawText(img.rect(), Qt::AlignCenter, QString::fromStdString(b->get_text()));
+
+        p.end();
+
+        deleteTexture(b->get_texture());
+        b->set_texture(bindTexture(img));
+    }
+
+    void generate_label_texture(Draggable_label * b)
+    {
+        std::cout << __PRETTY_FUNCTION__ << " constructing label texture" << std::endl;
+
+        QSize const pixel_size(width() * b->get_extent()[0], height() * b->get_extent()[1]);
+
+        QImage img(pixel_size, QImage::Format_ARGB32);
+        img.fill(QColor(0, 0, 0, 0));
+
+        QPainter p;
+        p.begin(&img);
+        p.setRenderHint(QPainter::Antialiasing);
+        p.setCompositionMode(QPainter::CompositionMode_SourceOver);
+
+        QFont font;
+        font.setWeight(QFont::Bold);
+        font.setPointSizeF(10.0f);
+        p.setFont(font);
+
+        p.setPen(QColor(255, 255, 255));
+
+        QSize text_size(pixel_size.width() * 0.8f, pixel_size.height() * 0.8f);
+
+        QSize b_size = p.boundingRect(QRect(QPoint(0, 0), text_size), Qt::AlignCenter, QString::fromStdString(b->get_text())).size();
+
+//        font.setPointSizeF(10.0f * text_size.height() / float(b_size.height())); // always use height ratio to ensure same size text for buttons of same height
+        font.setPointSizeF(10.0f * get_scale(b_size, text_size));
+        p.setFont(font);
+
+        p.drawText(img.rect(), Qt::AlignCenter, QString::fromStdString(b->get_text()));
+
+        p.end();
+
+        deleteTexture(b->get_texture());
+        b->set_texture(bindTexture(img));
+    }
+
+    void generate_statistics_texture(Draggable_statistics & b)
+    {
+        std::cout << __PRETTY_FUNCTION__ << " constructing statistic texture" << std::endl;
+
+        QSize const pixel_size(width() * b.get_extent()[0], height() * b.get_extent()[1]);
+
+        QImage img(pixel_size, QImage::Format_ARGB32);
+        img.fill(QColor(0, 0, 0, 0));
+
+        QPainter p;
+        p.begin(&img);
+        p.setRenderHint(QPainter::Antialiasing);
+        p.setCompositionMode(QPainter::CompositionMode_SourceOver);
+
+        QPen pen;
+        pen.setWidth(2);
+        pen.setColor(QColor(20, 133, 204));
+        p.setPen(pen);
+
+        p.setBrush(QBrush(QColor(76, 153, 204, 120)));
+
+        p.drawRoundedRect(QRect(2, 2, pixel_size.width() - 4, pixel_size.height() - 4), pixel_size.width() * 0.02f, pixel_size.width() * 0.02f);
+
+
+        QFont font;
+        font.setWeight(QFont::Bold);
+        font.setPixelSize(0.1f * pixel_size.height());
+        p.setFont(font);
+
+        p.setPen(QColor(255, 255, 255));
+
+//        QSize text_size(pixel_size.width() * 0.8f, pixel_size.height() * 0.8f);
+
+//        QSize b_size = p.boundingRect(QRect(QPoint(0, 0), text_size), Qt::AlignCenter, QString::fromStdString(b->get_text())).size();
+
+//        font.setPointSizeF(10.0f * get_scale(b_size, text_size));
+//        p.setFont(font);
+
+        p.drawText(0.2f * pixel_size.width(), 0.15f * pixel_size.height(), QString::fromStdString(b.get_text()));
+
+        pen.setWidthF(0.5f);
+        pen.setColor(QColor(255, 255, 255, 100));
+        p.setPen(pen);
+
+        p.drawLine(0.2f * pixel_size.width(), 0.8f * pixel_size.height(), 0.9f * pixel_size.width(), 0.8f * pixel_size.height());
+
+        for (int i = 1; i < 5; ++i)
+        {
+            float const height = 0.8f - 0.6f * i / 4.0f;
+            p.drawLine(0.2f * pixel_size.width(), height * pixel_size.height(), 0.9f * pixel_size.width(), height * pixel_size.height());
+        }
+
+        p.end();
+
+        deleteTexture(b.get_texture());
+        b.set_texture(bindTexture(img));
+    }
+
+    void setup_ui_elements()
+    {
+        // start level screen
+        {
+            Draggable_button * button = new Draggable_button(Eigen::Vector3f(0.5f, 0.75f, 0.0f), Eigen::Vector2f(0.5f, 0.2f), "Start Level",  std::bind(&My_viewer::start_level, this));
+            _buttons[int(Level_state::Before_start)].push_back(boost::shared_ptr<Draggable_button>(button));
+        }
+
+        // After finish screen
+        {
+            Draggable_button * button = new Draggable_button(Eigen::Vector3f(0.25f, 0.25f, 0.0f), Eigen::Vector2f(0.25f, 0.1f), "Next Level",  std::bind(&My_viewer::start_level, this));
+            _buttons[int(Level_state::After_finish)].push_back(boost::shared_ptr<Draggable_button>(button));
+        }
+
+        {
+            Draggable_button * button = new Draggable_button(Eigen::Vector3f(0.50f, 0.25f, 0.0f), Eigen::Vector2f(0.25f, 0.1f), "Show Statistics",  std::bind(&My_viewer::change_state_to_statistics, this));
+            _buttons[int(Level_state::After_finish)].push_back(boost::shared_ptr<Draggable_button>(button));
+        }
+
+        {
+            Draggable_button * button = new Draggable_button(Eigen::Vector3f(0.75f, 0.25f, 0.0f), Eigen::Vector2f(0.25f, 0.1f), "Quit",  std::bind(&My_viewer::start_level, this));
+            _buttons[int(Level_state::After_finish)].push_back(boost::shared_ptr<Draggable_button>(button));
+        }
+
+        {
+            Draggable_label * label = new Draggable_label(Eigen::Vector3f(0.5f, 0.8f, 0.0f), Eigen::Vector2f(0.8f, 0.3f), "Level finished!");
+            _labels[int(Level_state::After_finish)].push_back(boost::shared_ptr<Draggable_label>(label));
+        }
+
+        // Statistics
+        {
+            Draggable_statistics stat(Eigen::Vector3f(0.5f, 0.5f, 0.0f), Eigen::Vector2f(0.3f, 0.25f), "Temp.");
+            _statistics[int(Level_state::Statistics)].push_back(stat);
+        }
+
+        {
+            Draggable_button * button = new Draggable_button(Eigen::Vector3f(0.25f, 0.25f, 0.0f), Eigen::Vector2f(0.25f, 0.1f), "Back",  std::bind(&My_viewer::return_from_stats, this));
+            _buttons[int(Level_state::Statistics)].push_back(boost::shared_ptr<Draggable_button>(button));
+        }
+
     }
 
 public Q_SLOTS:
@@ -1577,17 +2000,69 @@ public Q_SLOTS:
 
     void handle_game_state_change()
     {
-        if (_core.get_previous_game_state() == Core::Game_state::Unstarted && _core.get_game_state() == Core::Game_state::Running)
+        if ((_core.get_previous_game_state() == Core::Game_state::Unstarted ||
+             _core.get_previous_game_state() == Core::Game_state::Finished) &&
+                _core.get_game_state() == Core::Game_state::Running)
         {
             // show a "Start!" sort of message
             std::cout << __PRETTY_FUNCTION__ << " starting the game" << std::endl;
+
+            _level_state = Level_state::Running;
+
+            update_draggable_to_level_element();
+            update_active_draggables();
         }
         else if (_core.get_previous_game_state() == Core::Game_state::Running && _core.get_game_state() == Core::Game_state::Finished)
         {
             // show score etc. on a screen that allows "replay", "next level" etc.
             std::cout << __PRETTY_FUNCTION__ << " finishing the game" << std::endl;
-            set_simulation_state(false);
+//            set_simulation_state(false);
+
+            _level_state = Level_state::After_finish;
+
+            QTimer::singleShot(3000, this, SLOT(show_afterstate_ui_elements()));
+
+            std::string const score("0072854");
+            _particle_systems[int(Level_state::After_finish)].clear();
+            _particle_systems[int(Level_state::After_finish)].push_back(Targeted_particle_system(3.0f));
+            _particle_systems[int(Level_state::After_finish)].back().generate(score);
+
+            update_draggable_to_level_element();
+            update_active_draggables();
         }
+    }
+
+    void show_afterstate_ui_elements()
+    {
+
+        for (boost::shared_ptr<Draggable_button> const& button : _buttons[int(Level_state::After_finish)])
+        {
+            button->set_visible(true);
+        }
+
+        for (boost::shared_ptr<Draggable_label> const& label : _labels[int(Level_state::After_finish)])
+        {
+            label->set_visible(true);
+        }
+
+        update_draggable_to_level_element();
+        update_active_draggables();
+    }
+
+    void change_state_to_statistics()
+    {
+        _level_state = Level_state::Statistics;
+
+        update_draggable_to_level_element();
+        update_active_draggables();
+    }
+
+    void return_from_stats()
+    {
+        _level_state = Level_state::After_finish;
+
+        update_draggable_to_level_element();
+        update_active_draggables();
     }
 
 private:
@@ -1603,7 +2078,8 @@ private:
     Selection _selection;
     Level_element * _selected_level_element;
     Ui_state _ui_state;
-//    bool _is_dragging;
+    Level_state _level_state;
+
     QPoint _dragging_start;
     Eigen::Vector3f _dragging_start_3d;
     int _picked_index;
@@ -1622,6 +2098,18 @@ private:
     std::vector<Draggable*> _active_draggables;
 
     std::unordered_map<Draggable*, Level_element*> _draggable_to_level_element;
+
+//    std::vector< boost::shared_ptr<Draggable_button> > _buttons;
+
+    std::unordered_map<int, std::vector< boost::shared_ptr<Draggable_button> > > _buttons;
+
+    std::unordered_map<int, std::vector< boost::shared_ptr<Draggable_label> > > _labels;
+
+    std::unordered_map<int, std::vector<Draggable_statistics> > _statistics;
+
+    std::unordered_map<int, std::vector<Targeted_particle_system> > _particle_systems;
+
+    QTimer _score_animation;
 };
 
 

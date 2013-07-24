@@ -535,7 +535,7 @@ public:
 
     void draw_level_elements(Level_data const& level_data) const
     {
-        for (Level_element * element : level_data._level_elements)
+        for (boost::shared_ptr<Level_element> const& element : level_data._level_elements)
         {
             element->accept(&_level_element_draw_visitor);
         }
@@ -551,7 +551,7 @@ public:
 
     void draw_elements_ui(Level_data const& level_data) const
     {
-        for (Level_element * element : level_data._level_elements)
+        for (boost::shared_ptr<Level_element> const& element : level_data._level_elements)
         {
             element->accept(&_level_element_ui_draw_visitor);
         }

@@ -484,6 +484,11 @@ public:
         _first_release = first_release;
     }
 
+    int get_num_released_molecules() const
+    {
+        return _num_released_molecules;
+    }
+
     void accept(Level_element_visitor const* visitor) override
     {
         visitor->visit(this);

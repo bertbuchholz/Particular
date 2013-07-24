@@ -92,4 +92,6 @@ HEADERS += \
     State.h \
     End_condition.h \
     Level_data.h \
-    Particle_system.h
+    Particle_system.h \
+    unique_ptr_serialization.h \
+    Sensor_data.h

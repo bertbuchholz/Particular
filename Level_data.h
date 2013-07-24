@@ -1,6 +1,8 @@
 #ifndef LEVEL_DATA_H
 #define LEVEL_DATA_H
 
+#include <boost/serialization/shared_ptr.hpp>
+
 #include "Atom.h"
 #include "Level_elements.h"
 #include "End_condition.h"
@@ -33,8 +35,8 @@ public:
     std::vector<Molecule_releaser*> _molecule_releasers;
     std::vector<Particle_system_element*> _particle_system_elements;
 
-    std::vector<Level_element*> _level_elements;
-//    std::vector< std::unique_ptr<Level_element> > _level_elements;
+//    std::vector<Level_element*> _level_elements;
+    std::vector< boost::shared_ptr<Level_element> > _level_elements;
 
     std::vector<End_condition*> _end_conditions;
 };

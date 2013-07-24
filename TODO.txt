@@ -60,6 +60,7 @@ Gaming part
 
 - Find representation for portals, molecule releasers and heat elements
 
+- Don't change scores once game_state is Finished, but possibly leave the physics running
 
 Done:
 D - Store connections in molecules

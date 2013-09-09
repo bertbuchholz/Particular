@@ -9,6 +9,7 @@
 #include <Eigen/Geometry>
 
 //#include <boost/optional.hpp>
+#include <boost/serialization/map.hpp>
 #include <boost/archive/xml_oarchive.hpp>
 #include <boost/archive/xml_iarchive.hpp>
 
@@ -1068,7 +1069,10 @@ public:
 
 //        std::cout << "Parameter_list::save: " << out_file << std::endl;
 
-        oa << BOOST_SERIALIZATION_NVP(_level_data);
+//        oa << BOOST_SERIALIZATION_NVP(_level_data);
+
+//        oa << BOOST_SERIALIZATION_NVP(*this);
+        oa << boost::serialization::make_nvp("Core", *this);
 
         out_file.close();
     }
@@ -1084,7 +1088,10 @@ public:
 
         try
         {
-            ia >> BOOST_SERIALIZATION_NVP(_level_data);
+//            ia >> BOOST_SERIALIZATION_NVP(_level_data);
+//            ia >> BOOST_SERIALIZATION_NVP(*this);
+            ia >> boost::serialization::make_nvp("Core", *this);
+
         }
         catch (boost::archive::archive_exception & e)
         {
@@ -1126,6 +1133,21 @@ public:
         _external_forces["gravity"]._force[2] = -parameters["gravity"]->get_value<float>();
     }
 
+    void update_parameter_list(Parameter_list & parameters) const
+    {
+        parameters["rotation_damping"]->set_value(_rotation_damping);
+        parameters["translation_damping"]->set_value(_translation_damping);
+        parameters["rotation_fluctuation"]->set_value(_rotation_fluctuation);
+        parameters["translation_fluctuation"]->set_value(_translation_fluctuation);
+
+        auto iter = _external_forces.find("gravity");
+
+        if (iter != _external_forces.end())
+        {
+            parameters["gravity"]->set_value(-iter->second._force[2]);
+        }
+    }
+
     static Parameter_list get_parameters()
     {
         Parameter_list parameters;
@@ -1157,10 +1179,62 @@ public:
     }
 
     template<class Archive>
-    void serialize(Archive & ar, const unsigned int /* version */)
+    void serialize(Archive & ar, const unsigned int version)
     {
         ar & BOOST_SERIALIZATION_NVP(_level_data);
+
+        if (version > 0)
+        {
+            ar & BOOST_SERIALIZATION_NVP(_translation_damping);
+            ar & BOOST_SERIALIZATION_NVP(_rotation_damping);
+
+            ar & BOOST_SERIALIZATION_NVP(_rotation_fluctuation);
+            ar & BOOST_SERIALIZATION_NVP(_translation_fluctuation);
+
+            ar & BOOST_SERIALIZATION_NVP(_external_forces);
+        }
     }
+
+//    template<class Archive>
+//    void save(Archive & ar, const unsigned int version) const
+//    {
+//        ar << BOOST_SERIALIZATION_NVP(_level_data);
+
+//        if (version > 0)
+//        {
+//            ar << BOOST_SERIALIZATION_NVP(_translation_damping);
+//            ar << BOOST_SERIALIZATION_NVP(_rotation_damping);
+
+//            ar << BOOST_SERIALIZATION_NVP(_rotation_fluctuation);
+//            ar << BOOST_SERIALIZATION_NVP(_translation_fluctuation);
+
+//            ar << BOOST_SERIALIZATION_NVP(_external_forces);
+//        }
+//    }
+
+//    template<class Archive>
+//    void load(Archive & ar, const unsigned int version)
+//    {
+//        ar >> BOOST_SERIALIZATION_NVP(_level_data);
+
+//        if (version > 0)
+//        {
+//            ar >> BOOST_SERIALIZATION_NVP(_translation_damping);
+//            ar >> BOOST_SERIALIZATION_NVP(_rotation_damping);
+
+//            ar >> BOOST_SERIALIZATION_NVP(_rotation_fluctuation);
+//            ar >> BOOST_SERIALIZATION_NVP(_translation_fluctuation);
+
+//            ar >> BOOST_SERIALIZATION_NVP(_external_forces);
+//        }
+//    }
+
+//    template<class Archive>
+//    void serialize(Archive & ar, const unsigned int file_version)
+//    {
+//        boost::serialization::split_member(ar, *this, file_version);
+//    }
+
 
 signals:
     void game_state_changed();
@@ -1174,7 +1248,7 @@ private:
     bool _use_indicators;
     std::vector<Force_indicator> _indicators;
 
-    std::unordered_map<std::string, External_force> _external_forces;
+    std::map<std::string, External_force> _external_forces;
 
     std::vector<Molecule_external_force> _molecule_external_forces;
 
@@ -1210,5 +1284,7 @@ private:
 };
 
 REGISTER_BASE_CLASS_WITH_PARAMETERS(Core);
+
+BOOST_CLASS_VERSION(Core, 1);
 
 #endif // CORE_H

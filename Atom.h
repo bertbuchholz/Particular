@@ -612,6 +612,13 @@ struct External_force
 {
     Eigen::Vector3f _origin;
     Eigen::Vector3f _force;
+
+    template<class Archive>
+    void serialize(Archive & ar, const unsigned int file_version)
+    {
+        ar & BOOST_SERIALIZATION_NVP(_origin);
+        ar & BOOST_SERIALIZATION_NVP(_force);
+    }
 };
 
 struct Molecule_external_force

@@ -35,7 +35,7 @@ public:
     enum class Plane { Neg_X = 0, Neg_Y, Neg_Z, Pos_X, Pos_Y, Pos_Z };
 
     template<class Archive>
-    void serialize(Archive & ar, const unsigned int /* version */)
+    void serialize(Archive & ar, const unsigned int version)
     {
         ar & BOOST_SERIALIZATION_NVP(_game_field_borders);
         ar & BOOST_SERIALIZATION_NVP(_barriers);
@@ -46,6 +46,11 @@ public:
 
         ar & BOOST_SERIALIZATION_NVP(_available_elements);
         ar & BOOST_SERIALIZATION_NVP(_score_time_factor);
+
+        if (version > 0)
+        {
+            ar & BOOST_SERIALIZATION_NVP(_background_name);
+        }
     }
 
     bool validate_elements()
@@ -97,6 +102,7 @@ public:
     void set_parameters(Parameter_list const& parameters)
     {
         _score_time_factor = parameters["score_time_factor"]->get_value<float>();
+        _background_name = parameters["background_name"]->get_value<std::string>();
 
         Parameter_list const* available_list = parameters.get_child("Available elements");
 
@@ -111,6 +117,7 @@ public:
         Parameter_list result = get_parameters();
 
         result["score_time_factor"]->set_value_no_update(_score_time_factor);
+        result["background_name"]->set_value_no_update(_background_name);
 
         Parameter_list * available_list = result.get_child("Available elements");
 
@@ -126,6 +133,8 @@ public:
     {
         Parameter_list parameters;
         parameters.add_parameter(new Parameter("score_time_factor", 60.0f, 1.0f, 3000.0f));
+
+        parameters.add_parameter(new Parameter("background_name", std::string("iss_interior_1.png")));
 
         Parameter_list * available_list = parameters.add_child("Available elements");
         available_list->add_parameter(new Parameter("Box_barrier", 0, 0, 10));
@@ -165,10 +174,12 @@ public:
     std::map<std::string, int> _available_elements;
 
     float _score_time_factor;
+
+    std::string _background_name;
 };
 
 REGISTER_BASE_CLASS_WITH_PARAMETERS(Level_data);
 
-BOOST_CLASS_VERSION(Level_data, 0)
+BOOST_CLASS_VERSION(Level_data, 1)
 
 #endif // LEVEL_DATA_H

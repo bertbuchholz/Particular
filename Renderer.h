@@ -32,6 +32,8 @@ public:
 //    virtual void render(std::vector<Molecule> const& molecules, StandardCamera const* = nullptr) const = 0;
     virtual void render(Level_data const& level_data, float const time, StandardCamera const* = nullptr) const = 0;
 
+    virtual void update(Level_data const& /* level_data */) {}
+
     virtual void set_parameters(Parameter_list const& /* parameters */)
     { }
 
@@ -797,6 +799,13 @@ public:
         _temperature_fbo = std::unique_ptr<QGLFramebufferObject>(new QGLFramebufferObject(size, QGLFramebufferObject::Depth));
 
         _level_element_draw_visitor.resize(size);
+    }
+
+    void update(Level_data const& level_data) override
+    {
+        glDeleteTextures(1, &_backdrop_texture);
+        Frame_buffer<Color> backdrop_tex_fb = convert<QColor_to_Color_converter, Color>(QImage(Data_config::get_instance()->get_qdata_path() + "/textures/" + QString::fromStdString(level_data._background_name)));
+        _backdrop_texture = create_texture(backdrop_tex_fb);
     }
 
     void draw_atom(Atom const& atom, float const scale, float const alpha = 1.0f) const

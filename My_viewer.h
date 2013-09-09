@@ -191,6 +191,8 @@ public:
 
         _current_level_name = filename;
 
+        _renderer->update(_core.get_level_data());
+
         update_game_camera();
 
         update();
@@ -333,8 +335,9 @@ public:
 
     void change_renderer()
     {
-        _molecule_renderer = std::unique_ptr<Molecule_renderer>(Parameter_registry<Molecule_renderer>::get_class_from_single_select_instance_2(_parameters.get_child("Molecule Renderer")));
-        _molecule_renderer->init(context(), size());
+        _renderer = std::unique_ptr<Molecule_renderer>(Parameter_registry<Molecule_renderer>::get_class_from_single_select_instance_2(_parameters.get_child("Molecule Renderer")));
+        _renderer->init(context(), size());
+        _renderer->update(_core.get_level_data());
         update();
     }
 
@@ -681,7 +684,7 @@ public:
 
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
-        _molecule_renderer->render(_core.get_level_data(), _core.get_current_time(), _my_camera);
+        _renderer->render(_core.get_level_data(), _core.get_current_time(), _my_camera);
 
         // debug displays
 
@@ -2162,7 +2165,7 @@ public:
 
     void resizeEvent(QResizeEvent *ev)
     {
-        _molecule_renderer->resize(ev->size());
+        _renderer->resize(ev->size());
 
         generate_ui_textures();
 
@@ -2667,7 +2670,7 @@ private:
 
     StandardCamera * _my_camera;
 
-    std::unique_ptr<Molecule_renderer> _molecule_renderer;
+    std::unique_ptr<Molecule_renderer> _renderer;
 
     std::vector<Draggable*> _active_draggables;
 

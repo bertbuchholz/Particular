@@ -10,6 +10,9 @@ public:
 
     enum class State { Not_finished, Finished };
 
+    End_condition() : _type(Type::Or)
+    { }
+
     virtual ~End_condition() {}
 
     virtual State check_state(std::list<Molecule> const& /*molecules*/) const = 0;
@@ -37,10 +40,11 @@ private:
 class Molecule_capture_condition : public End_condition
 {
 public:
-    Molecule_capture_condition() {}
+    Molecule_capture_condition() : _min_captured_molecules(10), _num_captured_molecules(0)
+    { }
 
     Molecule_capture_condition(int const min_captured_molecules) :
-        _min_captured_molecules(min_captured_molecules)
+        _min_captured_molecules(min_captured_molecules), _num_captured_molecules(0)
     { }
 
     State check_state(std::list<Molecule> const& /*molecules*/) const override

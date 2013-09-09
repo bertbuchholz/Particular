@@ -24,11 +24,12 @@
 
 #include "Draggable.h"
 #include "Level_element_draw_visitor.h"
+#include "Progress.h"
 //#include "State.h"
 
 
 
-class My_viewer : public Options_viewer
+class My_viewer : public Options_viewer // , public QGLFunctions
 {
     Q_OBJECT
 
@@ -40,10 +41,12 @@ public:
     enum class Ui_state { Level_editor, Playing };
     enum class Level_state { Main_menu, Before_start, Running, After_finish, Statistics };
 
-    My_viewer() :
-        _mouse_state(Mouse_state::None), _selection(Selection::None), _selected_level_element(nullptr), _level_state(Level_state::Before_start)
+    My_viewer(QGLFormat const& format = QGLFormat()) : Options_viewer(format),
+        _mouse_state(Mouse_state::None), _selection(Selection::None), _selected_level_element(nullptr), _level_state(Level_state::Main_menu)
     {
         std::function<void(void)> update = std::bind(static_cast<void (My_viewer::*)()>(&My_viewer::update), this);
+
+        _parameters.add_parameter(new Parameter("levels", std::string("")));
 
         _parameters.add_parameter(new Parameter("physics_timestep_ms", 10, 1, 100, std::bind(&My_viewer::update_physics_timestep, this)));
         _parameters.add_parameter(new Parameter("physics_speed", 1.0f, -10.0f, 100.0f, update));
@@ -63,6 +66,8 @@ public:
 
         Parameter_registry<Core>::create_normal_instance("Core", &_parameters, std::bind(&My_viewer::change_core_settings, this));
 
+        Parameter_registry<Level_data>::create_normal_instance("Level_data", &_parameters, std::bind(&My_viewer::change_level_data_settings, this));
+
         _parameters.add_parameter(new Parameter("draw_closest_force", true, update));
 
         _parameters.add_parameter(new Parameter("indicator_scale", 0.1f, 0.01f, 10.0f, update));
@@ -76,11 +81,12 @@ public:
                                                   "Box_barrier",
                                                   "Brownian_box",
                                                   "Box_portal",
+                                                  "Sphere_portal",
 //                                                  "Blow_barrier",
 //                                                  "Moving_box_barrier",
                                                   "Molecule_releaser",
-                                                  "Atom_cannon",
-//                                                  "Charged_barrier",
+//                                                  "Atom_cannon",
+                                                  "Charged_barrier",
                                                   "Tractor_barrier" };
 
         _parameters.add_parameter(new Parameter("particle_type", 0, particle_types, update));
@@ -90,8 +96,10 @@ public:
         _parameters.add_parameter(new Parameter("ui_state", 0, ui_states, std::bind(&My_viewer::change_ui_state, this)));
 
         _parameters.add_parameter(new Parameter("Toggle simulation", false, std::bind(&My_viewer::toggle_simulation, this)));
-        _parameters.add_parameter(Parameter::create_button("Save state", std::bind(&My_viewer::save_state, this)));
-        _parameters.add_parameter(Parameter::create_button("Load state", std::bind(&My_viewer::load_state, this)));
+        _parameters.add_parameter(Parameter::create_button("Save level", std::bind(&My_viewer::save_level, this)));
+        _parameters.add_parameter(Parameter::create_button("Load level", std::bind(static_cast<void (My_viewer::*)()>(&My_viewer::load_level), this)));
+        _parameters.add_parameter(Parameter::create_button("Save settings", std::bind(&My_viewer::save_parameters_with_check, this)));
+        _parameters.add_parameter(Parameter::create_button("Load settings", std::bind(&My_viewer::restore_parameters_with_check, this)));
         _parameters.add_parameter(Parameter::create_button("Clear", std::bind(&My_viewer::clear, this)));
         _parameters.add_parameter(Parameter::create_button("Start Level", std::bind(&My_viewer::start_level, this)));
         _parameters.add_parameter(Parameter::create_button("Reset Level", std::bind(&My_viewer::reset_level, this)));
@@ -106,54 +114,86 @@ public:
         change_ui_state();
 
         connect(&_core, SIGNAL(game_state_changed()), this, SLOT(handle_game_state_change()));
+
+        setup_fonts();
     }
 
-    void save_state()
+    void setup_fonts()
+    {
+        int id = QFontDatabase::addApplicationFont(Data_config::get_instance()->get_qdata_path() +  "/fonts/Matiz.ttf");
+        QString family = QFontDatabase::applicationFontFamilies(id).at(0);
+        _main_font = QFont(family);
+
+        id = QFontDatabase::addApplicationFont(Data_config::get_instance()->get_qdata_path() +  "/fonts/LondrinaOutline-Regular.otf");
+        family = QFontDatabase::applicationFontFamilies(id).at(0);
+        _particle_font = QFont(family);
+    }
+
+    void save_level()
     {
         QString filename;
 
         if (QApplication::keyboardModifiers() & Qt::ControlModifier)
         {
-            filename = "state.save";
+            filename = "state.data";
         }
         else
         {
             filename = QFileDialog::getSaveFileName(this, tr("Save File"),
                                                     ".",
-                                                    tr("State File (*.save)"));
+                                                    tr("State File (*.data)"));
         }
 
         if (!filename.isEmpty())
         {
-            _core.save_state(filename.toStdString());
+            _core.save_level(filename.toStdString());
         }
     }
 
-    void load_state()
+    void load_level()
     {
         QString filename;
 
         if (QApplication::keyboardModifiers() & Qt::ControlModifier)
         {
-            filename = "state.save";
+            filename = "state.data";
         }
         else
         {
             filename = QFileDialog::getOpenFileName(this, tr("Save File"),
                                                     ".",
-                                                    tr("State File (*.save)"));
+                                                    tr("State File (*.data)"));
         }
 
         if (!filename.isEmpty())
         {
-            clear();
-            _core.load_state(filename.toStdString());
-            update_draggable_to_level_element();
-            update_active_draggables();
-            change_renderer();
-            change_core_settings();
-            update();
+            load_level(filename.toStdString());
         }
+    }
+
+    void load_level(std::string const& filename)
+    {
+        std::cout << __PRETTY_FUNCTION__ << " " << filename << std::endl;
+
+        clear();
+        set_simulation_state(false);
+        _core.load_level(filename);
+        _core.reset_level();
+
+        update_level_element_buttons();
+
+        update_draggable_to_level_element();
+        update_active_draggables();
+        change_renderer();
+        change_core_settings();
+
+        _parameters.get_child(_core.get_level_data().name())->load(_core.get_level_data().get_current_parameters());
+
+        _current_level_name = filename;
+
+        update_game_camera();
+
+        update();
     }
 
     void restore_parameters() override
@@ -167,11 +207,6 @@ public:
     {
 //        assert(_level_state == Level_state::Before_start);
 
-        if (!animationIsStarted())
-        {
-            startAnimation();
-        }
-
         _core.start_level();
         set_simulation_state(true);
 
@@ -180,15 +215,23 @@ public:
 
     void load_next_level()
     {
-//        assert(_level_state == Level_state::Before_start);
+        std::cout << __PRETTY_FUNCTION__ << " next level: " << _progress.last_level << std::endl;
 
-        _level_state = Level_state::Before_start;
+        if (_level_names.size() <= _progress.last_level)
+        {
+            std::cout << "No more levels." << std::endl;
+            return;
+        }
 
         set_simulation_state(false);
 
-        // TODO: load level file
+        std::string const filename = (_level_names[_progress.last_level] + ".data").toStdString();
+
+        load_level(filename);
 
         reset_level();
+
+        change_level_state(Level_state::Before_start);
 
         update();
     }
@@ -199,6 +242,77 @@ public:
         update_draggable_to_level_element();
         update_active_draggables();
         update();
+    }
+
+    void update_level_element_buttons()
+    {
+        int i = 0;
+
+        _buttons[int(Level_state::Running)].clear();
+
+        for (auto const& iter : _core.get_level_data()._available_elements)
+        {
+            auto const& image_iter = _element_images.find(iter.first);
+
+            if (image_iter != _element_images.end()) continue;
+
+            _element_images[iter.first] = QImage(Data_config::get_instance()->get_qdata_path() +  "/textures/button_" + QString::fromStdString(iter.first) + ".png");
+        }
+
+        for (auto const& iter : _core.get_level_data()._available_elements)
+        {
+            if (iter.second > 0)
+            {
+                Eigen::Vector3f pos(0.05f + i * 0.06f, 0.95f, 0.0f);
+                Eigen::Vector2f size(0.04f, 0.04f * aspectRatio());
+
+                boost::shared_ptr<Draggable_button> button(new Draggable_button(pos, size, "", std::bind(&My_viewer::element_button_pressed, this, std::placeholders::_1), iter.first));
+
+//                QImage button_img(100, 100, QImage::Format_ARGB32);
+//                button_img.fill(Qt::black);
+
+//                button->set_texture(bindTexture(img));
+
+                QImage button_img = _element_images[iter.first];
+
+                QPainter p(&button_img);
+
+                QFont font = _main_font;
+        //        font.setWeight(QFont::Bold);
+                font.setPixelSize(100);
+//                font.setPointSizeF(20.0f);
+                p.setFont(font);
+
+                p.setPen(QColor(0, 0, 0));
+
+                p.drawText(25, 200, QString("%1").arg(iter.second));
+
+//                p.drawText(QRect(5, 5, 90, 90), Qt::AlignBottom | Qt::AlignRight, QString("%1").arg(iter.second));
+
+                deleteTexture(button->get_texture());
+                button->set_texture(bindTexture(button_img));
+
+                _buttons[int(Level_state::Running)].push_back(button);
+
+                ++i;
+            }
+        }
+
+        update_draggable_to_level_element();
+        update_active_draggables();
+    }
+
+    void element_button_pressed(std::string const& type)
+    {
+        _core.get_level_data()._available_elements[type] -= 1;
+
+        float top_pos = _core.get_level_data()._game_field_borders[Level_data::Plane::Pos_Z]->get_position()[2];
+
+        Eigen::Vector3f const position(0.0f, 0.0f, top_pos + 10.0f);
+
+        add_element(position, type);
+
+        update_level_element_buttons();
     }
 
     void change_game_field_borders()
@@ -230,16 +344,48 @@ public:
         update();
     }
 
-    class Game_camera_constraint : public qglviewer::WorldConstraint
+    void change_level_data_settings()
+    {
+        _core.get_level_data().set_parameters(*_parameters.get_child("Level_data"));
+        update();
+    }
+
+    class Game_camera_constraint_old : public qglviewer::Constraint
     {
     public:
-//        virtual void constrainTranslation(qglviewer::Vec & t, Frame * const frame)
-//        {
-//            // Express t in the world coordinate system.
-//            const qglviewer::Vec tWorld = frame->inverseTransformOf(t);
-//            if (frame->position().z + tWorld.z < 0.0) // check the new fr z coordinate
+        Game_camera_constraint_old(std::map<Level_data::Plane, Plane_barrier*> const& game_field_borders) : _game_field_borders(game_field_borders)
+        { }
+
+        void constrainTranslation(qglviewer::Vec & t, qglviewer::Frame * const frame) override
+        {
+            // Express t in the world coordinate system.
+            const qglviewer::Vec tWorld = frame->inverseTransformOf(t);
+            if (frame->position().z + tWorld.z > _game_field_borders[Level_data::Plane::Pos_Z]->get_position()[2])
+            {
+                std::cout << frame->position().z << " "
+                          << tWorld.z << " "
+                          << _game_field_borders[Level_data::Plane::Pos_Z]->get_position()[2] << "\n";
 //                t.z = frame->transformOf(-frame->position().z); // t.z is clamped so that next z position is 0.0
-//        }
+                t.z = _game_field_borders[Level_data::Plane::Pos_Z]->get_position()[2] - frame->position().z;
+
+                std::cout << "new t.z: " << t.z << "\n";
+
+            }
+            if (frame->position().z + tWorld.z < _game_field_borders[Level_data::Plane::Neg_Z]->get_position()[2])
+            {
+                t.z = _game_field_borders[Level_data::Plane::Neg_Z]->get_position()[2] - frame->position().z;
+            }
+            if (frame->position().x + tWorld.x > _game_field_borders[Level_data::Plane::Pos_X]->get_position()[0])
+            {
+                t.x = _game_field_borders[Level_data::Plane::Pos_X]->get_position()[0] - frame->position().x;
+            }
+            if (frame->position().x + tWorld.x < _game_field_borders[Level_data::Plane::Neg_X]->get_position()[0])
+            {
+                t.x = _game_field_borders[Level_data::Plane::Neg_X]->get_position()[0] - frame->position().x;
+            }
+
+            t.y = 0.0f;
+        }
 
         void constrainRotation(qglviewer::Quaternion & rotation, qglviewer::Frame * const frame) override
         {
@@ -247,11 +393,128 @@ public:
 
             std::cout << __PRETTY_FUNCTION__ << " " << rotation_axis.x << " " << rotation_axis.y << " " << rotation_axis.z << std::endl;
 
-            into_range(rotation_axis.x, -0.2, 0.2);
-            into_range(rotation_axis.y, -0.2, 0.2);
+            rotation_axis.y = 0.0f;
+
+//            into_range(rotation_axis.x, -0.2, 0.2);
+//            into_range(rotation_axis.y, -0.2, 0.2);
             rotation.setAxisAngle(frame->transformOf(rotation_axis), rotation.angle());
         }
+
+    private:
+        std::map<Level_data::Plane, Plane_barrier*> _game_field_borders;
     };
+
+    class Game_camera_constraint : public qglviewer::Constraint
+    {
+    public:
+        Game_camera_constraint(std::map<Level_data::Plane, Plane_barrier*> const& game_field_borders) : _game_field_borders(game_field_borders)
+        { }
+
+        void constrainTranslation(qglviewer::Vec & t, qglviewer::Frame * const frame) override
+        {
+            float const game_field_width_x = _game_field_borders[Level_data::Plane::Pos_X]->get_position()[0] - _game_field_borders[Level_data::Plane::Neg_X]->get_position()[0];
+            float const game_field_width_z = _game_field_borders[Level_data::Plane::Pos_Z]->get_position()[2] - _game_field_borders[Level_data::Plane::Neg_Z]->get_position()[2];
+
+            float const margin = 25.0f;
+
+            float const full_width[2] = { game_field_width_x + 2.0f * margin, game_field_width_z + 2.0f * margin };
+
+            float const aspect_ratio = 1.333f;
+
+            float const fov_horizontal = 90.0f / 360.0f * 2.0f * M_PI;
+            float const fov_vertical = fov_horizontal / aspect_ratio;
+
+            float const y_max = -std::max(full_width[0] * 0.5f / std::tan(fov_horizontal * 0.5f),
+                    full_width[1] * 0.5f / std::tan(fov_vertical * 0.5f));
+
+            float const y_min = y_max * 0.5f;
+
+            // Express t in the world coordinate system.
+            const qglviewer::Vec tWorld = frame->inverseTransformOf(t);
+
+            Eigen::Vector3f pyramid_tip_point(0.0f, y_max, 0.0f);
+
+            float const z_offset = std::tan(fov_vertical * 0.5f) * (y_max - y_min);
+            float const x_offset = std::tan(fov_horizontal * 0.5f) * (y_max - y_min);
+
+            std::vector<Eigen::Vector3f> corner_points;
+
+            corner_points.push_back(Eigen::Vector3f( x_offset, y_min,  z_offset));
+            corner_points.push_back(Eigen::Vector3f(-x_offset, y_min,  z_offset));
+            corner_points.push_back(Eigen::Vector3f(-x_offset, y_min, -z_offset));
+            corner_points.push_back(Eigen::Vector3f( x_offset, y_min, -z_offset));
+
+            std::vector< Eigen::Hyperplane<float, 3> > planes;
+
+            planes.push_back(Eigen::Hyperplane<float, 3>(Eigen::Vector3f(0.0f, 1.0f, 0.0f), pyramid_tip_point));
+
+            planes.push_back(Eigen::Hyperplane<float, 3>((corner_points[3] - pyramid_tip_point).cross(corner_points[0] - pyramid_tip_point).normalized(), pyramid_tip_point));
+            planes.push_back(Eigen::Hyperplane<float, 3>((corner_points[0] - pyramid_tip_point).cross(corner_points[1] - pyramid_tip_point).normalized(), pyramid_tip_point));
+            planes.push_back(Eigen::Hyperplane<float, 3>((corner_points[1] - pyramid_tip_point).cross(corner_points[2] - pyramid_tip_point).normalized(), pyramid_tip_point));
+            planes.push_back(Eigen::Hyperplane<float, 3>((corner_points[2] - pyramid_tip_point).cross(corner_points[3] - pyramid_tip_point).normalized(), pyramid_tip_point));
+
+            Eigen::Vector3f const new_world = QGLV2Eigen(frame->position() + tWorld);
+
+            std::vector<int> front_planes;
+
+            for (size_t i = 0; i < planes.size(); ++i)
+            {
+                if (planes[i].signedDistance(new_world) > 0.0f)
+                {
+                    front_planes.push_back(i);
+                }
+            }
+
+            Eigen::Vector3f constrained_world;
+
+            if (front_planes.size() == 4)
+            {
+                constrained_world = pyramid_tip_point;
+            }
+            else if (front_planes.size() == 3)
+            {
+                Eigen::ParametrizedLine<float, 3> const line = plane_plane_intersection(planes[front_planes[0]], planes[front_planes[1]]);
+
+                Eigen::Vector3f const point = line.intersectionPoint(planes[front_planes[2]]);
+
+                constrained_world = point;
+            }
+            else if (front_planes.size() == 2)
+            {
+                Eigen::ParametrizedLine<float, 3> const line = plane_plane_intersection(planes[front_planes[0]], planes[front_planes[1]]);
+
+                constrained_world = line.projection(new_world);
+            }
+            else if (front_planes.size() == 1)
+            {
+//                assert(front_planes.size() == 1);
+
+                constrained_world = planes[front_planes[0]].projection(new_world);
+            }
+
+            if (front_planes.size() > 0)
+            {
+                t = Eigen2QGLV(constrained_world) - frame->position();
+            }
+        }
+
+//        void constrainRotation(qglviewer::Quaternion & rotation, qglviewer::Frame * const frame) override
+//        {
+//            qglviewer::Vec rotation_axis = frame->inverseTransformOf(rotation.axis());
+
+//            std::cout << __PRETTY_FUNCTION__ << " " << rotation_axis.x << " " << rotation_axis.y << " " << rotation_axis.z << std::endl;
+
+//            rotation_axis.y = 0.0f;
+
+////            into_range(rotation_axis.x, -0.2, 0.2);
+////            into_range(rotation_axis.y, -0.2, 0.2);
+//            rotation.setAxisAngle(frame->transformOf(rotation_axis), rotation.angle());
+//        }
+
+    private:
+        std::map<Level_data::Plane, Plane_barrier*> _game_field_borders;
+    };
+
 
     void change_ui_state()
     {
@@ -260,23 +523,34 @@ public:
             _ui_state = Ui_state::Level_editor;
 
             camera()->frame()->setConstraint(nullptr);
+
+            _particle_systems.clear();
         }
         else if (_parameters["ui_state"]->get_value<std::string>() == "Playing")
         {
             _ui_state = Ui_state::Playing;
 
-            Game_camera_constraint * camera_constraint = new Game_camera_constraint;
-            camera_constraint->setTranslationConstraint(qglviewer::AxisPlaneConstraint::PLANE, qglviewer::Vec(0.0f, 1.0f, 0.0f));
-
-//            camera_constraint->setRotationConstraint();
-
-            delete camera()->frame()->constraint();
-            camera()->frame()->setConstraint(camera_constraint);
+            update_game_camera();
         }
 
         update_draggable_to_level_element();
         update_active_draggables();
         update();
+    }
+
+    void update_game_camera()
+    {
+        float const z = 0.5f * (_core.get_level_data()._game_field_borders[Level_data::Plane::Pos_Z]->get_position()[2]
+                + _core.get_level_data()._game_field_borders[Level_data::Plane::Neg_Z]->get_position()[2]);
+
+        _my_camera->setUpVector(qglviewer::Vec(0.0f, 0.0f, 1.0f));
+        _my_camera->setViewDirection(qglviewer::Vec(0.0f, 1.0f, 0.0f));
+        _my_camera->setPosition(qglviewer::Vec(0.0f, -80.0f, z));
+
+        Game_camera_constraint * camera_constraint = new Game_camera_constraint(_core.get_level_data()._game_field_borders); // FIXME: leak
+
+//        delete camera()->frame()->constraint();
+//        camera()->frame()->setConstraint(camera_constraint);
     }
 
     void change_clipping()
@@ -287,11 +561,11 @@ public:
 
     void init() override
     {
+//        initializeGLFunctions();
+
         Base::init();
 
         restoreStateFromFile();
-
-        glPointSize(5.0f);
 
         _physics_timer = new QTimer;
         _physics_timer->setInterval(_parameters["physics_timestep_ms"]->get_value<int>());
@@ -313,24 +587,51 @@ public:
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
+
         setSceneRadius(50.0f);
 
-        const GLubyte* pVersion = glGetString(GL_SHADING_LANGUAGE_VERSION);
-        std::cout << "shader version: " << pVersion << std::endl;
+        const GLubyte* opengl_version = glGetString(GL_VERSION);
+        const GLubyte* shader_version = glGetString(GL_SHADING_LANGUAGE_VERSION);
+
+        std::cout << __PRETTY_FUNCTION__ << " opengl version: " << opengl_version << std::endl;
+        std::cout << __PRETTY_FUNCTION__ << " shader version: " << shader_version << std::endl;
 
 //        GPU_force * gpu_force = new GPU_force(context());
 //        gpu_force->calc_forces(_core.get_molecules());
 
         glEnable(GL_TEXTURE_2D);
 
-        _rotate_tex = bindTexture(QImage("data/textures/rotate.png"));
-        _move_tex = bindTexture(QImage("data/textures/move.png"));
-        _scale_tex = bindTexture(QImage("data/textures/scale.png"));
-        _slider_tex = bindTexture(QImage("data/textures/slider.png"));
+        _rotate_tex = bindTexture(QImage(Data_config::get_instance()->get_qdata_path() + "/textures/rotate.png"));
+        _move_tex = bindTexture(QImage(Data_config::get_instance()->get_qdata_path() + "/textures/move.png"));
+        _scale_tex = bindTexture(QImage(Data_config::get_instance()->get_qdata_path() + "/textures/scale.png"));
+        _slider_tex = bindTexture(QImage(Data_config::get_instance()->get_qdata_path() + "/textures/slider.png"));
+        _particle_tex = bindTexture(QImage(Data_config::get_instance()->get_qdata_path() +  "/textures/particle.png"));
 
         generate_ui_textures();
 
+        init_game();
+
+        update_draggable_to_level_element();
+        update_active_draggables();
+
         startAnimation();
+    }
+
+    void init_game()
+    {
+        restore_parameters();
+
+        _parameters["ui_state"]->set_value(std::string("Playing"));
+
+        _particle_systems[int(_level_state)].push_back(Targeted_particle_system(3.0f));
+        _particle_systems[int(_level_state)].back().generate("I NEED A NAME", _particle_font, QRectF(0.0f, 0.6f, 1.0f, 0.3f));
+
+        QString const level_string = QString::fromStdString(_parameters["levels"]->get_value<std::string>());
+        _level_names = level_string.split(",", QString::SkipEmptyParts);
+
+        update_game_camera();
+
+        load_progress();
     }
 
     void draw_molecules_for_picking()
@@ -376,6 +677,8 @@ public:
 
     void draw() override
     {
+        setup_gl_points(true);
+
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
         _molecule_renderer->render(_core.get_level_data(), _core.get_current_time(), _my_camera);
@@ -386,14 +689,8 @@ public:
 
 //        draw_tree_for_point(Eigen::Vector3f(0.0f, 0.0f, 0.0f));
 
-//        draw_barriers();
-
-//        draw_brownian_elements();
-
-//        draw_portals();
-
-//        draw_molecule_releasers();
-
+        setup_gl_points(false);
+        glPointSize(8.0f);
 
         glDisable(GL_LIGHTING);
         draw_draggables();
@@ -526,17 +823,26 @@ public:
 
             for (boost::shared_ptr<Draggable_button> const& button : _buttons[int(_level_state)])
             {
-                draw_button(button.get(), false);
+                if (button->is_visible())
+                {
+                    draw_button(button.get(), false);
+                }
             }
 
             for (boost::shared_ptr<Draggable_label> const& label : _labels[int(_level_state)])
             {
-                draw_label(label.get());
+                if (label->is_visible())
+                {
+                    draw_label(label.get());
+                }
             }
 
-            for (Draggable_statistics const& stat : _statistics[int(_level_state)])
+            for (auto const& stat : _statistics[int(_level_state)])
             {
-                draw_statistic(stat);
+                if (stat.is_visible())
+                {
+                    draw_statistic(stat);
+                }
             }
 
             stop_normalized_screen_coordinates();
@@ -600,12 +906,49 @@ public:
 
     void draw_statistic(Draggable_statistics const& b)
     {
+        std::vector<float> const& values = b.get_values();
+
+        if (values.empty()) return;
+
         glPushMatrix();
 
         glTranslatef(b.get_position()[0], b.get_position()[1], b.get_position()[2]);
         glScalef(b.get_extent()[0] * 0.5f, b.get_extent()[1] * 0.5f, 1.0f);
 
         draw_textured_quad(b.get_texture());
+
+
+        glScalef(2.0f, 2.0f, 1.0f);
+
+        glTranslatef(-0.5f, -0.5f, 0.0f);
+
+        glColor4f(1.0f, 1.0f, 1.0f, 0.7f);
+
+        glLineWidth(2.0f);
+
+        glTranslatef(0.2f, 0.2f, 0.0f);
+        glScalef(0.7f, 0.6f, 1.0f);
+
+        glBegin(GL_LINE_STRIP);
+
+        size_t i;
+        float const time = values.size() * b.get_normalized_time();
+
+        for (i = 0; i < time; ++i)
+        {
+            glVertex2f(i / float(values.size()), values[i] / b.get_max_value());
+        }
+
+        --i;
+        Eigen::Vector2f v0(i / float(values.size()), values[i] / b.get_max_value());
+        i = std::min(values.size() - 1, i + 1);
+        Eigen::Vector2f v1(i / float(values.size()), values[i] / b.get_max_value());
+
+        float const alpha = time - int(time);
+
+        glVertex2fv(Eigen::Vector2f(v0 * (1.0f - alpha) + v1 * alpha).data());
+
+        glEnd();
 
         glPopMatrix();
     }
@@ -648,6 +991,9 @@ public:
 
     void draw_particle_system(Targeted_particle_system const& system)
     {
+        glDisable(GL_DEPTH_TEST);
+        glDisable(GL_LIGHTING);
+
         glMatrixMode(GL_PROJECTION);
         glPushMatrix();
         glLoadIdentity();
@@ -661,6 +1007,10 @@ public:
         glTranslatef(0.5f, 0.5f, 0.0f);
 
         glScalef(0.5f, 0.5f, 1.0f);
+
+//        glBindTexture(GL_TEXTURE_2D, _particle_tex);
+
+        glPointSize(4.0f * (height()) / (768.0f));
 
         glBegin(GL_POINTS);
 
@@ -804,56 +1154,56 @@ public:
         }
     }
 
-    void draw_closest_force() const
-    {
-        if (_parameters["draw_closest_force"]->get_value<bool>())
-        {
-            Reject_condition reject_cond;
+//    void draw_closest_force() const
+//    {
+//        if (_parameters["draw_closest_force"]->get_value<bool>())
+//        {
+//            Reject_condition reject_cond;
 
-            for (Molecule const& molecule : _core.get_molecules())
-            {
-                reject_cond.molecule_id = molecule.get_id();
+//            for (Molecule const& molecule : _core.get_molecules())
+//            {
+//                reject_cond.molecule_id = molecule.get_id();
 
-                for (Atom const& a : molecule._atoms)
-                {
-                    if (std::abs(a._charge) < 0.001f) continue;
+//                for (Atom const& a : molecule._atoms)
+//                {
+//                    if (std::abs(a._charge) < 0.001f) continue;
 
-                    boost::optional<Core::Molecule_atom_hash::Point_data const&> opt_pd = _core.get_molecule_hash().get_closest_point(a._r, reject_cond);
+//                    boost::optional<Core::Molecule_atom_hash::Point_data const&> opt_pd = _core.get_molecule_hash().get_closest_point(a._r, reject_cond);
 
-                    if (!opt_pd) continue;
+//                    if (!opt_pd) continue;
 
-                    Core::Molecule_atom_hash::Point_data const& pd = opt_pd.get();
+//                    Core::Molecule_atom_hash::Point_data const& pd = opt_pd.get();
 
-                    boost::optional<Molecule const&> opt_molecule = _core.get_molecule(pd.data.m_id);
+//                    boost::optional<Molecule const&> opt_molecule = _core.get_molecule(pd.data.m_id);
 
-                    assert(opt_molecule);
+//                    assert(opt_molecule);
 
-                    Atom const& closest_atom = opt_molecule->_atoms[pd.data.a_id];
+//                    Atom const& closest_atom = opt_molecule->_atoms[pd.data.a_id];
 
-                    if (std::abs(closest_atom._charge) < 0.001f) continue;
+//                    if (std::abs(closest_atom._charge) < 0.001f) continue;
 
-//                    Atom const& closest_atom = *_core.get_tree().find_closest<Reject_condition>(a._r, reject_cond);
+////                    Atom const& closest_atom = *_core.get_tree().find_closest<Reject_condition>(a._r, reject_cond);
 
-                    Eigen::Vector3f const force = _core.calc_forces_between_atoms(closest_atom, a);
+//                    Eigen::Vector3f const force = _core.calc_forces_between_atoms(closest_atom, a);
 
-                    if (force.norm() > 1e-6f)
-                    {
-                        if (force.dot(closest_atom._r - a._r) < 0.0f)
-                        {
-                            glColor3f(0.3f, 0.8f, 0.2f);
-                        }
-                        else
-                        {
-                            glColor3f(0.8f, 0.2f, 0.2f);
-                        }
+//                    if (force.norm() > 1e-6f)
+//                    {
+//                        if (force.dot(closest_atom._r - a._r) < 0.0f)
+//                        {
+//                            glColor3f(0.3f, 0.8f, 0.2f);
+//                        }
+//                        else
+//                        {
+//                            glColor3f(0.8f, 0.2f, 0.2f);
+//                        }
 
-                        glLineWidth(into_range(100.0f * force.norm(), 0.5f, 10.0f));
-                        draw_line(a._r, closest_atom._r);
-                    }
-                }
-            }
-        }
-    }
+//                        glLineWidth(into_range(100.0f * force.norm(), 0.5f, 10.0f));
+//                        draw_line(a._r, closest_atom._r);
+//                    }
+//                }
+//            }
+//        }
+//    }
 
     void draw_tree() const
     {
@@ -924,89 +1274,104 @@ public:
 
             std::string const element_type = _parameters["particle_type"]->get_value<std::string>();
 
-            float front_pos = _core.get_level_data()._game_field_borders[Level_data::Plane::Neg_Y]->get_position()[1];
-            float back_pos  = _core.get_level_data()._game_field_borders[Level_data::Plane::Pos_Y]->get_position()[1];
-
-            if (Molecule::molecule_exists(element_type))
-            {
-                _core.add_molecule(Molecule::create(element_type, intersect_pos));
-            }
-            else if (element_type == std::string("Box_barrier"))
-            {
-                float const strength = 10000.0f;
-                float const radius   = 2.0f;
-
-                _core.add_barrier(new Box_barrier(Eigen::Vector3f(-10.0f, front_pos, -10.0f) + intersect_pos, Eigen::Vector3f(10.0f, back_pos, 10.0f) + intersect_pos, strength, radius));
-            }
-            else if (element_type == std::string("Moving_box_barrier"))
-            {
-                float const strength = 10000.0f;
-                float const radius   = 2.0f;
-
-                _core.add_barrier(new Moving_box_barrier(Eigen::Vector3f(-10.0f, front_pos, -10.0f) + intersect_pos, Eigen::Vector3f(10.0f, back_pos, 10.0f) + intersect_pos, strength, radius));
-            }
-            else if (element_type == std::string("Blow_barrier"))
-            {
-                float const strength = 10000.0f;
-                float const radius   = 2.0f;
-
-                Blow_barrier * e = new Blow_barrier(Eigen::Vector3f(-10.0f, front_pos, -10.0f) + intersect_pos, Eigen::Vector3f(10.0f, back_pos, 10.0f) + intersect_pos,
-                                                                   Blow_barrier::Axis::X, 30.0f,
-                                                                   strength, radius);
-                e->set_user_editable(Level_element::Edit_type::All);
-                _core.add_barrier(e);
-            }
-            else if (element_type == std::string("Plane_barrier"))
-            {
-                float const strength = 100.0f;
-                float const radius   = 5.0f;
-
-                _core.add_barrier(new Plane_barrier(intersect_pos, Eigen::Vector3f::UnitZ(), strength, radius, Eigen::Vector2f(10.0f, 20.0)));
-            }
-            else if (element_type == std::string("Brownian_box"))
-            {
-                float const strength = 10.0f;
-                float const radius   = 25.0f;
-
-                Brownian_box * e = new Brownian_box(Eigen::Vector3f(-10.0f, front_pos, -10.0f) + intersect_pos, Eigen::Vector3f(10.0f, back_pos, 10.0f) + intersect_pos, strength, radius);
-                e->set_user_editable(Level_element::Edit_type::All);
-                e->set_persistent(false);
-                _core.add_brownian_element(e);
-            }
-            else if (element_type == std::string("Box_portal"))
-            {
-                _core.add_portal(new Box_portal(Eigen::Vector3f(-10.0f, front_pos, -10.0f) + intersect_pos, Eigen::Vector3f(10.0f, back_pos, 10.0f) + intersect_pos));
-            }
-            else if (element_type == std::string("Molecule_releaser"))
-            {
-                Molecule_releaser * m = new Molecule_releaser(Eigen::Vector3f(-10.0f, front_pos, -10.0f) + intersect_pos, Eigen::Vector3f(10.0f, back_pos, 10.0f) + intersect_pos, 1.0f, 1.0f);
-                m->set_exemplar(Molecule::create_water(Eigen::Vector3f::Zero()));
-                _core.add_molecule_releaser(m);
-            }
-            else if (element_type == std::string("Atom_cannon"))
-            {
-                Atom_cannon * m = new Atom_cannon(Eigen::Vector3f(-10.0f, front_pos, -10.0f) + intersect_pos, Eigen::Vector3f(10.0f, back_pos, 10.0f) + intersect_pos, 1.0f, 1.0f, 10.0f, 0.0f);
-                _core.add_molecule_releaser(m);
-            }
-            else if (element_type == std::string("Charged_barrier"))
-            {
-                float const strength = 10000.0f;
-                float const radius   = 2.0f;
-
-                Charged_barrier * b = new Charged_barrier(Eigen::Vector3f(-10.0f, front_pos, -10.0f) + intersect_pos, Eigen::Vector3f(10.0f, 20.0f, 10.0f) + intersect_pos, strength, radius, 10.0f);
-                _core.add_barrier(b);
-            }
-            else if (element_type == std::string("Tractor_barrier"))
-            {
-                float const strength = 10000.0f;
-
-                Tractor_barrier * b = new Tractor_barrier(Eigen::Vector3f(-10.0f, front_pos, -10.0f) + intersect_pos, Eigen::Vector3f(10.0f, 20.0f, 10.0f) + intersect_pos, strength);
-                _core.add_barrier(b);
-            }
-
-            update_draggable_to_level_element();
-            update_active_draggables();
+            add_element(intersect_pos, element_type);
         }
+    }
+
+    void add_element(Eigen::Vector3f const& position, std::string const& element_type)
+    {
+        float front_pos = _core.get_level_data()._game_field_borders[Level_data::Plane::Neg_Y]->get_position()[1];
+        float back_pos  = _core.get_level_data()._game_field_borders[Level_data::Plane::Pos_Y]->get_position()[1];
+
+        if (Molecule::molecule_exists(element_type))
+        {
+            _core.add_molecule(Molecule::create(element_type, position));
+        }
+        else if (element_type == std::string("Box_barrier"))
+        {
+            float const strength = 10000.0f;
+            float const radius   = 2.0f;
+
+            _core.add_barrier(new Box_barrier(Eigen::Vector3f(-10.0f, front_pos, -10.0f) + position, Eigen::Vector3f(10.0f, back_pos, 10.0f) + position, strength, radius));
+        }
+        else if (element_type == std::string("Moving_box_barrier"))
+        {
+            float const strength = 10000.0f;
+            float const radius   = 2.0f;
+
+            _core.add_barrier(new Moving_box_barrier(Eigen::Vector3f(-10.0f, front_pos, -10.0f) + position, Eigen::Vector3f(10.0f, back_pos, 10.0f) + position, strength, radius));
+        }
+        else if (element_type == std::string("Blow_barrier"))
+        {
+            float const strength = 10000.0f;
+            float const radius   = 2.0f;
+
+            Blow_barrier * e = new Blow_barrier(Eigen::Vector3f(-10.0f, front_pos, -10.0f) + position, Eigen::Vector3f(10.0f, back_pos, 10.0f) + position,
+                                                               Blow_barrier::Axis::X, 30.0f,
+                                                               strength, radius);
+            e->set_user_editable(Level_element::Edit_type::All);
+            _core.add_barrier(e);
+        }
+        else if (element_type == std::string("Plane_barrier"))
+        {
+            float const strength = 10000.0f;
+            float const radius   = 5.0f;
+
+            _core.add_barrier(new Plane_barrier(position, Eigen::Vector3f::UnitZ(), strength, radius, Eigen::Vector2f(10.0f, 20.0)));
+        }
+        else if (element_type == std::string("Brownian_box"))
+        {
+            float const strength = 10.0f;
+            float const radius   = 25.0f;
+
+            Brownian_box * e = new Brownian_box(Eigen::Vector3f(-10.0f, front_pos, -10.0f) + position, Eigen::Vector3f(10.0f, back_pos, 10.0f) + position, strength, radius);
+            e->set_user_editable(Level_element::Edit_type::All);
+            e->set_persistent(false);
+            _core.add_brownian_element(e);
+        }
+        else if (element_type == std::string("Box_portal"))
+        {
+            _core.add_portal(new Box_portal(Eigen::Vector3f(-10.0f, front_pos, -10.0f) + position, Eigen::Vector3f(10.0f, back_pos, 10.0f) + position));
+        }
+        else if (element_type == std::string("Sphere_portal"))
+        {
+            _core.add_portal(new Sphere_portal(Eigen::Vector3f(-10.0f, front_pos, -10.0f) + position, Eigen::Vector3f(10.0f, back_pos, 10.0f) + position));
+        }
+        else if (element_type == std::string("Molecule_releaser"))
+        {
+            Molecule_releaser * m = new Molecule_releaser(Eigen::Vector3f(-10.0f, front_pos, -10.0f) + position, Eigen::Vector3f(10.0f, back_pos, 10.0f) + position, 1.0f, 1.0f);
+            m->set_molecule_type("H2O");
+            _core.add_molecule_releaser(m);
+        }
+        else if (element_type == std::string("Atom_cannon"))
+        {
+            Atom_cannon * m = new Atom_cannon(Eigen::Vector3f(-10.0f, front_pos, -10.0f) + position, Eigen::Vector3f(10.0f, back_pos, 10.0f) + position, 1.0f, 1.0f, 10.0f, 0.0f);
+            _core.add_molecule_releaser(m);
+        }
+        else if (element_type == std::string("Charged_barrier"))
+        {
+            float const strength = 10000.0f;
+            float const radius   = 2.0f;
+
+            Charged_barrier * b = new Charged_barrier(Eigen::Vector3f(-10.0f, front_pos, -10.0f) + position, Eigen::Vector3f(10.0f, 20.0f, 10.0f) + position, strength, radius, 10.0f);
+            _core.add_barrier(b);
+        }
+        else if (element_type == std::string("Tractor_barrier"))
+        {
+            float const strength = 10000.0f;
+
+            Tractor_barrier * b = new Tractor_barrier(Eigen::Vector3f(-10.0f, front_pos, -10.0f) + position, Eigen::Vector3f(10.0f, 20.0f, 10.0f) + position, strength);
+            b->set_user_editable(Level_element::Edit_type::All);
+            b->set_persistent(false);
+            _core.add_barrier(b);
+        }
+        else
+        {
+            std::cout << __PRETTY_FUNCTION__ << " element does not exist: " << element_type << std::endl;
+        }
+
+        update_draggable_to_level_element();
+        update_active_draggables();
     }
 
     void mousePressEvent(QMouseEvent *event)
@@ -1074,10 +1439,12 @@ public:
                 bool found;
                 qglviewer::Vec world_pos = camera()->pointUnderPixel(event->pos(), found);
 
+                _mouse_state = Mouse_state::Init_drag_handle;
+                std::cout << __PRETTY_FUNCTION__ << " Init_drag_handle" << std::endl;
+
                 if (found)
                 {
                     _dragging_start_3d = QGLV2Eigen(world_pos);
-                    _mouse_state = Mouse_state::Init_drag_handle;
                 }
 
                 handled = true;
@@ -1142,48 +1509,54 @@ public:
         else if (_mouse_state == Mouse_state::Dragging_handle) // TODO: currently has Y plane constraint, move constraints into Draggable, consider giving it the viewline instead of a single position
         {
             Eigen::Hyperplane<float, 3> y_plane(Eigen::Vector3f(0.0f, 1.0f, 0.0f), _active_draggables[_picked_index]->get_position());
-            //                Eigen::Hyperplane<float, 3> y_plane(Eigen::Vector3f(0.0f, 1.0f, 0.0f),
-            //                                                    Eigen::Vector3f(
-            //                                                        _dragging_start_3d[0],
-            //                                                        _active_draggables[_picked_index]->get_position()[1],
-            //                                                        _dragging_start_3d[2]));
-
-            //                Eigen::Hyperplane<float, 3> view_plane(QGLV2Eigen(camera()->viewDirection()), _dragging_start_3d);
-            //                Eigen::Hyperplane<float, 3> view_plane(QGLV2Eigen(camera()->viewDirection()), _active_draggables[_picked_index]->get_position());
-
 
             qglviewer::Vec qglv_origin; // camera pos
-            qglviewer::Vec qglv_dir;    // origin - camera_pos
+            qglviewer::Vec qglv_dir;    // normalize(origin - camera_pos)
 
             camera()->convertClickToLine(event->pos(), qglv_origin, qglv_dir);
 
             Eigen::ParametrizedLine<float, 3> view_ray(QGLV2Eigen(qglv_origin), QGLV2Eigen(qglv_dir).normalized());
 
             Eigen::Vector3f new_position = view_ray.intersectionPoint(y_plane);
-            //                Eigen::Vector3f new_position = view_ray.intersectionPoint(view_plane);
-
-            //                new_position[1] =_active_draggables[_picked_index]->get_position()[1];
-
-//          _active_draggables[_picked_index].to_local();
-
-            _active_draggables[_picked_index]->set_position_from_world(new_position);
-            _active_draggables[_picked_index]->update();
 
             Draggable * parent = _active_draggables[_picked_index]->get_parent();
 
-            assert(_draggable_to_level_element.find(parent) != _draggable_to_level_element.end());
+            auto iter = _draggable_to_level_element.find(parent);
 
-            std::cout << __PRETTY_FUNCTION__ << ": " << parent << std::endl;
+            assert(iter != _draggable_to_level_element.end());
 
-            _draggable_to_level_element[parent]->accept(parent);
+            Level_element * level_element = iter->second;
 
-            update();
+//            if (!check_for_collision(level_element))
+            {
+                _active_draggables[_picked_index]->set_position_from_world(new_position);
+                _active_draggables[_picked_index]->update();
+
+                std::cout << __PRETTY_FUNCTION__ << ": " << parent << std::endl;
+
+                level_element->accept(parent);
+
+                update();
+            }
         }
 
         if (!handled)
         {
             Base::mouseMoveEvent(event);
         }
+    }
+
+    bool check_for_collision(Level_element const* level_element)
+    {
+        for (boost::shared_ptr<Level_element> const& l : _core.get_level_data()._level_elements)
+        {
+            if (l.get() != level_element && level_element->does_intersect(l.get()))
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     void mouseReleaseEvent(QMouseEvent * event)
@@ -1249,7 +1622,7 @@ public:
         else if (event->key() == Qt::Key_F8)
         {
             _particle_systems[int(_level_state)].push_back(Targeted_particle_system(3.0f));
-            _particle_systems[int(_level_state)].back().generate("Blubber");
+            _particle_systems[int(_level_state)].back().generate("Blubber", _particle_font, QRectF(0.0f, 0.5f, 1.0f, 0.3f));
         }
         else
         {
@@ -1397,16 +1770,35 @@ public:
                 action_first_release->setDefaultWidget(new Widget_text_combination("First release", spinbox_first_release));
             }
 
+            QWidgetAction * action_molecule_type = new QWidgetAction(this);
+            QComboBox * combo_molecule_type = new QComboBox();
+            {
+                std::vector<std::string> molecule_names = Molecule::get_molecule_names();
+
+                for (std::string const& name : molecule_names)
+                {
+                    combo_molecule_type->addItem(QString::fromStdString(name));
+
+                }
+
+                combo_molecule_type->setCurrentIndex(combo_molecule_type->findText(QString::fromStdString(m->get_molecule_type())));
+
+                action_molecule_type->setDefaultWidget(new Widget_text_combination("Molecule Type", combo_molecule_type));
+            }
+
+            menu.addAction(action_molecule_type);
             menu.addAction(action_num_max_molecules);
             menu.addAction(action_interval);
             menu.addAction(action_first_release);
 
             menu.exec(QCursor::pos());
 
+            m->set_molecule_type(combo_molecule_type->currentText().toStdString());
             m->set_num_max_molecules(spinbox_num_max_molecules->value());
             m->set_interval(spinbox_interval->value());
             m->set_first_release(spinbox_first_release->value());
 
+            delete action_molecule_type;
             delete action_num_max_molecules;
             delete action_interval;
             delete action_first_release;
@@ -1417,8 +1809,8 @@ public:
 
             QSpinBox * spinbox_num_min_captured_molecules = new QSpinBox();
             {
-                spinbox_num_min_captured_molecules->setMaximum(1000);
                 spinbox_num_min_captured_molecules->setMinimum(1);
+                spinbox_num_min_captured_molecules->setMaximum(1000);
                 spinbox_num_min_captured_molecules->setValue(m->get_condition().get_min_captured_molecules());
 
                 action_num_min_captured_molecules->setDefaultWidget(new Widget_text_combination("Captured Molecules", spinbox_num_min_captured_molecules));
@@ -1443,8 +1835,28 @@ public:
                 action_type->setDefaultWidget(new Widget_text_combination("Type", combo_type));
             }
 
+            QWidgetAction * action_score_factor = new QWidgetAction(this);
+            QDoubleSpinBox * spinbox_score_factor = new QDoubleSpinBox();
+            {
+                spinbox_score_factor->setMinimum(1);
+                spinbox_score_factor->setMaximum(100);
+                spinbox_score_factor->setValue(m->get_score_factor());
+
+                action_score_factor->setDefaultWidget(new Widget_text_combination("Score Factor", spinbox_score_factor));
+            }
+
+            QWidgetAction * action_destroy_on_enter = new QWidgetAction(this);
+            QCheckBox * checkbox_destroy_on_enter = new QCheckBox("Destroy on enter");
+            {
+                checkbox_destroy_on_enter->setChecked(m->do_destroy_on_entering());
+                action_destroy_on_enter->setDefaultWidget(checkbox_destroy_on_enter);
+            }
+
+            menu.addAction(action_score_factor);
+            menu.addAction(action_destroy_on_enter);
             menu.addAction(action_num_min_captured_molecules);
             menu.addAction(action_type);
+            menu.addAction(QString("Collected Molecules: %1").arg(m->get_condition().get_num_captured_molecules()));
 
             menu.exec(QCursor::pos());
 
@@ -1459,8 +1871,13 @@ public:
                 m->get_condition().set_type(End_condition::Type::And);
             }
 
+            m->set_score_factor(spinbox_score_factor->value());
+            m->set_destroy_on_entering(checkbox_destroy_on_enter->isChecked());
+
+            delete action_score_factor;
             delete action_num_min_captured_molecules;
             delete action_type;
+            delete action_destroy_on_enter;
         }
         else
         {
@@ -1512,6 +1929,11 @@ public:
         for (Targeted_particle_system & p : _particle_systems[int(_level_state)])
         {
             p.animate(animationPeriod() / 1000.0f);
+        }
+
+        for (auto & stat : _statistics[int(_level_state)])
+        {
+            stat.animate(animationPeriod() / 1000.0f);
         }
 
         Base::animate();
@@ -1767,11 +2189,13 @@ public:
 
         for (auto & iter : _statistics)
         {
-            for (Draggable_statistics & stat : iter.second)
+            for (auto & stat : iter.second)
             {
                 generate_statistics_texture(stat);
             }
         }
+
+        update_level_element_buttons();
     }
 
     QSize adapt_bounding_size(QSize b_size, QSize const& target_size) const
@@ -1824,8 +2248,8 @@ public:
 
         p.drawRoundedRect(QRect(5, 5, pixel_size.width() - 10, pixel_size.height() - 10), pixel_size.width() * 0.1f, pixel_size.width() * 0.1f);
 
-        QFont font;
-        font.setWeight(QFont::Bold);
+        QFont font = _main_font;
+//        font.setWeight(QFont::Bold);
         font.setPointSizeF(10.0f);
         p.setFont(font);
 
@@ -1860,8 +2284,8 @@ public:
         p.setRenderHint(QPainter::Antialiasing);
         p.setCompositionMode(QPainter::CompositionMode_SourceOver);
 
-        QFont font;
-        font.setWeight(QFont::Bold);
+        QFont font = _main_font;
+//        font.setWeight(QFont::Bold);
         font.setPointSizeF(10.0f);
         p.setFont(font);
 
@@ -1907,8 +2331,8 @@ public:
         p.drawRoundedRect(QRect(2, 2, pixel_size.width() - 4, pixel_size.height() - 4), pixel_size.width() * 0.02f, pixel_size.width() * 0.02f);
 
 
-        QFont font;
-        font.setWeight(QFont::Bold);
+        QFont font = _main_font;
+//        font.setWeight(QFont::Bold);
         font.setPixelSize(0.1f * pixel_size.height());
         p.setFont(font);
 
@@ -1941,8 +2365,97 @@ public:
         b.set_texture(bindTexture(img));
     }
 
+    void start_new_game()
+    {
+        // set level to 0 (including introduction part) and start game
+
+        _progress.last_level = 0;
+
+        load_next_level();
+    }
+
+    void continue_game()
+    {
+        // load current progress and start game
+        load_next_level();
+    }
+
+    void change_level_state(Level_state const new_level_state)
+    {
+        _level_state = new_level_state;
+
+        update_draggable_to_level_element();
+        update_active_draggables();
+    }
+
+    void quit_game()
+    {
+        save_progress();
+
+        QApplication::quit();
+    }
+
+    void change_state_to_main_menu()
+    {
+        change_level_state(Level_state::Main_menu);
+    }
+
+    void save_progress()
+    {
+        std::ofstream out_file("progress.data");
+        boost::archive::xml_oarchive oa(out_file);
+
+        oa << BOOST_SERIALIZATION_NVP(_progress);
+
+        out_file.close();
+    }
+
+    void load_progress()
+    {
+        std::ifstream in_file("progress.data");
+
+        if (in_file)
+        {
+            boost::archive::xml_iarchive ia(in_file);
+
+            try
+            {
+                ia >> BOOST_SERIALIZATION_NVP(_progress);
+            }
+            catch (std::exception e)
+            {
+                std::cout << "Failed to load progress file, progress reset: " << e.what() << std::endl;
+                _progress = Progress();
+            }
+
+            in_file.close();
+        }
+        else
+        {
+            std::cout << "No progress file found" << std::endl;
+        }
+    }
+
+
     void setup_ui_elements()
     {
+        // main menu
+        {
+            Draggable_button * button = new Draggable_button(Eigen::Vector3f(0.5f, 0.85f, 0.0f), Eigen::Vector2f(0.5f, 0.15f), "Start New Game",  std::bind(&My_viewer::start_new_game, this));
+            _buttons[int(Level_state::Main_menu)].push_back(boost::shared_ptr<Draggable_button>(button));
+        }
+
+        {
+            Draggable_button * button = new Draggable_button(Eigen::Vector3f(0.5f, 0.65f, 0.0f), Eigen::Vector2f(0.5f, 0.15f), "Continue Game",  std::bind(&My_viewer::continue_game, this));
+            _buttons[int(Level_state::Main_menu)].push_back(boost::shared_ptr<Draggable_button>(button));
+        }
+
+        {
+            Draggable_button * button = new Draggable_button(Eigen::Vector3f(0.5f, 0.45f, 0.0f), Eigen::Vector2f(0.5f, 0.15f), "Quit", std::bind(&My_viewer::quit_game, this));
+            _buttons[int(Level_state::Main_menu)].push_back(boost::shared_ptr<Draggable_button>(button));
+        }
+
+
         // start level screen
         {
             Draggable_button * button = new Draggable_button(Eigen::Vector3f(0.5f, 0.75f, 0.0f), Eigen::Vector2f(0.5f, 0.2f), "Start Level",  std::bind(&My_viewer::start_level, this));
@@ -1951,17 +2464,18 @@ public:
 
         // After finish screen
         {
-            Draggable_button * button = new Draggable_button(Eigen::Vector3f(0.25f, 0.25f, 0.0f), Eigen::Vector2f(0.25f, 0.1f), "Next Level",  std::bind(&My_viewer::start_level, this));
+            Draggable_button * button = new Draggable_button(Eigen::Vector3f(0.25f, 0.1f, 0.0f), Eigen::Vector2f(0.25f, 0.1f), "Next Level",  std::bind(&My_viewer::load_next_level, this));
+            _next_level_button = boost::shared_ptr<Draggable_button>(button);
+            _buttons[int(Level_state::After_finish)].push_back(_next_level_button);
+        }
+
+        {
+            Draggable_button * button = new Draggable_button(Eigen::Vector3f(0.50f, 0.1f, 0.0f), Eigen::Vector2f(0.25f, 0.1f), "Show Statistics", std::bind(&My_viewer::change_state_to_statistics, this));
             _buttons[int(Level_state::After_finish)].push_back(boost::shared_ptr<Draggable_button>(button));
         }
 
         {
-            Draggable_button * button = new Draggable_button(Eigen::Vector3f(0.50f, 0.25f, 0.0f), Eigen::Vector2f(0.25f, 0.1f), "Show Statistics",  std::bind(&My_viewer::change_state_to_statistics, this));
-            _buttons[int(Level_state::After_finish)].push_back(boost::shared_ptr<Draggable_button>(button));
-        }
-
-        {
-            Draggable_button * button = new Draggable_button(Eigen::Vector3f(0.75f, 0.25f, 0.0f), Eigen::Vector2f(0.25f, 0.1f), "Quit",  std::bind(&My_viewer::start_level, this));
+            Draggable_button * button = new Draggable_button(Eigen::Vector3f(0.75f, 0.1f, 0.0f), Eigen::Vector2f(0.25f, 0.1f), "Back to Main Menu", std::bind(&My_viewer::change_state_to_main_menu, this));
             _buttons[int(Level_state::After_finish)].push_back(boost::shared_ptr<Draggable_button>(button));
         }
 
@@ -1971,31 +2485,61 @@ public:
         }
 
         // Statistics
+        _statistics[int(Level_state::Statistics)].resize(_core.get_sensor_data().get_num_data_types());
+
         {
-            Draggable_statistics stat(Eigen::Vector3f(0.5f, 0.5f, 0.0f), Eigen::Vector2f(0.3f, 0.25f), "Temp.");
-            _statistics[int(Level_state::Statistics)].push_back(stat);
+            Draggable_statistics stat(Eigen::Vector3f(0.25f, 0.6f + 0.35f * 0.5f, 0.0f), Eigen::Vector2f(0.45f, 0.35f), "Released Molecules");
+            _statistics[int(Level_state::Statistics)][int(Sensor_data::Type::RelMol)] = stat;
         }
 
         {
-            Draggable_button * button = new Draggable_button(Eigen::Vector3f(0.25f, 0.25f, 0.0f), Eigen::Vector2f(0.25f, 0.1f), "Back",  std::bind(&My_viewer::return_from_stats, this));
+            Draggable_statistics stat(Eigen::Vector3f(0.75f, 0.6f + 0.35f * 0.5f, 0.0f), Eigen::Vector2f(0.45f, 0.35f), "Collected Molecules");
+            _statistics[int(Level_state::Statistics)][int(Sensor_data::Type::ColMol)] = stat;
+        }
+
+        {
+            Draggable_statistics stat(Eigen::Vector3f(0.25f, 0.2f + 0.35f * 0.5f, 0.0f), Eigen::Vector2f(0.45f, 0.35f), "Avg. Temperature");
+            _statistics[int(Level_state::Statistics)][int(Sensor_data::Type::AvgTemp)] = stat;
+        }
+
+        {
+            Draggable_statistics stat(Eigen::Vector3f(0.25f, 0.2f + 0.35f * 0.5f, 0.0f), Eigen::Vector2f(0.45f, 0.35f), "Avg. Temperature");
+            _statistics[int(Level_state::Statistics)][int(Sensor_data::Type::AvgTemp)] = stat;
+        }
+
+        {
+            Draggable_button * button = new Draggable_button(Eigen::Vector3f(0.50f, 0.1f, 0.0f), Eigen::Vector2f(0.25f, 0.1f), "Back",  std::bind(&My_viewer::return_from_stats, this));
             _buttons[int(Level_state::Statistics)].push_back(boost::shared_ptr<Draggable_button>(button));
         }
 
+        {
+            Draggable_button * button = new Draggable_button(Eigen::Vector3f(0.25f, 0.1f, 0.0f), Eigen::Vector2f(0.25f, 0.1f), "Repeat",  std::bind(&My_viewer::change_state_to_statistics, this));
+            _buttons[int(Level_state::Statistics)].push_back(boost::shared_ptr<Draggable_button>(button));
+        }
     }
 
 public Q_SLOTS:
     void update_physics()
     {
+        std::chrono::time_point<std::chrono::system_clock> const timer_start = std::chrono::system_clock::now();
+
 //        int const elapsed_milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>
 //                (std::chrono::system_clock::now() - _physics_elapsed_time).count();
 
 //        _physics_elapsed_time = std::chrono::system_clock::now();
 
-//        std::cout << "update_physics() time elapsed: " << elapsed_milliseconds << " now: " << std::chrono::system_clock::now().time_since_epoch().count() << std::endl;
         // FIXME: currently constant update time step, not regarding at all the actually elapsed time
         // some updates are really far away from the set time step, not sure why
         _core.update(_parameters["physics_timestep_ms"]->get_value<int>() / 1000.0f * _parameters["physics_speed"]->get_value<float>());
 //        _core.update(elapsed_milliseconds / 1000.0f * _parameters["physics_speed"]->get_value<float>());
+
+
+        std::chrono::time_point<std::chrono::system_clock> const timer_end = std::chrono::system_clock::now();
+
+        int const elapsed_milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>
+                (timer_end-timer_start).count();
+
+        std::cout << __PRETTY_FUNCTION__ << " time elapsed: " << elapsed_milliseconds << std::endl;
     }
 
     void handle_game_state_change()
@@ -2004,37 +2548,42 @@ public Q_SLOTS:
              _core.get_previous_game_state() == Core::Game_state::Finished) &&
                 _core.get_game_state() == Core::Game_state::Running)
         {
-            // show a "Start!" sort of message
             std::cout << __PRETTY_FUNCTION__ << " starting the game" << std::endl;
 
-            _level_state = Level_state::Running;
-
-            update_draggable_to_level_element();
-            update_active_draggables();
+            change_level_state(Level_state::Running);
         }
         else if (_core.get_previous_game_state() == Core::Game_state::Running && _core.get_game_state() == Core::Game_state::Finished)
         {
             // show score etc. on a screen that allows "replay", "next level" etc.
             std::cout << __PRETTY_FUNCTION__ << " finishing the game" << std::endl;
-//            set_simulation_state(false);
 
-            _level_state = Level_state::After_finish;
+            change_level_state(Level_state::After_finish);
 
             QTimer::singleShot(3000, this, SLOT(show_afterstate_ui_elements()));
 
-            std::string const score("0072854");
+            int const score_count = 12345; // TODO: get from core
+
             _particle_systems[int(Level_state::After_finish)].clear();
             _particle_systems[int(Level_state::After_finish)].push_back(Targeted_particle_system(3.0f));
-            _particle_systems[int(Level_state::After_finish)].back().generate(score);
+            _particle_systems[int(Level_state::After_finish)].back().generate(QString("%1").arg(score_count, 8, 10, QChar('0')).toStdString(), _particle_font, QRectF(0.0f, 0.5f, 1.0f, 0.3f));
 
-            update_draggable_to_level_element();
-            update_active_draggables();
+            setup_statistics(_core.get_sensor_data());
+
+            Score score;
+            score.final_score = score_count;
+            score.sensor_data = _core.get_sensor_data();
+
+            _progress.last_level += 1;
+            _progress.scores[_current_level_name].push_back(score);
+
+            _next_level_button->set_visible(_progress.last_level < _level_names.size());
+
+            save_progress();
         }
     }
 
     void show_afterstate_ui_elements()
     {
-
         for (boost::shared_ptr<Draggable_button> const& button : _buttons[int(Level_state::After_finish)])
         {
             button->set_visible(true);
@@ -2051,18 +2600,41 @@ public Q_SLOTS:
 
     void change_state_to_statistics()
     {
-        _level_state = Level_state::Statistics;
+        change_level_state(Level_state::Statistics);
 
-        update_draggable_to_level_element();
-        update_active_draggables();
+        for (auto & iter : _statistics)
+        {
+            for (auto & stat : iter.second)
+            {
+                stat.reset_animation();
+            }
+        }
     }
 
     void return_from_stats()
     {
-        _level_state = Level_state::After_finish;
+        change_level_state(Level_state::After_finish);
+    }
 
-        update_draggable_to_level_element();
-        update_active_draggables();
+    void setup_statistics(Sensor_data const& sensor_data)
+    {
+//        Sensor_data fake_sensor_data;
+
+//        std::vector<float> dummy_data;
+
+//        dummy_data.push_back(0);
+
+//        for (int i = 1; i < 50; ++i)
+//        {
+//            dummy_data.push_back(dummy_data[i - 1] + int(rand() / float(RAND_MAX) * 2));
+//            fake_sensor_data.add_value(Sensor_data::Type::ColMol, dummy_data[i]);
+//        }
+
+        for (int i = 0; i < sensor_data.get_num_data_types(); ++i)
+        {
+            _statistics[int(Level_state::Statistics)][i].set_values(sensor_data.get_data(Sensor_data::Type(i)));
+//            _statistics[int(Level_state::Statistics)][i].set_values(fake_sensor_data.get_data(Sensor_data::Type(i)));
+        }
     }
 
 private:
@@ -2089,27 +2661,35 @@ private:
     GLuint _move_tex;
     GLuint _slider_tex;
 
+    GLuint _particle_tex;
+
+    std::unordered_map<std::string, QImage> _element_images;
+
     StandardCamera * _my_camera;
 
     std::unique_ptr<Molecule_renderer> _molecule_renderer;
-
-//    std::vector<Draggable*> _draggables;
 
     std::vector<Draggable*> _active_draggables;
 
     std::unordered_map<Draggable*, Level_element*> _draggable_to_level_element;
 
-//    std::vector< boost::shared_ptr<Draggable_button> > _buttons;
-
     std::unordered_map<int, std::vector< boost::shared_ptr<Draggable_button> > > _buttons;
-
     std::unordered_map<int, std::vector< boost::shared_ptr<Draggable_label> > > _labels;
-
     std::unordered_map<int, std::vector<Draggable_statistics> > _statistics;
-
     std::unordered_map<int, std::vector<Targeted_particle_system> > _particle_systems;
 
+    boost::shared_ptr<Draggable_button> _next_level_button;
+
     QTimer _score_animation;
+
+    std::string _current_level_name;
+
+    QStringList _level_names;
+
+    Progress _progress;
+
+    QFont _main_font;
+    QFont _particle_font;
 };
 
 

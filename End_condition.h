@@ -27,7 +27,7 @@ public:
     template<class Archive>
     void serialize(Archive & ar, const unsigned int /* version */)
     {
-        ar & _type;
+        ar & BOOST_SERIALIZATION_NVP(_type);
     }
 
 private:
@@ -73,8 +73,8 @@ public:
     template<class Archive>
     void serialize(Archive & ar, const unsigned int /* version */)
     {
-        ar & boost::serialization::base_object<End_condition>(*this);
-        ar & _min_captured_molecules;
+        ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(End_condition);
+        ar & BOOST_SERIALIZATION_NVP(_min_captured_molecules);
     }
 
 private:

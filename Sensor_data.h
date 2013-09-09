@@ -1,12 +1,53 @@
 #ifndef SENSOR_DATA_H
 #define SENSOR_DATA_H
 
-struct Sensor_data
+#include <vector>
+
+class Sensor_data
 {
-    int num_collected_molecules;
-    int num_released_molecules;
-    float average_temperature;
-    float energy_consumption; // including tractors?
+public:
+    enum class Type { ColMol = 0, RelMol, AvgTemp, EnergyCon };
+
+    Sensor_data()
+    {
+        _data.resize(4);
+    }
+
+    void add_value(Type const type, float const value)
+    {
+        _data[int(type)].push_back(value);
+    }
+
+    std::vector<float> const& get_data(Type const type) const
+    {
+        return _data[int(type)];
+    }
+
+    void clear()
+    {
+        for (auto & v : _data)
+        {
+            v.clear();
+        }
+    }
+
+    int get_num_data_types() const
+    {
+        return _data.size();
+    }
+
+    template<class Archive>
+    void serialize(Archive & ar, const unsigned int /* version */)
+    {
+        ar & BOOST_SERIALIZATION_NVP(_data);
+    }
+
+private:
+    std::vector< std::vector<float> > _data;
+//    int num_collected_molecules;
+//    int num_released_molecules;
+//    float average_temperature;
+//    float energy_consumption; // including tractors?
 };
 
 #endif // SENSOR_DATA_H

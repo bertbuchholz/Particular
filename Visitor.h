@@ -2,6 +2,7 @@
 #define VISITOR_HPP
 
 class Box_portal;
+class Sphere_portal;
 
 class Plane_barrier;
 class Box_barrier;
@@ -30,6 +31,7 @@ public:
     virtual void visit(Atom_cannon *) const {}
 
     virtual void visit(Box_portal *) const {}
+    virtual void visit(Sphere_portal *) const {}
 
     virtual void visit(Brownian_box *) const {}
     virtual void visit(Brownian_plane *) const {}

@@ -54,13 +54,21 @@ Gaming part
 
 - No wind, no gravity, use moving elements to give pushes to objects
 
-- Penalty when objects move inside a barrier
-
 - Portals with end conditions AND and OR (all ANDs must be true or at least one OR)
 
 - Find representation for portals, molecule releasers and heat elements
 
-- Don't change scores once game_state is Finished, but possibly leave the physics running
+- Setup playing camera correctly:
+  - No moving in but possibly zooming
+  - default view centered and FOV so that the game field is completely visible
+  - constrain rotation
+  - panning only up to the borders of the game field
+
+- Split up the score listing (time bonus etc.)
+
+- Add statistics using the progress with highscore and own score vs. everybody else's
+
+- Add indicator to portal, how many molecules have gone in there yet and possibly to the releaser to indicate how many are left
 
 Done:
 D - Store connections in molecules
@@ -79,4 +87,8 @@ D - Make elements' properties editable (temperature, radius)
 D - Remove a molecule once it passed a gate, add an effect when it does
 D - Forcefield (Tractor_barrier)
 D - Add Resize, Translate and Rotate to the editable properties of an object for level design
-
+D - Interpolate statistics graphs and do smooth animation
+D - Level needs number of "addable" elements
+D - State file storing progress, highscores etc.
+D - Don't change scores once game_state == Finished, but possibly leave the physics running
+D - Penalty when objects move inside a barrier

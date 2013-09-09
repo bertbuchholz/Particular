@@ -6,7 +6,7 @@
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 
-#include "Level_elements.h"
+#include "Level_element.h"
 #include "Visitor.h"
 
 class Constraint
@@ -249,6 +249,8 @@ class Draggable_disc : public Draggable
 class Draggable_label : public Draggable
 {
 public:
+    Draggable_label() {}
+
     Draggable_label(Eigen::Vector3f const& position, Eigen::Vector2f const& size, std::string const& text) :
         Draggable(position), _texture(0), _extent(size), _text(text), _alpha(1.0f)
     {
@@ -312,18 +314,28 @@ public:
         Draggable_label(position, size, text), _callback(callback)
     { }
 
+    Draggable_button(Eigen::Vector3f const& position, Eigen::Vector2f const& size, std::string const& text, std::function<void(std::string const&)> callback, std::string const& callback_data) :
+        Draggable_label(position, size, text), _callback_with_data(callback), _callback_data(callback_data)
+    { }
+
     void clicked() override
     {
-        if (_callback) _callback();
+        if (_callback_with_data) _callback_with_data(_callback_data);
+        else if (_callback) _callback();
     }
 
 private:
     std::function<void(void)> _callback;
+    std::function<void(std::string const&)> _callback_with_data;
+
+    std::string _callback_data;
 };
 
 class Draggable_statistics : public Draggable_label
 {
 public:
+    Draggable_statistics() {}
+
     Draggable_statistics(Eigen::Vector3f const& position, Eigen::Vector2f const& size, std::string const& text) :
         Draggable_label(position, size, text), _animation_start(0.0f), _animation_duration(10.0f)
     { }
@@ -338,6 +350,53 @@ public:
         return into_range((_current_time - _animation_start) / _animation_duration, 0.0f, 1.0f);
     }
 
+    void set_values(std::vector<float> const& values)
+    {
+        _values = values;
+
+        auto iter = std::max_element(_values.begin(), _values.end());
+
+        if (iter != _values.end())
+        {
+            _max_value = *iter;
+        }
+        else
+        {
+            _max_value = 0.0f;
+        }
+
+        iter = std::min_element(_values.begin(), _values.end());
+
+        if (iter != _values.end())
+        {
+            _min_value = *iter;
+        }
+        else
+        {
+            _min_value = 0.0f;
+        }
+    }
+
+    std::vector<float> const& get_values() const
+    {
+        return _values;
+    }
+
+    float get_max_value() const
+    {
+        return _max_value;
+    }
+
+    float get_min_value() const
+    {
+        return _min_value;
+    }
+
+    void reset_animation()
+    {
+        _current_time = 0.0f;
+    }
+
 private:
     std::string _x_label;
     std::string _y_label;
@@ -347,6 +406,8 @@ private:
     float _animation_duration;
 
     std::vector<float> _values;
+    float _max_value;
+    float _min_value;
 };
 
 //class Draggable_statistics : public Draggable
@@ -795,6 +856,15 @@ public:
     }
 
     void visit(Box_portal * b) const override
+    {
+        std::cout << __PRETTY_FUNCTION__ << std::endl;
+        b->set_transform(_transform);
+        b->set_position(get_position());
+        b->set_size(_extent_2 * 2.0f);
+        b->set_property_values(_properties);
+    }
+
+    void visit(Sphere_portal * b) const override
     {
         std::cout << __PRETTY_FUNCTION__ << std::endl;
         b->set_transform(_transform);

@@ -122,13 +122,13 @@ public:
     template<class Archive>
     void serialize(Archive & ar, const unsigned int /* version */)
     {
-        ar & _r_0;
-        ar & _r;
-        ar & _mass;
-        ar & _charge;
-        ar & _radius;
-        ar & _type;
-        ar & _parent_id;
+        ar & BOOST_SERIALIZATION_NVP(_r_0);
+        ar & BOOST_SERIALIZATION_NVP(_r);
+        ar & BOOST_SERIALIZATION_NVP(_mass);
+        ar & BOOST_SERIALIZATION_NVP(_charge);
+        ar & BOOST_SERIALIZATION_NVP(_radius);
+        ar & BOOST_SERIALIZATION_NVP(_type);
+        ar & BOOST_SERIALIZATION_NVP(_parent_id);
     }
 
     Atom()
@@ -168,7 +168,19 @@ public:
         return (iter != _molecule_factory_map.end());
     }
 
-    static Molecule create(std::string const& name, Eigen::Vector3f const& position)
+    static std::vector<std::string> get_molecule_names()
+    {
+        std::vector<std::string> result;
+
+        for (auto & iter : _molecule_factory_map)
+        {
+            result.push_back(iter.first);
+        }
+
+        return result;
+    }
+
+    static Molecule create(std::string const& name, Eigen::Vector3f const& position = Eigen::Vector3f::Zero())
     {
         auto iter = Molecule::_molecule_factory_map.find(name);
 
@@ -485,33 +497,34 @@ public:
     template<class Archive>
     void serialize(Archive & ar, const unsigned int /* version */)
     {
-        ar & _atoms;
+        ar & BOOST_SERIALIZATION_NVP(_atoms);
 
-        ar & _mass;
-        ar & _I_body;
-        ar & _I_body_inv;
+        ar & BOOST_SERIALIZATION_NVP(_mass);
+        ar & BOOST_SERIALIZATION_NVP(_I_body);
+        ar & BOOST_SERIALIZATION_NVP(_I_body_inv);
 
-        ar & _x;
-        ar & _q.x();
-        ar & _q.y();
-        ar & _q.z();
-        ar & _q.w();
-        ar & _P;
-        ar & _L;
+        ar & BOOST_SERIALIZATION_NVP(_x);
+        ar & boost::serialization::make_nvp("qx", _q.x());
+        ar & boost::serialization::make_nvp("qy", _q.y());
+        ar & boost::serialization::make_nvp("qz", _q.z());
+        ar & boost::serialization::make_nvp("qw", _q.w());
 
-        ar & _I_inv;
-        ar & _R;
-        ar & _v;
-        ar & _omega;
+        ar & BOOST_SERIALIZATION_NVP(_P);
+        ar & BOOST_SERIALIZATION_NVP(_L);
 
-        ar & _force;
-        ar & _torque;
+        ar & BOOST_SERIALIZATION_NVP(_I_inv);
+        ar & BOOST_SERIALIZATION_NVP(_R);
+        ar & BOOST_SERIALIZATION_NVP(_v);
+        ar & BOOST_SERIALIZATION_NVP(_omega);
 
-        ar & _connectivity;
+        ar & BOOST_SERIALIZATION_NVP(_force);
+        ar & BOOST_SERIALIZATION_NVP(_torque);
 
-        ar & _accumulated_charge;
+        ar & BOOST_SERIALIZATION_NVP(_connectivity);
 
-        ar & _id;
+        ar & BOOST_SERIALIZATION_NVP(_accumulated_charge);
+
+        ar & BOOST_SERIALIZATION_NVP(_id);
     }
 
     std::vector<Atom> _atoms;

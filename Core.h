@@ -8,7 +8,9 @@
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 
-#include <boost/optional.hpp>
+//#include <boost/optional.hpp>
+#include <boost/archive/xml_oarchive.hpp>
+#include <boost/archive/xml_iarchive.hpp>
 
 #include <Registry_parameters.h>
 
@@ -18,10 +20,13 @@
 #include "Atomic_force.h"
 #include "Spatial_hash.h"
 #include "RegularBspTree.h"
-#include "Level_elements.h"
+#include "Level_element.h"
 #include "Level_data.h"
 #include "End_condition.h"
 #include "Sensor_data.h"
+
+
+
 
 class Core : public QObject
 {
@@ -47,8 +52,8 @@ public:
         _previous_game_state(Game_state::Unstarted),
         _molecule_id_counter(0),
         _current_time(0.0f),
-        _last_sensor_check(0.0f),
-        _molecule_hash(Molecule_atom_hash(100, 4.0f))
+        _last_sensor_check(0.0f)
+//        _molecule_hash(Molecule_atom_hash(100, 4.0f))
     {
         Eigen::Vector2f grid_start(-10.0f, -10.0f);
         Eigen::Vector2f grid_end  ( 10.0f,  10.0f);
@@ -114,19 +119,18 @@ public:
 
                     if (sender_atom->_parent_id == receiver_atom._parent_id) continue;
 
-                    float const dist = (receiver_atom._r - sender_atom->_r).norm();
-
-                    if (dist > 1e-4f)
-                    {
-                        force_i += calc_forces_between_atoms(receiver_atom, *sender_atom);
-                    }
+                    force_i += calc_forces_between_atoms(receiver_atom, *sender_atom);
                 }
             }
             else
             {
                 float const dist = (receiver_atom._r - node->get_averaged_data()._r).norm();
+                float const dist_to_cell_center = (receiver_atom._r - node->get_center()).norm();
 
-                if (node->is_point_in(receiver_atom._r) ||
+                bool const too_close_to_cell = dist_to_cell_center < 1.5f * node->get_radius();
+
+                if (too_close_to_cell ||
+                        node->is_point_in(receiver_atom._r) ||
                         dist < _max_force_distance ||
                         dist < node->get_averaged_data()._radius * 2.0f) // too large, push children
                 {
@@ -224,8 +228,8 @@ public:
         Eigen::Vector3f force_i = Eigen::Vector3f::Zero();
 
 //        force_i = apply_forces_brute_force(receiver_atom, parent_molecule_id);
-//        force_i = apply_forces_using_tree(receiver_atom);
-        force_i = apply_forces_from_vector(receiver_atom, get_atoms_from_tree(receiver_atom));
+        force_i = apply_forces_using_tree(receiver_atom);
+//        force_i = apply_forces_from_vector(receiver_atom, get_atoms_from_tree(receiver_atom));
 
 
         // per atom force application, replaced by per molecule application
@@ -350,6 +354,11 @@ public:
 
     void check_molecules_in_portals()
     {
+        for (Portal * p : _level_data._portals)
+        {
+            p->start_update();
+        }
+
         auto molecule_iter = std::begin(_level_data._molecules);
 
         while (molecule_iter != std::end(_level_data._molecules))
@@ -364,17 +373,22 @@ public:
                 {
                     p->handle_molecule_entering();
 
-                    Particle_system_element * p = new Particle_system_element;
-                    p->init(m);
+                    if (p->do_destroy_on_entering())
+                    {
+                        Particle_system_element * p = new Particle_system_element;
+                        p->init(m);
 
-                    _level_data._particle_system_elements.push_back(p);
+                        _level_data._particle_system_elements.push_back(p);
 
-                    _molecule_id_to_molecule_map.erase(m.get_id());
+                        _molecule_id_to_molecule_map.erase(m.get_id());
 
-                    molecule_iter = _level_data._molecules.erase(std::remove_if(_level_data._molecules.begin(), _level_data._molecules.end(), Compare_by_id(m.get_id())),
-                                                                 _level_data._molecules.end());
+                        molecule_iter = _level_data._molecules.erase(std::remove_if(_level_data._molecules.begin(), _level_data._molecules.end(), Compare_by_id(m.get_id())),
+                                                                     _level_data._molecules.end());
 
-                    has_been_removed = true;
+                        has_been_removed = true;
+                    }
+
+                    std::cout << __PRETTY_FUNCTION__ << " molecule in portal" << std::endl;
                 }
             }
 
@@ -394,7 +408,25 @@ public:
         int elapsed_milliseconds;
         std::chrono::time_point<std::chrono::system_clock> timer_start, timer_end;
 
+        if (time_debug)
+        {
+            timer_start = std::chrono::system_clock::now();
+        }
+
         check_molecules_in_portals();
+
+        if (time_debug)
+        {
+            timer_end = std::chrono::system_clock::now();
+
+            elapsed_milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>
+                    (timer_end-timer_start).count();
+
+            if (elapsed_milliseconds > 1)
+            {
+                std::cout << "check_molecules_in_portals(): " << elapsed_milliseconds << std::endl;
+            }
+        }
 
         for (Molecule_releaser * m : _level_data._molecule_releasers)
         {
@@ -409,7 +441,7 @@ public:
             timer_start = std::chrono::system_clock::now();
         }
 
-        update_spatial_hash();
+//        update_spatial_hash();
 
         if (time_debug)
         {
@@ -418,7 +450,7 @@ public:
             elapsed_milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>
                     (timer_end-timer_start).count();
 
-            if (elapsed_milliseconds > 15)
+            if (elapsed_milliseconds > 1)
             {
                 std::cout << "update_spatial_hash(): " << elapsed_milliseconds << std::endl;
             }
@@ -438,7 +470,7 @@ public:
             elapsed_milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>
                     (timer_end-timer_start).count();
 
-            if (elapsed_milliseconds > 15)
+//            if (elapsed_milliseconds > 1)
             {
                 std::cout << "update_tree(): " << elapsed_milliseconds << std::endl;
             }
@@ -474,7 +506,7 @@ public:
             elapsed_milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>
                     (timer_end-timer_start).count();
 
-            if (elapsed_milliseconds > 15)
+//            if (elapsed_milliseconds > 1)
             {
                 std::cout << "compute_force_and_torque(): " << elapsed_milliseconds << std::endl;
             }
@@ -520,16 +552,16 @@ public:
             elapsed_milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>
                     (timer_end-timer_start).count();
 
-            if (elapsed_milliseconds > 15)
+//            if (elapsed_milliseconds > 1)
             {
                 std::cout << "update molecules: " << elapsed_milliseconds << std::endl;
             }
         }
 
-        if (_current_time - _last_sensor_check > 1.0f)
+        if (_game_state == Game_state::Running && _current_time - _last_sensor_check > 1.0f)
         {
             _last_sensor_check = _current_time;
-            _sensor_data.push_back(do_sensor_check());
+            do_sensor_check();
         }
 
         if (_game_state == Game_state::Running && check_is_finished())
@@ -538,32 +570,33 @@ public:
         }
     }
 
-    Sensor_data do_sensor_check()
+    void do_sensor_check()
     {
-        Sensor_data data;
-
-        data.num_collected_molecules = 0;
-        data.num_released_molecules = 0;
-        data.average_temperature = 0.0f;
-        data.energy_consumption = 0.0f;
+        float num_collected_molecules = 0.0f;
+        float num_released_molecules = 0.0f;
+        float average_temperature = 0.0f;
+        float energy_consumption = 0.0f;
 
         for (Portal const* p : _level_data._portals)
         {
             Molecule_capture_condition const& condition = p->get_condition();
-            data.num_collected_molecules += condition.get_num_captured_molecules();
+            num_collected_molecules += condition.get_num_captured_molecules();
         }
 
         for (Molecule_releaser const* p : _level_data._molecule_releasers)
         {
-            data.num_released_molecules += p->get_num_released_molecules();
+            num_released_molecules += p->get_num_released_molecules();
         }
 
-        for (Brownian_element const* p : _level_data._brownian_elements)
-        {
-            // data.energy_consumption += std::abs(p->get_strength()) * radius // TODO: get the data
-        }
+//        for (Brownian_element const* p : _level_data._brownian_elements)
+//        {
+//            // data.energy_consumption += std::abs(p->get_strength()) * radius // TODO: get the data
+//        }
 
-        return data;
+        _sensor_data.add_value(Sensor_data::Type::AvgTemp, average_temperature);
+        _sensor_data.add_value(Sensor_data::Type::ColMol, num_collected_molecules);
+        _sensor_data.add_value(Sensor_data::Type::RelMol, num_released_molecules);
+        _sensor_data.add_value(Sensor_data::Type::EnergyCon, energy_consumption);
     }
 
     bool check_is_finished() const
@@ -605,10 +638,10 @@ public:
         return _level_data;
     }
 
-    Molecule_atom_hash const& get_molecule_hash() const
-    {
-        return _molecule_hash;
-    }
+//    Molecule_atom_hash const& get_molecule_hash() const
+//    {
+//        return _molecule_hash;
+//    }
 
     My_tree const& get_tree() const
     {
@@ -623,18 +656,18 @@ public:
         ++_molecule_id_counter;
     }
 
-    void update_spatial_hash()
-    {
-        _molecule_hash.clear();
+//    void update_spatial_hash()
+//    {
+//        _molecule_hash.clear();
 
-        for (Molecule const& m : _level_data._molecules)
-        {
-            for (size_t i = 0; i < m._atoms.size(); ++i)
-            {
-                _molecule_hash.add_point(m._atoms[i]._r, Molecule_atom_id(m.get_id(), i));
-            }
-        }
-    }
+//        for (Molecule const& m : _level_data._molecules)
+//        {
+//            for (size_t i = 0; i < m._atoms.size(); ++i)
+//            {
+//                _molecule_hash.add_point(m._atoms[i]._r, Molecule_atom_id(m.get_id(), i));
+//            }
+//        }
+//    }
 
     struct Atom_averager
     {
@@ -821,7 +854,7 @@ public:
         Eigen::Vector3f play_box_center(play_box.center());
         Eigen::Vector3f play_box_extent((play_box.max() - play_box.min()));
 
-        float const strength = 100.0f;
+        float const strength = 10000.0f;
         float const radius   = 2.0f;
 
         for (int axis = 0; axis < 3; ++axis)
@@ -928,7 +961,7 @@ public:
     }
 
 
-    std::vector<Sensor_data> const& get_sensor_data() const
+    Sensor_data const& get_sensor_data() const
     {
         return _sensor_data;
     }
@@ -969,8 +1002,6 @@ public:
 
     void clear()
     {
-        // TODO & FIXME: delete stuff or use freaking smart pointers
-
         _level_data._molecules.clear();
         _level_data._barriers.clear();
         _level_data._brownian_elements.clear();
@@ -982,7 +1013,7 @@ public:
         _molecule_external_forces.clear();
         _molecule_id_to_molecule_map.clear();
         _external_forces.clear();
-        _molecule_hash.clear();
+//        _molecule_hash.clear();
     }
 
     void reset_level()
@@ -993,8 +1024,10 @@ public:
 
         _molecule_external_forces.clear();
         _external_forces.clear();
-        _molecule_hash.clear();
+//        _molecule_hash.clear();
         _molecule_id_to_molecule_map.clear();
+
+        _sensor_data.clear();
 
         reset_level_elements();
 
@@ -1016,12 +1049,57 @@ public:
 
     void load_state(std::string const& file_name)
     {
+        std::cout << __PRETTY_FUNCTION__ << " file: " << file_name << std::endl;
+
         std::ifstream in_file(file_name.c_str(), std::ios_base::binary);
         boost::archive::text_iarchive ia(in_file);
 
         ia >> *this;
 
         in_file.close();
+    }
+
+    void save_level(std::string const& file_name) const
+    {
+//        std::ofstream out_file(file_name.c_str(), std::ios_base::binary);
+        std::ofstream out_file(file_name.c_str());
+//        boost::archive::text_oarchive oa(out_file);
+        boost::archive::xml_oarchive oa(out_file);
+
+//        std::cout << "Parameter_list::save: " << out_file << std::endl;
+
+        oa << BOOST_SERIALIZATION_NVP(_level_data);
+
+        out_file.close();
+    }
+
+    void load_level(std::string const& file_name)
+    {
+        std::cout << __PRETTY_FUNCTION__ << " file: " << file_name << std::endl;
+
+//        std::ifstream in_file(file_name.c_str(), std::ios_base::binary);
+//        boost::archive::text_iarchive ia(in_file);
+        std::ifstream in_file(file_name.c_str());
+        boost::archive::xml_iarchive ia(in_file);
+
+        try
+        {
+            ia >> BOOST_SERIALIZATION_NVP(_level_data);
+        }
+        catch (boost::archive::archive_exception & e)
+        {
+            std::cout << "Boost Archive Exception. Failed to load level file: " << file_name << ", level reset: " << e.what() << std::endl;
+            _level_data = Level_data();
+        }
+        catch (std::exception & e)
+        {
+            std::cout << "Failed to load level file: " << file_name << ", level reset: " << e.what() << std::endl;
+            _level_data = Level_data();
+        }
+
+        in_file.close();
+
+        assert(_level_data.validate_elements());
     }
 
     void set_parameters(Parameter_list const& parameters)
@@ -1062,7 +1140,6 @@ public:
         parameters.add_parameter(new Parameter("max_force_distance", 10.0f, 1.0f, 1000.0f));
         parameters.add_parameter(new Parameter("gravity", 1.0f, 0.0f, 100.0f));
 
-//        Parameter_registry<Atomic_force>::create_single_select_instance(&parameters, "Atomic Force Type");
         Parameter_registry<Atomic_force>::create_multi_select_instance(&parameters, "Atomic Force Type");
 
         return parameters;
@@ -1082,8 +1159,7 @@ public:
     template<class Archive>
     void serialize(Archive & ar, const unsigned int /* version */)
     {
-//        ar & _molecules;
-        ar & _level_data;
+        ar & BOOST_SERIALIZATION_NVP(_level_data);
     }
 
 signals:
@@ -1122,14 +1198,14 @@ private:
     float _current_time;
     float _last_sensor_check;
 
-    std::vector<Sensor_data> _sensor_data;
+    Sensor_data _sensor_data;
 
     bool _do_constrain_forces;
     float _max_force;
 
     float _max_force_distance;
 
-    Molecule_atom_hash _molecule_hash;
+//    Molecule_atom_hash _molecule_hash;
     My_tree _tree;
 };
 

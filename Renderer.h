@@ -18,6 +18,7 @@
 
 #include "Level_data.h"
 #include "Level_element_draw_visitor.h"
+#include "Data_config.h"
 
 class Molecule_renderer
 {
@@ -317,24 +318,25 @@ private:
 REGISTER_CLASS_WITH_PARAMETERS(Molecule_renderer, Distance_renderer);
 
 
-class Shader_renderer : Molecule_renderer
+
+class Editor_renderer : Molecule_renderer
 {
 public:
-    Shader_renderer()
+    Editor_renderer()
     {
         _icosphere = IcoSphere<OpenMesh::Vec3f, Color>(2);
     }
 
     void init(QGLContext const* context, QSize const& size) override
     {
-        _molecule_program = std::unique_ptr<QGLShaderProgram>(init_program(context, "data/shaders/simple.vert", "data/shaders/molecule.frag"));
-        _temperature_program = std::unique_ptr<QGLShaderProgram>(init_program(context, "data/shaders/temperature.vert", "data/shaders/temperature.frag"));
-        _screen_quad_program = std::unique_ptr<QGLShaderProgram>(init_program(context, "data/shaders/fullscreen_square.vert", "data/shaders/simple_texture.frag"));
-        _post_program = std::unique_ptr<QGLShaderProgram>(init_program(context, "data/shaders/fullscreen_square.vert", "data/shaders/post.frag"));
-        _blur_program = std::unique_ptr<QGLShaderProgram>(init_program(context, "data/shaders/fullscreen_square.vert", "data/shaders/blur_1D.frag"));
+        _molecule_program = std::unique_ptr<QGLShaderProgram>(init_program(context, Data_config::get_instance()->get_qdata_path() + "/shaders/simple.vert", Data_config::get_instance()->get_qdata_path() + "/shaders/molecule.frag"));
+        _temperature_program = std::unique_ptr<QGLShaderProgram>(init_program(context, Data_config::get_instance()->get_qdata_path() + "/shaders/temperature.vert", Data_config::get_instance()->get_qdata_path() + "/shaders/temperature.frag"));
+        _screen_quad_program = std::unique_ptr<QGLShaderProgram>(init_program(context, Data_config::get_instance()->get_qdata_path() + "/shaders/fullscreen_square.vert", Data_config::get_instance()->get_qdata_path() + "/shaders/simple_texture.frag"));
+        _post_program = std::unique_ptr<QGLShaderProgram>(init_program(context, Data_config::get_instance()->get_qdata_path() + "/shaders/fullscreen_square.vert", Data_config::get_instance()->get_qdata_path() + "/shaders/post.frag"));
+        _blur_program = std::unique_ptr<QGLShaderProgram>(init_program(context, Data_config::get_instance()->get_qdata_path() + "/shaders/fullscreen_square.vert", Data_config::get_instance()->get_qdata_path() + "/shaders/blur_1D.frag"));
 
-        _sphere_mesh = load_mesh<MyMesh>("data/meshes/icosphere_3.obj");
-        _grid_mesh = load_mesh<MyMesh>("data/meshes/grid_10x10.obj");
+        _sphere_mesh = load_mesh<MyMesh>(Data_config::get_instance()->get_data_path() + "/meshes/icosphere_3.obj");
+        _grid_mesh = load_mesh<MyMesh>(Data_config::get_instance()->get_data_path() + "/meshes/grid_10x10.obj");
 
         typename MyMesh::ConstVertexIter vIt(_grid_mesh.vertices_begin()), vEnd(_grid_mesh.vertices_end());
 
@@ -346,15 +348,15 @@ public:
             _grid_mesh.set_texcoord2D(vIt.handle(), t);
         }
 
-        Frame_buffer<Color> ice_tex_fb = convert<QColor_to_Color_converter, Color>(QImage("data/textures/ice_texture.jpg"));
+        Frame_buffer<Color> ice_tex_fb = convert<QColor_to_Color_converter, Color>(QImage(Data_config::get_instance()->get_qdata_path() + "/textures/ice_texture.png"));
         _ice_texture = create_texture(ice_tex_fb);
 
-        Frame_buffer<Color> backdrop_tex_fb = convert<QColor_to_Color_converter, Color>(QImage("data/textures/iss_interior_1.jpg"));
+        Frame_buffer<Color> backdrop_tex_fb = convert<QColor_to_Color_converter, Color>(QImage(Data_config::get_instance()->get_qdata_path() + "/textures/iss_interior_1.png"));
         _backdrop_texture = create_texture(backdrop_tex_fb);
 
         resize(size);
 
-        _level_element_draw_visitor.init(context);
+        _level_element_draw_visitor.init(context, size);
         _level_element_ui_draw_visitor.init(context);
     }
 
@@ -384,6 +386,8 @@ public:
 
         _post_fbo = std::unique_ptr<QGLFramebufferObject>(new QGLFramebufferObject(size, QGLFramebufferObject::Depth));
         _temperature_fbo = std::unique_ptr<QGLFramebufferObject>(new QGLFramebufferObject(size, QGLFramebufferObject::Depth));
+
+        _level_element_draw_visitor.resize(size);
     }
 
     void draw_atom(Atom const& atom, float const scale, float const alpha = 1.0f) const
@@ -440,6 +444,8 @@ public:
             return;
         }
 
+        glDisable(GL_DEPTH_TEST);
+
         _temperature_program->bind();
 
         _temperature_program->setUniformValue("ice_texture", 0);
@@ -452,9 +458,6 @@ public:
 
         _temperature_program->setUniformValue("screen_size", screen_size);
         _temperature_program->setUniformValue("time", time);
-
-        glColor3f(0.5f, 0.5f, 0.5f);
-        draw_backdrop_quad();
 
         std::vector<Brownian_element*> const& elements = level_data._brownian_elements;
 
@@ -494,6 +497,11 @@ public:
             glVertex3fv(p.data());
         }
         glEnd();
+
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, 0);
+        glActiveTexture(GL_TEXTURE1);
+        glBindTexture(GL_TEXTURE_2D, 0);
 
         _temperature_program->release();
     }
@@ -574,6 +582,8 @@ public:
 
     void render(Level_data const& level_data, float const time, StandardCamera const* camera) const override
     {
+        glEnable(GL_DEPTH_TEST);
+
         QSize screen_size(camera->screenWidth(), camera->screenHeight());
 
         _scene_fbo->bind();
@@ -582,15 +592,7 @@ public:
 
         assert(_scene_fbo->isValid());
 
-        // draw the complete scene into an FB
-
-        glEnable(GL_TEXTURE_2D);
-
-//        glColor3f(1.0f, 0.0f, 0.0f);
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, _backdrop_texture);
-        draw_backdrop_quad();
-
+        glEnable(GL_LIGHTING);
         glDisable(GL_TEXTURE_2D);
 
         std::list<Molecule> const& molecules = level_data._molecules;
@@ -607,6 +609,434 @@ public:
             _molecule_program->setUniformValue("m_view", QMatrix4x4(m_view).transposed());
             _molecule_program->setUniformValue("light_pos", QVector3D(-5.0f, 5.0f, 5.0f));
             _molecule_program->setUniformValue("camera_pos", QVector3D(camera->position()[0], camera->position()[1], camera->position()[2]));
+
+            for (Molecule const& molecule : molecules)
+            {
+                draw_molecule(molecule, _scale);
+            }
+        }
+        _molecule_program->release();
+
+        draw_level_elements(level_data);
+
+        glDisable(GL_LIGHTING);
+        glEnable(GL_BLEND);
+
+        draw_particle_systems(level_data);
+
+        _scene_fbo->release();
+
+        glViewport(0.0f, 0.0f, camera->screenWidth(), camera->screenHeight());
+
+
+        // distort/"freeze" the scene texture by using the temperature on the front game field plane
+
+        _temperature_fbo->bind();
+
+        QGLFramebufferObject::blitFramebuffer(_temperature_fbo.get(), QRect(0, 0, screen_size.width(), screen_size.height()),
+                                              _scene_fbo.get(), QRect(0, 0, screen_size.width(), screen_size.height()),
+                                              GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+        draw_temperature_mesh(_grid_mesh, level_data, _scene_fbo->texture(), screen_size, time);
+
+        _temperature_fbo->release();
+
+
+        glPushAttrib(GL_COLOR_BUFFER_BIT | GL_VIEWPORT_BIT | GL_ENABLE_BIT);
+
+        glDisable(GL_DEPTH_TEST);
+        glViewport(0.0f, 0.0f, camera->screenWidth(), camera->screenHeight());
+
+        _screen_quad_program->bind();
+        _screen_quad_program->setUniformValue("texture", 0);
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, _temperature_fbo->texture());
+        draw_quad_with_tex_coords();
+        _screen_quad_program->release();
+
+        glPopAttrib();
+
+        // put the depth buffer from the scene drawing onto the direct FB
+        QGLFramebufferObject::blitFramebuffer(0, QRect(0, 0, screen_size.width(), screen_size.height()),
+                                              _scene_fbo.get(), QRect(0, 0, screen_size.width(), screen_size.height()),
+                                              GL_DEPTH_BUFFER_BIT);
+
+        glEnable(GL_TEXTURE_2D);
+        glDisable(GL_LIGHTING);
+
+        draw_elements_ui(level_data);
+
+        glEnable(GL_DEPTH_TEST);
+    }
+
+
+    void set_parameters(Parameter_list const& parameters) override
+    {
+        _scale = parameters["scale"]->get_value<float>();
+    }
+
+    static Parameter_list get_parameters()
+    {
+        Parameter_list parameters;
+        parameters.add_parameter(new Parameter("scale", 1.0f, 0.1f, 10.0f));
+        return parameters;
+    }
+
+    static std::string name()
+    {
+        return "Editor Renderer";
+    }
+
+    static Molecule_renderer * create()
+    {
+        return new Editor_renderer;
+    }
+
+private:
+    float _scale;
+
+    IcoSphere<OpenMesh::Vec3f, Color> _icosphere;
+    MyMesh _sphere_mesh;
+    MyMesh _grid_mesh;
+
+    GLuint _ice_texture;
+    GLuint _backdrop_texture;
+    GLuint _tmp_screen_texture[2];
+
+
+    std::unique_ptr<QGLShaderProgram> _molecule_program;
+    std::unique_ptr<QGLShaderProgram> _temperature_program;
+    std::unique_ptr<QGLShaderProgram> _screen_quad_program;
+    std::unique_ptr<QGLShaderProgram> _post_program;
+    std::unique_ptr<QGLShaderProgram> _blur_program;
+
+
+    GLuint _depth_tex;
+
+    std::unique_ptr<QGLFramebufferObject> _scene_fbo;
+    std::unique_ptr<QGLFramebufferObject> _post_fbo;
+    std::unique_ptr<QGLFramebufferObject> _temperature_fbo;
+
+    Level_element_draw_visitor _level_element_draw_visitor;
+    Level_element_ui_draw_visitor _level_element_ui_draw_visitor;
+};
+
+REGISTER_CLASS_WITH_PARAMETERS(Molecule_renderer, Editor_renderer);
+
+
+
+class Shader_renderer : Molecule_renderer
+{
+public:
+    Shader_renderer()
+    {
+        _icosphere = IcoSphere<OpenMesh::Vec3f, Color>(2);
+    }
+
+    void init(QGLContext const* context, QSize const& size) override
+    {
+        _molecule_program = std::unique_ptr<QGLShaderProgram>(init_program(context, Data_config::get_instance()->get_qdata_path() + "/shaders/simple.vert", Data_config::get_instance()->get_qdata_path() + "/shaders/molecule.frag"));
+        _temperature_program = std::unique_ptr<QGLShaderProgram>(init_program(context, Data_config::get_instance()->get_qdata_path() + "/shaders/temperature.vert", Data_config::get_instance()->get_qdata_path() + "/shaders/temperature.frag"));
+        _screen_quad_program = std::unique_ptr<QGLShaderProgram>(init_program(context, Data_config::get_instance()->get_qdata_path() + "/shaders/fullscreen_square.vert", Data_config::get_instance()->get_qdata_path() + "/shaders/simple_texture.frag"));
+        _post_program = std::unique_ptr<QGLShaderProgram>(init_program(context, Data_config::get_instance()->get_qdata_path() + "/shaders/fullscreen_square.vert", Data_config::get_instance()->get_qdata_path() + "/shaders/post.frag"));
+        _blur_program = std::unique_ptr<QGLShaderProgram>(init_program(context, Data_config::get_instance()->get_qdata_path() + "/shaders/fullscreen_square.vert", Data_config::get_instance()->get_qdata_path() + "/shaders/blur_1D.frag"));
+
+        _sphere_mesh = load_mesh<MyMesh>(Data_config::get_instance()->get_data_path() + "/meshes/icosphere_3.obj");
+        _grid_mesh = load_mesh<MyMesh>(Data_config::get_instance()->get_data_path() + "/meshes/grid_10x10.obj");
+
+        typename MyMesh::ConstVertexIter vIt(_grid_mesh.vertices_begin()), vEnd(_grid_mesh.vertices_end());
+
+        for (; vIt!=vEnd; ++vIt)
+        {
+            MyMesh::Point const& v = _grid_mesh.point(vIt.handle());
+
+            MyMesh::TexCoord2D t(v[0] * 0.5f + 0.5f, v[2] * 0.5f + 0.5f);
+            _grid_mesh.set_texcoord2D(vIt.handle(), t);
+        }
+
+        Frame_buffer<Color> ice_tex_fb = convert<QColor_to_Color_converter, Color>(QImage(Data_config::get_instance()->get_qdata_path() + "/textures/ice_texture.png"));
+        _ice_texture = create_texture(ice_tex_fb);
+
+        Frame_buffer<Color> backdrop_tex_fb = convert<QColor_to_Color_converter, Color>(QImage(Data_config::get_instance()->get_qdata_path() + "/textures/iss_interior_1.png"));
+        _backdrop_texture = create_texture(backdrop_tex_fb);
+
+        Frame_buffer<Color> blurred_backdrop_tex_fb = convert<QColor_to_Color_converter, Color>(QImage(Data_config::get_instance()->get_qdata_path() + "/textures/iss_interior_1_blurred.png"));
+        _blurred_backdrop_texture = create_texture(blurred_backdrop_tex_fb);
+
+        resize(size);
+
+        _level_element_draw_visitor.init(context, size);
+        _level_element_ui_draw_visitor.init(context);
+    }
+
+    void resize(QSize const& size) override
+    {
+//        _scene_fbo = std::unique_ptr<QGLFramebufferObject>(new QGLFramebufferObject(size, QGLFramebufferObject::Depth));
+        _scene_fbo = std::unique_ptr<QGLFramebufferObject>(new QGLFramebufferObject(size));
+
+
+        glGenTextures(1, &_depth_tex); // FIXME: need to delete first
+        glBindTexture(GL_TEXTURE_2D, _depth_tex);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH24_STENCIL8, size.width(), size.height(), 0, GL_DEPTH_STENCIL, GL_UNSIGNED_INT_24_8, NULL);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_NONE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        glBindTexture(GL_TEXTURE_2D, 0);
+
+        // FIXME: need to delete first
+        _tmp_screen_texture[0] = create_texture(size.width(), size.height());
+        _tmp_screen_texture[1] = create_texture(size.width(), size.height());
+
+        _scene_fbo->bind();
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, _depth_tex, 0);
+        _scene_fbo->release();
+
+        _post_fbo = std::unique_ptr<QGLFramebufferObject>(new QGLFramebufferObject(size, QGLFramebufferObject::Depth));
+        _temperature_fbo = std::unique_ptr<QGLFramebufferObject>(new QGLFramebufferObject(size, QGLFramebufferObject::Depth));
+
+        _level_element_draw_visitor.resize(size);
+    }
+
+    void draw_atom(Atom const& atom, float const scale, float const alpha = 1.0f) const
+    {
+        float radius = scale * atom._radius;
+
+        Color4 color(Atom::atom_colors[int(atom._type)], alpha);
+
+        if (atom._type == Atom::Type::Charge)
+        {
+            radius = 0.3f;
+        }
+
+        glm::mat4x4 model_matrix = glm::mat4(1.0f);
+        model_matrix = glm::translate(model_matrix, glm::vec3(atom._r[0], atom._r[1], atom._r[2]));
+        model_matrix = glm::scale(model_matrix, glm::vec3(radius, radius, radius));
+
+        glUniformMatrix4fv(_molecule_program->uniformLocation("m_model"), 1, GL_FALSE, glm::value_ptr(model_matrix));
+
+        glUniform4fv(_molecule_program->uniformLocation("color"), 1, color.data());
+
+        draw_mesh(_sphere_mesh);
+    }
+
+    void draw_molecule(Molecule const& molecule, float const scale, float const alpha = 1.0f) const
+    {
+        for (Atom const& atom : molecule._atoms)
+        {
+            draw_atom(atom, scale, alpha);
+        }
+    }
+
+    float get_brownian_strength(Eigen::Vector3f const& pos, std::vector<Brownian_element*> const& elements) const
+    {
+        float factor = 0.0f;
+
+        for (Brownian_element const* element : elements)
+        {
+            factor += element->get_brownian_motion_factor(pos);
+        }
+
+        float const max_strength = 50.0f;
+
+        float const strength = into_range(factor / max_strength, -1.0f, 1.0f) * 0.5f + 0.5f;
+
+        return strength;
+    }
+
+    void draw_temperature_mesh(MyMesh const& mesh, Level_data const& level_data, GLuint const bg_texture, QSize const& screen_size, const float time) const
+    {
+        if (level_data._game_field_borders.size() != 6)
+        {
+            std::cout << __PRETTY_FUNCTION__ << " no game field borders or too many/few, not drawing temperature mesh" << std::endl;
+            return;
+        }
+
+        glDisable(GL_DEPTH_TEST);
+
+        _temperature_program->bind();
+
+        _temperature_program->setUniformValue("ice_texture", 0);
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, _ice_texture);
+
+        _temperature_program->setUniformValue("scene_texture", 1);
+        glActiveTexture(GL_TEXTURE1);
+        glBindTexture(GL_TEXTURE_2D, bg_texture);
+
+        _temperature_program->setUniformValue("screen_size", screen_size);
+        _temperature_program->setUniformValue("time", time);
+
+//        glColor3f(0.5f, 0.5f, 0.5f);
+//        draw_backdrop_quad();
+
+        std::vector<Brownian_element*> const& elements = level_data._brownian_elements;
+
+        auto front_face_iter = level_data._game_field_borders.find(Level_data::Plane::Neg_Y);
+
+        assert(front_face_iter != level_data._game_field_borders.end());
+
+        Plane_barrier const* front_face = front_face_iter->second;
+        Eigen::Vector3f extent(front_face->get_extent().get()[0] * 0.5f, 0.0f, front_face->get_extent().get()[1] * 0.5f);
+
+        typename MyMesh::ConstFaceIter fIt(mesh.faces_begin()), fEnd(mesh.faces_end());
+
+        glBegin(GL_TRIANGLES);
+        for (; fIt!=fEnd; ++fIt)
+        {
+            typename MyMesh::ConstFaceVertexIter fvIt = mesh.cfv_iter(fIt.handle());
+
+            Eigen::Vector3f p = OM2Eigen(mesh.point(fvIt.handle()));
+            p = p.cwiseProduct(extent) + front_face->get_position();
+//            glColor4f(1.0f, 0.0f, 0.0f, 1.0f);
+            glTexCoord2fv(mesh.texcoord2D(fvIt.handle()).data());
+            glColor3fv(Color(get_brownian_strength(p, elements)).data());
+            glVertex3fv(p.data());
+            ++fvIt;
+            p = OM2Eigen(mesh.point(fvIt.handle()));
+            p = p.cwiseProduct(extent) + front_face->get_position();
+//            glColor4f(1.0f, 0.0f, 0.0f, 1.0f);
+            glTexCoord2fv(mesh.texcoord2D(fvIt.handle()).data());
+            glColor3fv(Color(get_brownian_strength(p, elements)).data());
+            glVertex3fv(p.data());
+            ++fvIt;
+            p = OM2Eigen(mesh.point(fvIt.handle()));
+            p = p.cwiseProduct(extent) + front_face->get_position();
+//            glColor4f(1.0f, 0.0f, 0.0f, 1.0f);
+            glTexCoord2fv(mesh.texcoord2D(fvIt.handle()).data());
+            glColor3fv(Color(get_brownian_strength(p, elements)).data());
+            glVertex3fv(p.data());
+        }
+        glEnd();
+
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, 0);
+        glActiveTexture(GL_TEXTURE1);
+        glBindTexture(GL_TEXTURE_2D, 0);
+
+        _temperature_program->release();
+    }
+
+    void draw_temperature(Level_data const& level_data) const
+    {
+        auto front_face_iter = level_data._game_field_borders.find(Level_data::Plane::Neg_Y);
+
+        assert(front_face_iter != level_data._game_field_borders.end());
+
+        Plane_barrier const* front_face = front_face_iter->second;
+        Eigen::Vector3f extent(front_face->get_extent().get()[0] * 0.5f, 0.0f, front_face->get_extent().get()[1] * 0.5f);
+
+        Eigen::Vector3f grid_start = front_face->get_position() - extent;
+        Eigen::Vector3f grid_end = front_face->get_position() + extent;
+
+        float resolution = 1.0f;
+
+        std::cout << __PRETTY_FUNCTION__ << " " << grid_start << " " << grid_end << std::endl;
+
+        for (float x = grid_start[0]; x < grid_end[0]; x += resolution)
+        {
+            for (float z = grid_start[2]; z < grid_end[2]; z += resolution)
+            {
+                Eigen::Vector3f pos(x, front_face->get_position()[1], z);
+
+                float const strength = get_brownian_strength(pos, level_data._brownian_elements);
+
+                Color c(strength, 0.0f, 1.0f - strength);
+
+                glColor3fv(c.data());
+
+                glBegin(GL_POINTS);
+                glVertex3fv(pos.data());
+                glEnd();
+            }
+        }
+    }
+
+    void draw_level_elements(Level_data const& level_data) const
+    {
+        for (boost::shared_ptr<Level_element> const& element : level_data._level_elements)
+        {
+            element->accept(&_level_element_draw_visitor);
+        }
+    }
+
+    void draw_particle_systems(Level_data const& level_data) const
+    {
+        for (Particle_system_element * element : level_data._particle_system_elements)
+        {
+            element->accept(&_level_element_draw_visitor);
+        }
+    }
+
+    void draw_elements_ui(Level_data const& level_data) const
+    {
+        for (boost::shared_ptr<Level_element> const& element : level_data._level_elements)
+        {
+            element->accept(&_level_element_ui_draw_visitor);
+        }
+    }
+
+    void draw_backdrop_quad() const
+    {
+        glPushMatrix();
+
+        glTranslatef(0.0f, 300.0f, 0.0f);
+
+        glScalef(300.0f, 1.0f, 300.0f);
+
+        glRotatef(90.0f, 1.0f, 0.0f, 0.0f);
+
+        draw_quad_with_tex_coords();
+
+        glPopMatrix();
+    }
+
+    void render(Level_data const& level_data, float const time, StandardCamera const* camera) const override
+    {
+        glEnable(GL_DEPTH_TEST);
+
+        QSize screen_size(camera->screenWidth(), camera->screenHeight());
+
+        _scene_fbo->bind();
+
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+        assert(_scene_fbo->isValid());
+
+        // draw the complete scene into an FB
+
+        glEnable(GL_TEXTURE_2D);
+
+        glColor3f(1.0f, 1.0f, 1.0f);
+        glDisable(GL_LIGHTING);
+
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, _backdrop_texture);
+        draw_backdrop_quad();
+
+        glBindTexture(GL_TEXTURE_2D, 0);
+
+        glEnable(GL_LIGHTING);
+        glDisable(GL_TEXTURE_2D);
+
+        std::list<Molecule> const& molecules = level_data._molecules;
+
+        _molecule_program->bind();
+        {
+            GLdouble m_projection[16];
+            glGetDoublev(GL_PROJECTION_MATRIX, m_projection);
+
+            GLdouble m_view[16];
+            glGetDoublev(GL_MODELVIEW_MATRIX, m_view);
+
+            _molecule_program->setUniformValue("m_projection", QMatrix4x4(m_projection).transposed());
+            _molecule_program->setUniformValue("m_view", QMatrix4x4(m_view).transposed());
+            _molecule_program->setUniformValue("light_pos", QVector3D(-5.0f, 5.0f, 5.0f));
+            _molecule_program->setUniformValue("camera_pos", QVector3D(camera->position()[0], camera->position()[1], camera->position()[2]));
+            _molecule_program->setUniformValue("bg_texture", 0);
+            glActiveTexture(GL_TEXTURE0);
+            glBindTexture(GL_TEXTURE_2D, _blurred_backdrop_texture);
 
             for (Molecule const& molecule : molecules)
             {
@@ -666,7 +1096,10 @@ public:
 
         _temperature_fbo->bind();
 
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+        QGLFramebufferObject::blitFramebuffer(_temperature_fbo.get(), QRect(0, 0, screen_size.width(), screen_size.height()),
+                                              _post_fbo.get(), QRect(0, 0, screen_size.width(), screen_size.height()),
+                                              GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         draw_temperature_mesh(_grid_mesh, level_data, _tmp_screen_texture[1], screen_size, time);
 
@@ -693,10 +1126,12 @@ public:
                                               _scene_fbo.get(), QRect(0, 0, screen_size.width(), screen_size.height()),
                                               GL_DEPTH_BUFFER_BIT);
 
-        glEnable(GL_DEPTH_TEST);
         glEnable(GL_TEXTURE_2D);
+        glDisable(GL_LIGHTING);
 
         draw_elements_ui(level_data);
+
+        glEnable(GL_DEPTH_TEST);
     }
 
 
@@ -731,6 +1166,7 @@ private:
 
     GLuint _ice_texture;
     GLuint _backdrop_texture;
+    GLuint _blurred_backdrop_texture;
     GLuint _tmp_screen_texture[2];
 
 
@@ -752,5 +1188,7 @@ private:
 };
 
 REGISTER_CLASS_WITH_PARAMETERS(Molecule_renderer, Shader_renderer);
+
+void setup_gl_points(bool const distance_dependent);
 
 #endif // RENDERER_H

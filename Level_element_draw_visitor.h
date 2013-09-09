@@ -4,7 +4,8 @@
 #include <Draw_functions.h>
 
 #include "Visitor.h"
-#include "Level_elements.h"
+#include "Level_element.h"
+#include "Data_config.h"
 
 
 class Level_element_draw_visitor : public Level_element_visitor
@@ -125,63 +126,157 @@ public:
 
     void visit(Molecule_releaser * b) const override
     {
-        glEnable(GL_LIGHTING);
-
         glPushMatrix();
 
         glTranslatef(b->get_position()[0], b->get_position()[1], b->get_position()[2]);
         glMultMatrixf(b->get_transform().data());
 
+        glColor4f(0.3f, 0.35f, 0.7f, 0.6f);
+        draw_box(b->get_box().min(), b->get_box().max(), 1.0f, true);
+        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
-//        _texture_program->bind();
+        glDisable(GL_LIGHTING);
 
-        glEnable(GL_TEXTURE_2D);
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, _molecule_releaser_tex);
-//        glColor4f(0.8f, 0.8f, 0.6f, 1.0f);
-        glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
-        glPushMatrix();
-//        glScalef(7.9f, 7.9f, 7.9f);
-        glScalef(b->get_box().sizes()[0], b->get_box().sizes()[1] * 0.95f, b->get_box().sizes()[2]);
+        glPointSize(24.0f * _scale_factor);
 
-        draw_mesh(_molecule_releaser_mesh);
-
-        glBindTexture(GL_TEXTURE_2D, 0);
-//        _texture_program->release();
-
-        glPopMatrix();
-
-        glDisable(GL_TEXTURE_2D);
-
-//        draw_box(b->get_box().min(), b->get_box().max());
-
+        glBegin(GL_POINTS);
+        for (Targeted_particle_system const& p_system : b->get_particle_systems())
+        {
+            for (Targeted_particle const& p : p_system.get_particles())
+            {
+                Color4 color(p.color, 1.0f);
+                glColor4fv(color.data());
+                glVertex3fv(p.position.data());
+            }
+        }
+        glEnd();
 
         if (b->is_selected())
         {
             glColor3f(1.0f, 1.0f, 0.7f);
             draw_box(b->get_box().min(), b->get_box().max(), 1.05f, true);
+            glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
         }
 
-        Eigen::Vector3f arrow_start = Eigen::Vector3f::Zero();
-        arrow_start[0] = b->get_extent()[0] * 0.5f;
+        float const unreleased_ratio = 1.0f - b->get_num_released_molecules() / float(b->get_num_max_molecules());
 
-        Eigen::Vector3f arrow_end = arrow_start;
-        arrow_end[0] += 15.0f;
+        if (b->get_num_max_molecules() - b->get_num_released_molecules() > 0)
+        {
+            float animation_position = b->get_animation_count();
 
-        glDisable(GL_LIGHTING);
+            QEasingCurve curve(QEasingCurve::InOutQuad);
 
-        glLineWidth(3.0f);
-        glColor3f(1.0f, 1.0f, 1.0f);
+            if (animation_position < 0.5f)
+            {
+                animation_position = curve.valueForProgress(animation_position * 2.0f);
+            }
+            else
+            {
+                animation_position = curve.valueForProgress(1.0f - (animation_position - 0.5f) * 2.0f);
+            }
 
-        glPushMatrix();
-        glRotatef(90.0f, 1.0f, 0.0f, 0.0f);
-        draw_arrow_z_plane(Eigen2OM(arrow_start), Eigen2OM(arrow_end));
-        glPopMatrix();
+            Eigen::Vector3f arrow_start = Eigen::Vector3f::Zero();
+            arrow_start[0] = b->get_extent()[0] * 0.5f * animation_position;
+
+            Eigen::Vector3f arrow_end = arrow_start;
+            arrow_end[0] += 10.0f * unreleased_ratio + 2.0f;
+
+            glDisable(GL_LIGHTING);
+
+            glLineWidth(3.0f);
+            glColor3f(1.0f, 1.0f, 1.0f);
+
+            glPushMatrix();
+            glRotatef(90.0f, 1.0f, 0.0f, 0.0f);
+            draw_arrow_z_plane_bold(Eigen2OM(arrow_start), Eigen2OM(arrow_end), 1.0f - std::max(0.0f, unreleased_ratio - 0.2f));
+            glPopMatrix();
+        }
 
         glEnable(GL_LIGHTING);
 
         glPopMatrix();
     }
+
+//    void visit(Molecule_releaser * b) const override
+//    {
+//        glPushMatrix();
+
+//        glTranslatef(b->get_position()[0], b->get_position()[1], b->get_position()[2]);
+//        glMultMatrixf(b->get_transform().data());
+
+
+//        glDisable(GL_LIGHTING);
+
+//        glPointSize(24.0f * _scale_factor);
+
+////        draw_box(b->get_box().min(), b->get_box().max());
+//        glBegin(GL_POINTS);
+//        for (Targeted_particle_system const& p_system : b->get_particle_systems())
+//        {
+//            for (Targeted_particle const& p : p_system.get_particles())
+//            {
+//                Color4 color(p.color, 1.0f);
+//                glColor4fv(color.data());
+//                glVertex3fv(p.position.data());
+//            }
+//        }
+//        glEnd();
+
+////        _texture_program->bind();
+
+//        glEnable(GL_LIGHTING);
+
+
+//        glEnable(GL_TEXTURE_2D);
+//        glActiveTexture(GL_TEXTURE0);
+//        glBindTexture(GL_TEXTURE_2D, _molecule_releaser_tex);
+////        glColor4f(0.8f, 0.8f, 0.6f, 1.0f);
+//        glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+//        glPushMatrix();
+////        glScalef(7.9f, 7.9f, 7.9f);
+//        glScalef(b->get_box().sizes()[0], b->get_box().sizes()[1] * 0.95f, b->get_box().sizes()[2]);
+
+//        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+//        draw_mesh(_molecule_releaser_mesh);
+//        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+
+//        glBindTexture(GL_TEXTURE_2D, 0);
+////        _texture_program->release();
+
+//        glPopMatrix();
+
+//        glDisable(GL_TEXTURE_2D);
+
+////        draw_box(b->get_box().min(), b->get_box().max());
+
+
+//        if (b->is_selected())
+//        {
+//            glColor3f(1.0f, 1.0f, 0.7f);
+//            draw_box(b->get_box().min(), b->get_box().max(), 1.05f, true);
+//            glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+//        }
+
+//        Eigen::Vector3f arrow_start = Eigen::Vector3f::Zero();
+//        arrow_start[0] = b->get_extent()[0] * 0.5f;
+
+//        Eigen::Vector3f arrow_end = arrow_start;
+//        arrow_end[0] += 15.0f;
+
+//        glDisable(GL_LIGHTING);
+
+//        glLineWidth(3.0f);
+//        glColor3f(1.0f, 1.0f, 1.0f);
+
+//        glPushMatrix();
+//        glRotatef(90.0f, 1.0f, 0.0f, 0.0f);
+//        draw_arrow_z_plane_bold(Eigen2OM(arrow_start), Eigen2OM(arrow_end));
+//        glPopMatrix();
+
+//        glEnable(GL_LIGHTING);
+
+//        glPopMatrix();
+//    }
 
     void visit(Brownian_box * b) const override
     {
@@ -199,6 +294,8 @@ public:
 
         glDisable(GL_LIGHTING);
 
+        glPointSize(24.0f * _scale_factor);
+
 //        draw_box(b->get_box().min(), b->get_box().max());
         glBegin(GL_POINTS);
         for (Particle const& p : b->get_particles())
@@ -206,6 +303,8 @@ public:
             glVertex3fv(p.position.data());
         }
         glEnd();
+
+        glBindTexture(GL_TEXTURE_2D, 0);
 
         glEnable(GL_LIGHTING);
 
@@ -243,6 +342,8 @@ public:
         glMultMatrixf(b->get_transform().data());
 
         glDisable(GL_LIGHTING);
+
+        glPointSize(24.0f * _scale_factor);
 
 //        draw_box(b->get_box().min(), b->get_box().max());
         glBegin(GL_POINTS);
@@ -286,13 +387,143 @@ public:
         glTranslatef(b->get_position()[0], b->get_position()[1], b->get_position()[2]);
         glMultMatrixf(b->get_transform().data());
 
-        glColor3f(0.3f, 0.8f, 0.4f);
-        draw_box(b->get_box().min(), b->get_box().max());
+        glColor4f(0.3f, 0.8f, 0.4f, 0.6f);
+        draw_box(b->get_box().min(), b->get_box().max(), 1.0f, true);
+        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+
+        glDisable(GL_LIGHTING);
+
+        glPushMatrix();
+        if (b->get_box().sizes()[0] < b->get_box().sizes()[2])
+        {
+            glTranslatef(b->get_box().sizes()[0] * 0.5f + 1.5f, -b->get_box().sizes()[1] * 0.5f, 0.0f);
+            glScalef(1.0f, 1.0f, b->get_box().sizes()[2]);
+        }
+        else
+        {
+            glTranslatef(0.0f, -b->get_box().sizes()[1] * 0.5f, -b->get_box().sizes()[2] * 0.5f - 1.5f);
+            glScalef(b->get_box().sizes()[0], 1.0f, 1.0f);
+            glRotatef(90.0f, 0.0f, 1.0f, 0.0f);
+        }
+        glTranslatef(-0.5f, 0.0f, -0.5f);
+        glRotatef(90.0f, 1.0f, 0.0f, 0.0f);
+
+        int const num_capped_molecules = b->get_condition().get_num_captured_molecules();
+        int const min_capped_molecules = b->get_condition().get_min_captured_molecules();
+
+        float const rect_size_x = 1.0f;
+        float const rect_size_y = 1.0f / float(min_capped_molecules);
+
+        for (int i = 0; i < min_capped_molecules; ++i)
+        {
+            if (i < num_capped_molecules)
+            {
+                glColor4f(0.4f, 1.0f, 0.6f, 0.6f);
+            }
+            else
+            {
+                glColor4f(0.4f, 0.5f, 0.4f, 0.4f);
+            }
+
+            draw_rect_z_plane(Eigen::Vector3f(0.0f, 0.0f, 0.0f), Eigen::Vector3f(rect_size_x, rect_size_y * 0.9f, 0.0f));
+
+            glTranslatef(0.0f, rect_size_y, 0.0f);
+        }
+
+        glPopMatrix();
+
+        glPointSize(24.0f * _scale_factor);
+
+        glBegin(GL_POINTS);
+        for (Particle const& p : b->get_particles())
+        {
+            Color4 color(p.color, 1.0f);
+            glColor4fv(color.data());
+            glVertex3fv(p.position.data());
+        }
+        glEnd();
+
+//        glColor3f(0.3f, 0.8f, 0.4f);
+//        draw_box(b->get_box().min(), b->get_box().max());
 
         if (b->is_selected())
         {
             glColor3f(0.3f, 1.0f, 0.4f);
             draw_box(b->get_box().min(), b->get_box().max(), 1.05f, true);
+            glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+        }
+
+        glPopMatrix();
+    }
+
+    void visit(Sphere_portal * b) const override
+    {
+        glPushMatrix();
+
+        glTranslatef(b->get_position()[0], b->get_position()[1], b->get_position()[2]);
+        glMultMatrixf(b->get_transform().data());
+
+        glColor4f(0.3f, 0.8f, 0.4f, 0.6f);
+        glPushMatrix();
+
+        Eigen::Vector3f const& extent = b->get_extent();
+
+        glScalef(extent[0] * 0.5f, extent[1] * 0.5f, extent[2] * 0.5f);
+
+        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+        draw_mesh(_icosphere_3_mesh);
+        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+
+        glDisable(GL_LIGHTING);
+
+        glPushMatrix();
+        glRotatef(90.0f, 1.0f, 0.0f, 0.0f);
+
+        int const num_capped_molecules = b->get_condition().get_num_captured_molecules();
+        int const min_capped_molecules = b->get_condition().get_min_captured_molecules();
+
+        float const arc_fraction = 1.0f / float(min_capped_molecules);
+
+        for (int i = 0; i < min_capped_molecules; ++i)
+        {
+            if (i < num_capped_molecules)
+            {
+                glColor4f(0.4f, 1.0f, 0.6f, 0.6f);
+
+            }
+            else
+            {
+                glColor4f(0.4f, 0.5f, 0.4f, 0.4f);
+            }
+
+            draw_arc<Eigen::Vector3f>(1.1f, 1.0f, arc_fraction * 0.9f, std::max(64, min_capped_molecules * 6));
+
+            glRotatef(arc_fraction * 360.0f, 0.0f, 0.0f, 1.0f);
+        }
+
+        glPopMatrix();
+
+        glPopMatrix();
+
+        glPointSize(24.0f * _scale_factor);
+
+        glBegin(GL_POINTS);
+        for (Particle const& p : b->get_particles())
+        {
+            Color4 color(p.color, 1.0f);
+            glColor4fv(color.data());
+            glVertex3fv(p.position.data());
+        }
+        glEnd();
+
+//        glColor3f(0.3f, 0.8f, 0.4f);
+//        draw_box(b->get_box().min(), b->get_box().max());
+
+        if (b->is_selected())
+        {
+            glColor3f(0.3f, 1.0f, 0.4f);
+            draw_mesh(_icosphere_3_mesh);
+            glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
         }
 
         glPopMatrix();
@@ -301,6 +532,7 @@ public:
     void visit(Particle_system_element * system) const override
     {
         glDisable(GL_LIGHTING);
+        glEnable(GL_BLEND);
 
         float const lifetime_percentage = system->get_life_percentage();
 
@@ -312,27 +544,31 @@ public:
             alpha *= alpha;
         }
 
+        glPointSize(24.0f * _scale_factor);
+
         glBegin(GL_POINTS);
         for (Particle const& p : system->get_particles())
         {
-//            glColor4f(1.0f, 0.7f, 0.6f, alpha);
             Color4 color(p.color, alpha);
             glColor4fv(color.data());
             glVertex3fv(p.position.data());
         }
         glEnd();
+
+        glBindTexture(GL_TEXTURE_2D, 0);
+
+        glEnable(GL_LIGHTING);
     }
 
-    void init(QGLContext const* context)
+    void init(QGLContext const* context, QSize const& size)
     {
-
-        Frame_buffer<Color> molecule_releaser_tex_fb = convert<QColor_to_Color_converter, Color>(QImage("data/textures/molecule_releaser.png"));
+        Frame_buffer<Color> molecule_releaser_tex_fb = convert<QColor_to_Color_converter, Color>(QImage(Data_config::get_instance()->get_qdata_path() + "/textures/molecule_releaser.png"));
         _molecule_releaser_tex = create_texture(molecule_releaser_tex_fb);
 
-        Frame_buffer<Color4> brownian_panel_tex_fb = convert<QRgb_to_Color4_converter, Color4>(QImage("data/textures/brownian_panel.png"));
+        Frame_buffer<Color4> brownian_panel_tex_fb = convert<QRgb_to_Color4_converter, Color4>(QImage(Data_config::get_instance()->get_qdata_path() + "/textures/brownian_panel.png"));
         _brownian_panel_tex = create_texture(brownian_panel_tex_fb);
 
-        _molecule_releaser_mesh = load_mesh<MyMesh>("data/meshes/molecule_releaser.obj");
+        _molecule_releaser_mesh = load_mesh<MyMesh>(Data_config::get_instance()->get_data_path() +  "/meshes/molecule_releaser.obj");
 
 //        typename MyMesh::ConstVertexIter vIt(_molecule_releaser_mesh.vertices_begin()), vEnd(_molecule_releaser_mesh.vertices_end());
 
@@ -344,12 +580,26 @@ public:
 //            std::cout << vIt.handle() << " normal " << _molecule_releaser_mesh.normal(vIt.handle()) << std::endl;
 //        }
 
-        _tractor_circle_mesh = load_mesh<MyMesh>("data/meshes/tractor_circle.obj");
+        _tractor_circle_mesh = load_mesh<MyMesh>(Data_config::get_instance()->get_data_path() +  "/meshes/tractor_circle.obj");
 
-        _texture_program = std::unique_ptr<QGLShaderProgram>(init_program(context, "data/shaders/temperature.vert", "data/shaders/test.frag"));
+        _icosphere_3_mesh = load_mesh<MyMesh>(Data_config::get_instance()->get_data_path() +  "/meshes/icosphere_3.obj");
+
+        _texture_program = std::unique_ptr<QGLShaderProgram>(init_program(context, Data_config::get_instance()->get_qdata_path() + "/shaders/temperature.vert", Data_config::get_instance()->get_qdata_path() + "/shaders/test.frag"));
+
+        Frame_buffer<Color4> particle_tex_fb = convert<QRgb_to_Color4_converter, Color4>(QImage(Data_config::get_instance()->get_qdata_path() + "/textures/particle.png"));
+        _particle_tex = create_texture(particle_tex_fb);
+
+        resize(size);
+    }
+
+    void resize(QSize const& size)
+    {
+         _scale_factor = (size.height()) / (768.0f);
     }
 
 private:
+    float _scale_factor; // changes with screen size changes
+
     std::unique_ptr<QGLShaderProgram> _texture_program;
 
     GLuint _brownian_panel_tex;
@@ -358,6 +608,9 @@ private:
     GLuint _molecule_releaser_tex;
 
     MyMesh _tractor_circle_mesh;
+    MyMesh _icosphere_3_mesh;
+
+    GLuint _particle_tex;
 };
 
 
@@ -408,10 +661,10 @@ public:
 
     void init(QGLContext const* /* context */)
     {
-        Frame_buffer<Color4> brownian_panel_tex_fb = convert<QRgb_to_Color4_converter, Color4>(QImage("data/textures/brownian_panel.png"));
+        Frame_buffer<Color4> brownian_panel_tex_fb = convert<QRgb_to_Color4_converter, Color4>(QImage(Data_config::get_instance()->get_qdata_path() +  "/textures/brownian_panel.png"));
         _brownian_panel_tex = create_texture(brownian_panel_tex_fb);
 
-        Frame_buffer<Color4> tractor_panel_tex_fb = convert<QRgb_to_Color4_converter, Color4>(QImage("data/textures/tractor_panel.png"));
+        Frame_buffer<Color4> tractor_panel_tex_fb = convert<QRgb_to_Color4_converter, Color4>(QImage(Data_config::get_instance()->get_qdata_path() +  "/textures/tractor_panel.png"));
         _tractor_panel_tex = create_texture(tractor_panel_tex_fb);
     }
 

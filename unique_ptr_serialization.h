@@ -24,24 +24,24 @@ namespace boost {
         inline void save
             (Archive &archive,
             std::unique_ptr<T> const& subtree,
-            const unsigned int file_version)
+            const unsigned int /*file_version*/)
         {
             // only the raw pointer has to be saved
             const T *const  subtree_x = subtree.get();
 
-            archive << subtree_x;
+            archive << BOOST_SERIALIZATION_NVP(subtree_x);
         }
 
         template <class Archive, class T>
         inline void load
             (Archive &archive,
             std::unique_ptr<T> &subtree,
-            const unsigned int file_version)
+            const unsigned int /*file_version*/)
         {
 
             T *p_subtree;
 
-            archive >> p_subtree;
+            archive >> BOOST_SERIALIZATION_NVP(p_subtree);
 
             #if BOOST_WORKAROUND(BOOST_DINKUMWARE_STDLIB, == 1)
                 subtree.release();

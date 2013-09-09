@@ -11,6 +11,7 @@
 #include <Draw_functions.h>
 
 #include "Atom.h"
+#include "Data_config.h"
 
 // force calc using shader, each pixel == 1 atom
 // textures with:
@@ -98,7 +99,7 @@ public:
         _radius_frame = Frame_buffer<float>(_size, _size);
         _parent_id_frame = Frame_buffer<int>(_size, _size);
 
-        _shader = std::unique_ptr<QGLShaderProgram>(init_program(context, "data/shaders/force_calc.vert", "data/shaders/force_calc.frag"));
+        _shader = std::unique_ptr<QGLShaderProgram>(init_program(context, Data_config::get_instance()->get_qdata_path() + "/shaders/force_calc.vert", Data_config::get_instance()->get_qdata_path() + "/shaders/force_calc.frag"));
 
         init_vertex_data();
     }
@@ -153,10 +154,10 @@ public:
 
         assert(num_atoms < _max_num_atoms);
 
-        GLuint position_texture  = create_texture(_position_frame);
-        GLuint charge_texture    = create_single_channel_texture(_charge_frame);
-        GLuint radius_texture    = create_single_channel_texture(_radius_frame);
-        GLuint parent_id_texture = create_single_channel_texture(_parent_id_frame);
+//        GLuint position_texture  = create_texture(_position_frame);
+//        GLuint charge_texture    = create_single_channel_texture(_charge_frame);
+//        GLuint radius_texture    = create_single_channel_texture(_radius_frame);
+//        GLuint parent_id_texture = create_single_channel_texture(_parent_id_frame);
 
         glPushAttrib(GL_COLOR_BUFFER_BIT);
 

@@ -42,7 +42,8 @@ QMAKE_CXXFLAGS += -Wall \
     -Wextra \
     -fPIC \
     -std=c++11 \
-    -stdlib=libc++
+    -stdlib=libc++ \
+    -ftemplate-depth=1024
 
 QMAKE_CXX = /opt/local/bin/clang++-mp-3.3
 QMAKE_LINK = /opt/local/bin/clang++-mp-3.3
@@ -56,7 +57,10 @@ LIBS += -lGLU
 # Input
 SOURCES += main.cpp \
     RegularBspTree.cpp \
-    Atom.cpp
+    Atom.cpp \
+    Data_config.cpp \
+    Renderer.cpp \
+    Level_element.cpp
 
 OTHER_FILES += TODO.txt \
     data/shaders/picking.vert \
@@ -85,7 +89,6 @@ HEADERS += \
     Atomic_force.h \
     RegularBspTree.h \
     Draggable.h \
-    Level_elements.h \
     Visitor.h \
     Level_element_draw_visitor.h \
     Eigen_Matrix_serializer.h \
@@ -94,4 +97,8 @@ HEADERS += \
     Level_data.h \
     Particle_system.h \
     unique_ptr_serialization.h \
-    Sensor_data.h
+    Sensor_data.h \
+    Progress.h \
+    Score.h \
+    Data_config.h \
+    Level_element.h

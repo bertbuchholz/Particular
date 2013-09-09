@@ -11,7 +11,8 @@ namespace boost
     {
         for (int i = 0; i < t.size(); i++)
         {
-            ar & t.data()[i];
+            ar & boost::serialization::make_nvp("v", t.data()[i]);
+//            ar & BOOST_SERIALIZATION_NVP(t.data()[i]);
         }
     }
 }

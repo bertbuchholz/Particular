@@ -2,6 +2,7 @@
 #define PARTICLE_SYSTEM_H
 
 #include <QImage>
+#include <QFont>
 #include <Eigen/Core>
 #include <functional>
 #include <vector>
@@ -21,10 +22,10 @@ struct Particle
     template<class Archive>
     void serialize(Archive & ar, const unsigned int /* version */)
     {
-        ar & position;
-        ar & speed;
-        ar & color;
-        ar & age;
+        ar & BOOST_SERIALIZATION_NVP(position);
+        ar & BOOST_SERIALIZATION_NVP(speed);
+        ar & BOOST_SERIALIZATION_NVP(color);
+        ar & BOOST_SERIALIZATION_NVP(age);
     }
 };
 
@@ -36,9 +37,9 @@ struct Targeted_particle : public Particle
     template<class Archive>
     void serialize(Archive & ar, const unsigned int /* version */)
     {
-        ar & boost::serialization::base_object<Particle>(*this);
-        ar & initial_speed;
-        ar & target;
+        ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Particle);
+        ar & BOOST_SERIALIZATION_NVP(initial_speed);
+        ar & BOOST_SERIALIZATION_NVP(target);
     }
 };
 
@@ -60,28 +61,43 @@ private:
 class Targeted_particle_system
 {
 public:
-    Targeted_particle_system(float const total_duration = 10.0f) : _total_duration(total_duration)
+    Targeted_particle_system(float const total_duration = 10.0f) : _total_duration(total_duration), _age(0.0f)
     { }
 
-    void generate(std::string const& text)
+    // rect in 0..1 coordinates
+    void generate(std::string const& text, QFont const& main_font, QRectF const& rect)
     {
 
-        QImage img(text.size() * 30, 100, QImage::Format_RGB32);
+        int const scale = 500;
+
+        QRect scaled_rect(rect.left() * scale,
+                          rect.top() * scale,
+                          rect.width() * scale,
+                          rect.height() * scale);
+
+//        QImage img(text.size() * 30, text.size() * 30, QImage::Format_RGB32);
+        QImage img(scale, scale, QImage::Format_RGB32);
         img.fill(QColor(0, 0, 0));
 
         QPainter p(&img);
 
-        QFont font;
-        font.setWeight(QFont::Bold);
-        font.setPixelSize(25);
+        QFont font = main_font;
+//        font.setWeight(QFont::Bold);
+        font.setPixelSize(70);
+        font.setLetterSpacing(QFont::PercentageSpacing, 115.0f);
         p.setFont(font);
 
         p.setPen(QColor(255, 255, 255));
         p.setBrush(Qt::NoBrush);
 
-        p.drawText(QRect(15, 15, img.width() - 30, img.height() - 30), Qt::AlignCenter, QString::fromStdString(text));
+//        p.drawText(QRect(15, 15, img.width() - 30, img.height() - 30), Qt::AlignCenter, QString::fromStdString(text));
 
-//        img.save("/Users/bert/Desktop/text.png");
+//        QSize b_size = p.boundingRect(QRect(0, 0, 500, 500), Qt::AlignLeft | Qt::AlignTop, QString::fromStdString(text)).size();
+
+
+        p.drawText(scaled_rect, Qt::AlignCenter, QString::fromStdString(text));
+
+        img.save("/Users/bert/Desktop/text.png");
 
         generate(img);
     }
@@ -94,11 +110,11 @@ public:
         {
             for (int y = 0; y < image.height(); ++y)
             {
-                if (qRed(image.pixel(x, y)) > 128)
+                if (qRed(image.pixel(x, y)) > 10)
                 {
                     Targeted_particle p;
                     p.age = 0.0f;
-                    p.color = Color(1.0f, 0.0f, 0.0f);
+                    p.color = Color(1.0f, 0.33f, 0.05f);
                     p.position = Eigen::Vector3f::Random();
                     p.position[2] = 0.0f;
                     p.target = Eigen::Vector3f(  x / float(image.width())  * 2.0f - 1.0f,
@@ -107,7 +123,7 @@ public:
 
 //                    p.speed = Eigen::Vector3f::Random();
 
-                    p.initial_speed = 2.5f * (p.target - p.position) / _total_duration; // 2.5f is the 1/integral(wendland_2_1)
+                    p.initial_speed = (0.05f + 2.5f) * (p.target - p.position) / _total_duration; // 2.5f is the 1/integral(wendland_2_1)
 
                     p.speed[2] = 0.0f;
 
@@ -120,8 +136,20 @@ public:
         std::cout << __PRETTY_FUNCTION__ << " created " << _particles.size() << " particles" << std::endl;
     }
 
+    void init(std::vector<Targeted_particle> const& particles)
+    {
+        _particles = particles;
+
+        for (Targeted_particle & p : _particles)
+        {
+            p.initial_speed = (0.05f + 2.5f) * (p.target - p.position) / _total_duration; // 2.5f is the 1/integral(wendland_2_1)
+        }
+    }
+
     void animate(float const timestep)
     {
+        _age += timestep;
+
         for (Targeted_particle & p : _particles)
         {
             if (p.age < 1.0f)
@@ -150,6 +178,11 @@ public:
         }
     }
 
+    static bool is_dead(Targeted_particle_system const& p)
+    {
+        return p._age > p._total_duration;
+    }
+
     std::vector<Targeted_particle> const& get_particles() const
     {
         return _particles;
@@ -159,6 +192,7 @@ private:
     std::vector<Targeted_particle> _particles;
 
     float _total_duration;
+    float _age;
 };
 
 #endif // PARTICLE_SYSTEM_H

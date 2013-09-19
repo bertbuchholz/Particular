@@ -665,8 +665,13 @@ public:
 
         load_progress();
 
-        float const z = 0.5f * (_core.get_level_data()._game_field_borders[Level_data::Plane::Pos_Z]->get_position()[2]
-                + _core.get_level_data()._game_field_borders[Level_data::Plane::Neg_Z]->get_position()[2]);
+        float z = 0.0f;
+
+        if (_core.get_level_data()._game_field_borders.size() > 0)
+        {
+            z = 0.5f * (_core.get_level_data()._game_field_borders[Level_data::Plane::Pos_Z]->get_position()[2]
+                    + _core.get_level_data()._game_field_borders[Level_data::Plane::Neg_Z]->get_position()[2]);
+        }
 
         _my_camera->setUpVector(qglviewer::Vec(0.0f, 0.0f, 1.0f));
         _my_camera->setViewDirection(qglviewer::Vec(0.0f, 1.0f, 0.0f));

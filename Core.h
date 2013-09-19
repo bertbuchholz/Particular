@@ -4,6 +4,7 @@
 #include <QObject>
 
 #include <vector>
+#include <chrono>
 
 #include <Eigen/Core>
 #include <Eigen/Geometry>
@@ -309,6 +310,9 @@ private:
 
 //    Molecule_atom_hash _molecule_hash;
     My_tree _tree;
+
+    mutable int _debug_leaf_usage_count;
+    mutable int _debug_inner_node_usage_count;
 };
 
 REGISTER_BASE_CLASS_WITH_PARAMETERS(Core);

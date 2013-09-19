@@ -187,7 +187,9 @@ private:
 
         float const vdw_radii = a_0._radius + a_1._radius;
         float const sigma = _radius_factor * vdw_radii;
-        float const pow_6 = std::pow(sigma / distance, 6.0f);
+        float const sigma_distance = sigma / distance;
+//        float const pow_6 = std::pow(sigma / distance, 6.0f);
+        float const pow_6 = sigma_distance * sigma_distance * sigma_distance * sigma_distance * sigma_distance * sigma_distance;
         return _strength * 4.0f * (pow_6 * pow_6 - pow_6);
     }
 

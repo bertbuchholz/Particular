@@ -42,14 +42,16 @@ QMAKE_CXXFLAGS += -Wall \
     -Wextra \
     -fPIC \
     -std=c++11 \
-    -stdlib=libc++ \
     -ftemplate-depth=1024 # \
 #    -ferror-limit=1
 
-QMAKE_CXX = /opt/local/bin/clang++-mp-3.3
-QMAKE_LINK = /opt/local/bin/clang++-mp-3.3
+macx {
+    QMAKE_CXX = /opt/local/bin/clang++-mp-3.3
+    QMAKE_LINK = /opt/local/bin/clang++-mp-3.3
 
-QMAKE_LFLAGS_X86_64 = $$QMAKE_CXXFLAGS
+    QMAKE_CXXFLAGS += -stdlib=libc++
+    QMAKE_LFLAGS_X86_64 = $$QMAKE_CXXFLAGS
+}
 
 LIBS += -lGLU
 #    -lpthread \

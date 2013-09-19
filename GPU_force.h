@@ -3,6 +3,7 @@
 
 #include <QGLFramebufferObject>
 #include <QGLShaderProgram>
+#include <QGLFunctions>
 
 #include <Eigen/Core>
 
@@ -84,7 +85,7 @@ inline GLuint create_single_channel_texture(Frame_buffer<float> const& frame)
     return texture_index;
 }
 
-class GPU_force
+class GPU_force : public QGLFunctions
 {
 public:
     GPU_force(QGLContext const* context)
@@ -100,6 +101,8 @@ public:
         _parent_id_frame = Frame_buffer<int>(_size, _size);
 
         _shader = std::unique_ptr<QGLShaderProgram>(init_program(context, Data_config::get_instance()->get_qdata_path() + "/shaders/force_calc.vert", Data_config::get_instance()->get_qdata_path() + "/shaders/force_calc.frag"));
+
+        initializeGLFunctions(context);
 
         init_vertex_data();
     }

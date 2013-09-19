@@ -10,18 +10,18 @@ Core::Core() :
     _last_sensor_check(0.0f)
   //        _molecule_hash(Molecule_atom_hash(100, 4.0f))
 {
-    Eigen::Vector2f grid_start(-10.0f, -10.0f);
-    Eigen::Vector2f grid_end  ( 10.0f,  10.0f);
+//    Eigen::Vector2f grid_start(-10.0f, -10.0f);
+//    Eigen::Vector2f grid_end  ( 10.0f,  10.0f);
 
-    float resolution = 0.5f;
+//    float resolution = 0.5f;
 
-    for (float x = grid_start[0]; x < grid_end[0]; x += resolution)
-    {
-        for (float y = grid_start[1]; y < grid_end[1]; y += resolution)
-        {
-            _indicators.push_back(Force_indicator(Eigen::Vector3f(x, y, 0.0f)));
-        }
-    }
+//    for (float x = grid_start[0]; x < grid_end[0]; x += resolution)
+//    {
+//        for (float y = grid_start[1]; y < grid_end[1]; y += resolution)
+//        {
+//            _indicators.push_back(Force_indicator(Eigen::Vector3f(x, y, 0.0f)));
+//        }
+//    }
 }
 
 
@@ -75,6 +75,7 @@ Eigen::Vector3f Core::apply_forces_using_tree(const Atom &receiver_atom) const
 
                 if (sender_atom->_parent_id == receiver_atom._parent_id) continue;
 
+                ++_debug_leaf_usage_count;
                 force_i += calc_forces_between_atoms(receiver_atom, *sender_atom);
             }
         }
@@ -100,6 +101,7 @@ Eigen::Vector3f Core::apply_forces_using_tree(const Atom &receiver_atom) const
             }
             else
             {
+                ++_debug_inner_node_usage_count;
                 force_i += calc_forces_between_atoms(receiver_atom, node->get_averaged_data());
             }
         }
@@ -433,6 +435,9 @@ void Core::update(const float time_step)
         timer_start = std::chrono::system_clock::now();
     }
 
+    _debug_leaf_usage_count = 0;
+    _debug_inner_node_usage_count = 0;
+
     for (Molecule & m : _level_data._molecules)
     {
         compute_force_and_torque(m);
@@ -448,19 +453,21 @@ void Core::update(const float time_step)
         //            if (elapsed_milliseconds > 1)
         {
             std::cout << "compute_force_and_torque(): " << elapsed_milliseconds << std::endl;
+            std::cout << "leaf usage: " << _debug_leaf_usage_count << " ";
+            std::cout << "inner node usage: " << _debug_inner_node_usage_count << std::endl;
         }
     }
 
     _molecule_external_forces.erase(std::remove_if(_molecule_external_forces.begin(), _molecule_external_forces.end(), Check_duration(_current_time)),
                                     _molecule_external_forces.end());
 
-    if (_use_indicators)
-    {
-        for (Force_indicator & f : _indicators)
-        {
-            f._force = force_on_atom(f._atom);
-        }
-    }
+//    if (_use_indicators)
+//    {
+//        for (Force_indicator & f : _indicators)
+//        {
+//            f._force = force_on_atom(f._atom);
+//        }
+//    }
 
     if (time_debug)
     {

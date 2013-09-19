@@ -30,7 +30,7 @@ public:
     virtual void resize(QSize const& /* size */) {}
 
 //    virtual void render(std::vector<Molecule> const& molecules, StandardCamera const* = nullptr) const = 0;
-    virtual void render(Level_data const& level_data, float const time, StandardCamera const* = nullptr) const = 0;
+    virtual void render(Level_data const& level_data, float const time, StandardCamera const* = nullptr) = 0;
 
     virtual void update(Level_data const& /* level_data */) {}
 
@@ -65,7 +65,7 @@ public:
         }
     }
 
-    void render(Level_data const& level_data, float const /* time */, StandardCamera const* = nullptr) const override
+    void render(Level_data const& level_data, float const /* time */, StandardCamera const* = nullptr) override
     {
         std::list<Molecule> const& molecules = level_data._molecules;
 
@@ -165,7 +165,7 @@ public:
         }
     }
 
-    void render(Level_data const& level_data, float const /* time */, StandardCamera const* = nullptr) const override
+    void render(Level_data const& level_data, float const /* time */, StandardCamera const* = nullptr) override
     {
         std::list<Molecule> const& molecules = level_data._molecules;
 
@@ -211,7 +211,7 @@ REGISTER_CLASS_WITH_PARAMETERS(Molecule_renderer, Ball_renderer);
 class Distance_renderer : Molecule_renderer
 {
 public:
-    void render(Level_data const& level_data, float const /* time */, StandardCamera const* camera) const override
+    void render(Level_data const& level_data, float const /* time */, StandardCamera const* camera) override
     {
         std::list<Molecule> const& molecules = level_data._molecules;
 
@@ -320,8 +320,7 @@ private:
 REGISTER_CLASS_WITH_PARAMETERS(Molecule_renderer, Distance_renderer);
 
 
-
-class Editor_renderer : Molecule_renderer
+class Editor_renderer : public Molecule_renderer, public QGLFunctions
 {
 public:
     Editor_renderer()
@@ -331,6 +330,8 @@ public:
 
     void init(QGLContext const* context, QSize const& size) override
     {
+        initializeGLFunctions(context);
+
         _molecule_program = std::unique_ptr<QGLShaderProgram>(init_program(context, Data_config::get_instance()->get_qdata_path() + "/shaders/simple.vert", Data_config::get_instance()->get_qdata_path() + "/shaders/molecule.frag"));
         _temperature_program = std::unique_ptr<QGLShaderProgram>(init_program(context, Data_config::get_instance()->get_qdata_path() + "/shaders/temperature.vert", Data_config::get_instance()->get_qdata_path() + "/shaders/temperature.frag"));
         _screen_quad_program = std::unique_ptr<QGLShaderProgram>(init_program(context, Data_config::get_instance()->get_qdata_path() + "/shaders/fullscreen_square.vert", Data_config::get_instance()->get_qdata_path() + "/shaders/simple_texture.frag"));
@@ -392,7 +393,7 @@ public:
         _level_element_draw_visitor.resize(size);
     }
 
-    void draw_atom(Atom const& atom, float const scale, float const alpha = 1.0f) const
+    void draw_atom(Atom const& atom, float const scale, float const alpha = 1.0f)
     {
         float radius = scale * atom._radius;
 
@@ -414,7 +415,7 @@ public:
         draw_mesh(_sphere_mesh);
     }
 
-    void draw_molecule(Molecule const& molecule, float const scale, float const alpha = 1.0f) const
+    void draw_molecule(Molecule const& molecule, float const scale, float const alpha = 1.0f)
     {
         for (Atom const& atom : molecule._atoms)
         {
@@ -438,7 +439,7 @@ public:
         return strength;
     }
 
-    void draw_temperature_mesh(MyMesh const& mesh, Level_data const& level_data, GLuint const bg_texture, QSize const& screen_size, const float time) const
+    void draw_temperature_mesh(MyMesh const& mesh, Level_data const& level_data, GLuint const bg_texture, QSize const& screen_size, const float time)
     {
         if (level_data._game_field_borders.size() != 6)
         {
@@ -582,7 +583,7 @@ public:
         glPopMatrix();
     }
 
-    void render(Level_data const& level_data, float const time, StandardCamera const* camera) const override
+    void render(Level_data const& level_data, float const time, StandardCamera const* camera) override
     {
         glEnable(GL_DEPTH_TEST);
 
@@ -727,7 +728,7 @@ REGISTER_CLASS_WITH_PARAMETERS(Molecule_renderer, Editor_renderer);
 
 
 
-class Shader_renderer : Molecule_renderer
+class Shader_renderer : public Molecule_renderer, public QGLFunctions
 {
 public:
     Shader_renderer()
@@ -737,6 +738,8 @@ public:
 
     void init(QGLContext const* context, QSize const& size) override
     {
+        initializeGLFunctions(context);
+
         _molecule_program = std::unique_ptr<QGLShaderProgram>(init_program(context, Data_config::get_instance()->get_qdata_path() + "/shaders/simple.vert", Data_config::get_instance()->get_qdata_path() + "/shaders/molecule.frag"));
         _temperature_program = std::unique_ptr<QGLShaderProgram>(init_program(context, Data_config::get_instance()->get_qdata_path() + "/shaders/temperature.vert", Data_config::get_instance()->get_qdata_path() + "/shaders/temperature.frag"));
         _screen_quad_program = std::unique_ptr<QGLShaderProgram>(init_program(context, Data_config::get_instance()->get_qdata_path() + "/shaders/fullscreen_square.vert", Data_config::get_instance()->get_qdata_path() + "/shaders/simple_texture.frag"));
@@ -809,7 +812,7 @@ public:
         _backdrop_texture = create_texture(backdrop_tex_fb);
     }
 
-    void draw_atom(Atom const& atom, float const scale, float const alpha = 1.0f) const
+    void draw_atom(Atom const& atom, float const scale, float const alpha = 1.0f)
     {
         float radius = scale * atom._radius;
 
@@ -831,7 +834,7 @@ public:
         draw_mesh(_sphere_mesh);
     }
 
-    void draw_molecule(Molecule const& molecule, float const scale, float const alpha = 1.0f) const
+    void draw_molecule(Molecule const& molecule, float const scale, float const alpha = 1.0f)
     {
         for (Atom const& atom : molecule._atoms)
         {
@@ -855,7 +858,7 @@ public:
         return strength;
     }
 
-    void draw_temperature_mesh(MyMesh const& mesh, Level_data const& level_data, GLuint const bg_texture, QSize const& screen_size, const float time) const
+    void draw_temperature_mesh(MyMesh const& mesh, Level_data const& level_data, GLuint const bg_texture, QSize const& screen_size, const float time)
     {
         if (level_data._game_field_borders.size() != 6)
         {
@@ -1002,7 +1005,7 @@ public:
         glPopMatrix();
     }
 
-    void render(Level_data const& level_data, float const time, StandardCamera const* camera) const override
+    void render(Level_data const& level_data, float const time, StandardCamera const* camera) override
     {
         glEnable(GL_DEPTH_TEST);
 

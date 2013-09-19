@@ -143,7 +143,7 @@ public:
         {
             for (Atom const& sender_atom : sender._atoms)
             {
-                _position_frame.set_data(num_atoms, sender_atom._r);
+                _position_frame.set_data(num_atoms, sender_atom.get_position());
                 _charge_frame.set_data(num_atoms, sender_atom._charge);
                 _radius_frame.set_data(num_atoms, sender_atom._radius);
                 _parent_id_frame.set_data(num_atoms, sender.get_id());

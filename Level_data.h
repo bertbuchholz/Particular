@@ -7,6 +7,7 @@
 
 #include "Atom.h"
 #include "Level_element.h"
+#include "Molecule_releaser.h"
 #include "End_condition.h"
 
 

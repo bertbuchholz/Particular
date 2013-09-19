@@ -2,11 +2,14 @@
 #define DRAGGABLE_H
 
 #include <vector>
+#include <QVariantAnimation>
 
 #include <Eigen/Core>
 #include <Eigen/Geometry>
+#include <QGLViewer/camera.h>
 
 #include "Level_element.h"
+#include "Molecule_releaser.h"
 #include "Visitor.h"
 
 class Constraint
@@ -252,7 +255,7 @@ public:
     Draggable_label() {}
 
     Draggable_label(Eigen::Vector3f const& position, Eigen::Vector2f const& size, std::string const& text) :
-        Draggable(position), _texture(0), _extent(size), _text(text), _alpha(1.0f)
+        Draggable(position), _alpha(1.0f), _texture(0), _extent(size), _text(text)
     {
         _draggable = false;
     }
@@ -296,14 +299,62 @@ public:
         _alpha = alpha;
     }
 
+protected:
+    float _alpha;
+
 private:
     GLuint _texture;
 
     Eigen::Vector2f _extent;
 
     std::string _text;
+};
 
-    float _alpha;
+
+class Draggable_atom_label : public Draggable_label
+{
+public:
+    Draggable_atom_label(Eigen::Vector3f const& position, Eigen::Vector2f const& size, std::string const& text, Level_element * atom, qglviewer::Camera * camera) :
+        Draggable_label(position, size, text), _current_time(0.0f), _camera(camera)
+    {
+        _level_element = atom;
+        _level_element->add_observer(this);
+
+        _alpha = 0.0f;
+    }
+
+    void animate(const float timestep) override
+    {
+        _current_time += timestep;
+
+        float const blend_duration = 5.0f;
+
+        _alpha = std::min(_current_time / blend_duration, 1.0f);
+    }
+
+    void notify() override
+    {
+        Eigen::Vector3f projected_position = QGLV2Eigen(_camera->projectedCoordinatesOf(Eigen2QGLV(_level_element->get_position())));
+
+        if (QGLV2Eigen(_camera->position()).dot(_level_element->get_position()) < 0.0f) // behind the camera
+        {
+            projected_position[0] = 1000.0f;
+            projected_position[1] = 1000.0f;
+        }
+        else
+        {
+            projected_position[0] /= float(_camera->screenWidth());
+            projected_position[1] /= float(_camera->screenHeight());
+            projected_position[1] = 1.0f - projected_position[1];
+            projected_position[2] = 0.0f;
+        }
+
+        set_position(projected_position);
+    }
+
+private:
+    float _current_time;
+    qglviewer::Camera const* _camera;
 };
 
 
@@ -340,7 +391,7 @@ public:
         Draggable_label(position, size, text), _animation_start(0.0f), _animation_duration(10.0f)
     { }
 
-    void animate(const float timestep)
+    void animate(const float timestep) override
     {
         _current_time += timestep;
     }
@@ -965,4 +1016,9 @@ private:
 };
 
 
+void generate_button_texture(const QSize &screen_size, QFont font, Draggable_button * b);
+void generate_label_texture(QSize const& screen_size, QFont font, Draggable_label * b);
+void generate_statistics_texture(const QSize &screen_size, QFont font, Draggable_statistics & b);
+
 #endif // DRAGGABLE_H
+

@@ -1,7 +1,7 @@
 #ifndef END_CONDITION_H
 #define END_CONDITION_H
 
-#include "Atom.h"
+class Molecule;
 
 class End_condition
 {

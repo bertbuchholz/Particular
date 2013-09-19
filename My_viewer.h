@@ -39,7 +39,8 @@ public:
     enum class Mouse_state { None, Init_drag_handle, Init_drag_molecule, Dragging_molecule, Dragging_handle };
     enum class Selection { None, Level_element, Molecule };
     enum class Ui_state { Level_editor, Playing };
-    enum class Level_state { Main_menu, Before_start, Running, After_finish, Statistics };
+    enum class Level_state { Main_menu, Intro, Before_start, Running, After_finish, Statistics };
+    enum class Intro_state { Beginning, Single_molecule, Two_molecules_0, Two_molecules_1, Two_molecules_2, Two_molecules_3, Finishing, Finished };
 
     My_viewer(QGLFormat const& format = QGLFormat()) : Options_viewer(format),
         _mouse_state(Mouse_state::None), _selection(Selection::None), _selected_level_element(nullptr), _level_state(Level_state::Main_menu)
@@ -104,6 +105,7 @@ public:
         _parameters.add_parameter(Parameter::create_button("Start Level", std::bind(&My_viewer::start_level, this)));
         _parameters.add_parameter(Parameter::create_button("Reset Level", std::bind(&My_viewer::reset_level, this)));
         _parameters.add_parameter(Parameter::create_button("Do physics timestep", std::bind(&My_viewer::do_physics_timestep, this)));
+        _parameters.add_parameter(Parameter::create_button("Show cam orientation", std::bind(&My_viewer::print_cam_orientation, this)));
 
         Parameter_registry<Molecule_renderer>::create_single_select_instance(&_parameters, "Molecule Renderer", std::bind(&My_viewer::change_renderer, this));
 
@@ -116,6 +118,12 @@ public:
         connect(&_core, SIGNAL(game_state_changed()), this, SLOT(handle_game_state_change()));
 
         setup_fonts();
+    }
+
+    void print_cam_orientation()
+    {
+        qglviewer::Vec axis = camera()->orientation().axis();
+        std::cout << "angle: " << camera()->orientation().angle() << " axis: " << axis[0] << ", " << axis[1] << ", " << axis[2] << " pos: " << QGLV2Eigen(camera()->position()) << std::endl;
     }
 
     void setup_fonts()
@@ -533,7 +541,8 @@ public:
         {
             _ui_state = Ui_state::Playing;
 
-            update_game_camera();
+//            update_game_camera();
+            init_game();
         }
 
         update_draggable_to_level_element();
@@ -546,9 +555,27 @@ public:
         float const z = 0.5f * (_core.get_level_data()._game_field_borders[Level_data::Plane::Pos_Z]->get_position()[2]
                 + _core.get_level_data()._game_field_borders[Level_data::Plane::Neg_Z]->get_position()[2]);
 
-        _my_camera->setUpVector(qglviewer::Vec(0.0f, 0.0f, 1.0f));
-        _my_camera->setViewDirection(qglviewer::Vec(0.0f, 1.0f, 0.0f));
-        _my_camera->setPosition(qglviewer::Vec(0.0f, -80.0f, z));
+//        _my_camera->setUpVector(qglviewer::Vec(0.0f, 0.0f, 1.0f));
+//        _my_camera->setViewDirection(qglviewer::Vec(0.0f, 1.0f, 0.0f));
+//        _my_camera->setPosition(qglviewer::Vec(0.0f, -80.0f, z));
+
+        qglviewer::Vec position(0.0f, -80.0f, z);
+
+//        qglviewer::KeyFrameInterpolator * kfi = new qglviewer::KeyFrameInterpolator(camera()->frame());
+//        kfi->addKeyFrame(*camera()->frame());
+//        camera()->setKeyFrameInterpolator(0, kfi);
+//        qglviewer::Quaternion orientation(qglviewer::Vec(0.0f, 1.0f, 0.0f), 0.5f * M_PI);
+//        qglviewer::Quaternion orientation(qglviewer::Vec(0.0f, 0.0f, 1.0f), 0.0f);
+        qglviewer::Quaternion orientation(qglviewer::Vec(1.0f, 0.0f, 0.0f), M_PI * 0.5f);
+
+        qglviewer::Frame level_initial_view(position, orientation);
+//        level_initial_view.rotate(orientation);
+//        level_initial_view.setPosition(level_start_position);
+//        kfi->addKeyFrame(level_initial_view);
+//        kfi->setInterpolationTime(2.0f);
+//        kfi->startInterpolation();
+
+        camera()->interpolateTo(level_initial_view, 2.0f);
 
         Game_camera_constraint * camera_constraint = new Game_camera_constraint(_core.get_level_data()._game_field_borders); // FIXME: leak
 
@@ -564,6 +591,8 @@ public:
 
     void init() override
     {
+        std::cout << __PRETTY_FUNCTION__ << std::endl;
+
 //        initializeGLFunctions();
 
         Base::init();
@@ -612,7 +641,8 @@ public:
 
         generate_ui_textures();
 
-        init_game();
+        restore_parameters();
+//        init_game();
 
         update_draggable_to_level_element();
         update_active_draggables();
@@ -622,19 +652,25 @@ public:
 
     void init_game()
     {
-        restore_parameters();
+//        restore_parameters();
 
-        _parameters["ui_state"]->set_value(std::string("Playing"));
+//        _parameters["ui_state"]->set_value(std::string("Playing"));
 
+        _particle_systems[int(_level_state)].clear();
         _particle_systems[int(_level_state)].push_back(Targeted_particle_system(3.0f));
         _particle_systems[int(_level_state)].back().generate("I NEED A NAME", _particle_font, QRectF(0.0f, 0.6f, 1.0f, 0.3f));
 
         QString const level_string = QString::fromStdString(_parameters["levels"]->get_value<std::string>());
         _level_names = level_string.split(",", QString::SkipEmptyParts);
 
-        update_game_camera();
-
         load_progress();
+
+        float const z = 0.5f * (_core.get_level_data()._game_field_borders[Level_data::Plane::Pos_Z]->get_position()[2]
+                + _core.get_level_data()._game_field_borders[Level_data::Plane::Neg_Z]->get_position()[2]);
+
+        _my_camera->setUpVector(qglviewer::Vec(0.0f, 0.0f, 1.0f));
+        _my_camera->setViewDirection(qglviewer::Vec(0.0f, 1.0f, 0.0f));
+        _my_camera->setPosition(qglviewer::Vec(0.0f, -80.0f, z));
     }
 
     void draw_molecules_for_picking()
@@ -650,7 +686,7 @@ public:
 
                 glPushMatrix();
 
-                glTranslatef(atom._r[0], atom._r[1], atom._r[2]);
+                glTranslatef(atom.get_position()[0], atom.get_position()[1], atom.get_position()[2]);
 
 //                float radius = scale * atom._radius;
                 float radius = atom._radius;
@@ -901,6 +937,7 @@ public:
 
         glTranslatef(b->get_position()[0], b->get_position()[1], b->get_position()[2]);
         glScalef(b->get_extent()[0] * 0.5f, b->get_extent()[1] * 0.5f, 1.0f);
+        glColor4f(1.0f, 1.0f, 1.0f, b->get_alpha());
 
         draw_textured_quad(b->get_texture());
 
@@ -1147,12 +1184,12 @@ public:
 
             for (Force_indicator const& f : _core.get_force_indicators())
             {
-                draw_point(f._atom._r);
+                draw_point(f._atom.get_position());
 
                 //glLineWidth(into_range(1.0f, 5.0f, f._force.norm()));
                 //            draw_arrow_z_plane(Eigen2OM(f._atom._r), Eigen2OM(f._atom._r + f._force.normalized()));
 
-                draw_arrow_z_plane(Eigen2OM(f._atom._r), Eigen2OM(f._atom._r + f._force * indicator_scale));
+                draw_arrow_z_plane(Eigen2OM(f._atom.get_position()), Eigen2OM(f._atom.get_position() + f._force * indicator_scale));
             }
         }
     }
@@ -1243,7 +1280,7 @@ public:
         Ball_renderer ball_renderer;
 
         Atom dummy = Atom::create_oxygen(point);
-        dummy._r = point;
+        dummy.set_position(point);
         dummy._parent_id = 1000000;
 
         std::vector<Atom const*> atoms = _core.get_atoms_from_tree(dummy);
@@ -1381,7 +1418,11 @@ public:
     {
         bool handled = false;
 
-        if (event->buttons() & Qt::LeftButton && event->modifiers() & Qt::ControlModifier)
+        if (_level_state == Level_state::Intro)
+        {
+            handled = true;
+        }
+        else if (event->buttons() & Qt::LeftButton && event->modifiers() & Qt::ControlModifier)
         {
             add_element_event(event->pos());
             handled = true;
@@ -1626,6 +1667,17 @@ public:
         {
             _particle_systems[int(_level_state)].push_back(Targeted_particle_system(3.0f));
             _particle_systems[int(_level_state)].back().generate("Blubber", _particle_font, QRectF(0.0f, 0.5f, 1.0f, 0.3f));
+        }
+        else if (_ui_state == Ui_state::Playing && event->key() == Qt::Key_Escape)
+        {
+            if (_level_state == Level_state::Intro) // skip intro
+            {
+                load_next_level();
+            }
+            else if (_level_state == Level_state::Running) // go to pause menu
+            {
+
+            }
         }
         else
         {
@@ -1939,6 +1991,16 @@ public:
             stat.animate(animationPeriod() / 1000.0f);
         }
 
+        for (auto & l : _labels[int(_level_state)])
+        {
+            l->animate(animationPeriod() / 1000.0f);
+        }
+
+        if (_level_state == Level_state::Intro)
+        {
+            update_intro(animationPeriod() / 1000.0f);
+        }
+
         Base::animate();
     }
 
@@ -2220,7 +2282,7 @@ public:
         return b_size;
     }
 
-    float get_scale(QSize const& b_size, QSize const& target_size) const
+    float get_scale(QSize const& b_size, QSize const& target_size)
     {
         float const width_ratio = target_size.width() / float(b_size.width());
         float const height_ratio = target_size.height() / float(b_size.height());
@@ -2368,13 +2430,21 @@ public:
         b.set_texture(bindTexture(img));
     }
 
+    void setup_intro();
+
+    void update_intro(float const timestep);
+
     void start_new_game()
     {
         // set level to 0 (including introduction part) and start game
 
         _progress.last_level = 0;
 
-        load_next_level();
+        change_level_state(Level_state::Intro);
+
+        setup_intro();
+
+//        load_next_level();
     }
 
     void continue_game()
@@ -2640,6 +2710,9 @@ public Q_SLOTS:
         }
     }
 
+    void intro_cam1_end_reached();
+    void intro_cam2_end_reached();
+
 private:
     QTimer * _physics_timer;
     std::chrono::time_point<std::chrono::system_clock> _physics_elapsed_time;
@@ -2683,8 +2756,6 @@ private:
 
     boost::shared_ptr<Draggable_button> _next_level_button;
 
-    QTimer _score_animation;
-
     std::string _current_level_name;
 
     QStringList _level_names;
@@ -2693,6 +2764,9 @@ private:
 
     QFont _main_font;
     QFont _particle_font;
+
+    float _intro_time;
+    Intro_state _intro_state;
 };
 
 

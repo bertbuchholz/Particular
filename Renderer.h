@@ -60,7 +60,7 @@ public:
             {
                 Atom const& connected = m._atoms[connected_index];
 
-                draw_line(connector._r, connected._r);
+                draw_line(connector.get_position(), connected.get_position());
             }
         }
     }
@@ -148,7 +148,7 @@ public:
             radius = 0.3f;
         }
 
-        glTranslatef(atom._r[0], atom._r[1], atom._r[2]);
+        glTranslatef(atom.get_position()[0], atom.get_position()[1], atom.get_position()[2]);
 
         glScalef(radius, radius, radius);
 
@@ -404,7 +404,7 @@ public:
         }
 
         glm::mat4x4 model_matrix = glm::mat4(1.0f);
-        model_matrix = glm::translate(model_matrix, glm::vec3(atom._r[0], atom._r[1], atom._r[2]));
+        model_matrix = glm::translate(model_matrix, glm::vec3(atom.get_position()[0], atom.get_position()[1], atom.get_position()[2]));
         model_matrix = glm::scale(model_matrix, glm::vec3(radius, radius, radius));
 
         glUniformMatrix4fv(_molecule_program->uniformLocation("m_model"), 1, GL_FALSE, glm::value_ptr(model_matrix));
@@ -745,6 +745,7 @@ public:
 
         _sphere_mesh = load_mesh<MyMesh>(Data_config::get_instance()->get_data_path() + "/meshes/icosphere_3.obj");
         _grid_mesh = load_mesh<MyMesh>(Data_config::get_instance()->get_data_path() + "/meshes/grid_10x10.obj");
+        _bg_hemisphere_mesh = load_mesh<MyMesh>(Data_config::get_instance()->get_data_path() + "/meshes/bg_hemisphere.obj");
 
         typename MyMesh::ConstVertexIter vIt(_grid_mesh.vertices_begin()), vEnd(_grid_mesh.vertices_end());
 
@@ -820,7 +821,7 @@ public:
         }
 
         glm::mat4x4 model_matrix = glm::mat4(1.0f);
-        model_matrix = glm::translate(model_matrix, glm::vec3(atom._r[0], atom._r[1], atom._r[2]));
+        model_matrix = glm::translate(model_matrix, glm::vec3(atom.get_position()[0], atom.get_position()[1], atom.get_position()[2]));
         model_matrix = glm::scale(model_matrix, glm::vec3(radius, radius, radius));
 
         glUniformMatrix4fv(_molecule_program->uniformLocation("m_model"), 1, GL_FALSE, glm::value_ptr(model_matrix));
@@ -1022,7 +1023,13 @@ public:
 
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, _backdrop_texture);
-        draw_backdrop_quad();
+//        draw_backdrop_quad();
+
+        glPushMatrix();
+        glTranslatef(0.0f, 200.0f, 0.0f);
+        glScalef(300.0f, 1.0f, 300.0f);
+        draw_mesh(_bg_hemisphere_mesh);
+        glPopMatrix();
 
         glBindTexture(GL_TEXTURE_2D, 0);
 
@@ -1172,6 +1179,7 @@ private:
     IcoSphere<OpenMesh::Vec3f, Color> _icosphere;
     MyMesh _sphere_mesh;
     MyMesh _grid_mesh;
+    MyMesh _bg_hemisphere_mesh;
 
     GLuint _ice_texture;
     GLuint _backdrop_texture;

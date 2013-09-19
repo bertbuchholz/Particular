@@ -17,6 +17,8 @@
 
 #include "Eigen_Matrix_serializer.h"
 
+#include "Level_element.h"
+
 typedef OpenMesh::Vec3f Vec;
 
 inline Eigen::Matrix3f star_matrix(Eigen::Vector3f const& v)
@@ -34,7 +36,7 @@ inline Eigen::Matrix3f star_matrix(Eigen::Vector3f const& v)
 // Mass of 1 atom = 1.008 g / 6.02 x 10^23 = 1.67 x 10^-24 g
 
 
-class Atom
+class Atom : public Level_element
 {
 public:
     enum class Type { Charge = 0, H, O, C, S, N, Na, Cl };
@@ -99,6 +101,12 @@ public:
         _r_0(position), _mass(get_atom_mass(weight_per_mol)), _charge(charge), _radius(radius)
     { }
 
+    void accept(Level_element_visitor const* /* visitor */ ) override { /* visitor->visit(this); */ }
+
+    Eigen::AlignedBox<float, 3> get_world_aabb() const override { return Eigen::AlignedBox3f(); }
+
+
+
 //    Vec const& get_speed() const
 //    {
 //        return _speed;
@@ -120,10 +128,19 @@ public:
 //    }
 
     template<class Archive>
-    void serialize(Archive & ar, const unsigned int /* version */)
+    void serialize(Archive & ar, const unsigned int version)
     {
         ar & BOOST_SERIALIZATION_NVP(_r_0);
-        ar & BOOST_SERIALIZATION_NVP(_r);
+
+        if (version < 1)
+        {
+//            ar & BOOST_SERIALIZATION_NVP(_r);
+        }
+        else
+        {
+            ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Level_element);
+        }
+
         ar & BOOST_SERIALIZATION_NVP(_mass);
         ar & BOOST_SERIALIZATION_NVP(_charge);
         ar & BOOST_SERIALIZATION_NVP(_radius);
@@ -139,7 +156,7 @@ public:
 
 //private:
     Eigen::Vector3f _r_0; // body space position of particle
-    Eigen::Vector3f _r;   // world space position
+//    Eigen::Vector3f _r;   // world space position // replaced by _position in Level_element
     float _mass;
     float _charge;
     float _radius;
@@ -155,6 +172,8 @@ struct Body_state
     Eigen::Vector3f _P;
     Eigen::Vector3f _L;
 };
+
+BOOST_CLASS_VERSION(Atom, 1)
 
 class Molecule
 {
@@ -433,7 +452,7 @@ public:
         for (Atom & a : _atoms)
         {
             a._r_0 = a._r_0 - center_of_mass;
-            a._r = _R * a._r_0 + _x;
+            a.set_position(_R * a._r_0 + _x);
         }
 
         // sanity check
@@ -474,8 +493,21 @@ public:
 
         for (Atom & a : _atoms)
         {
-            a._r = _R * a._r_0 + _x;
-            assert(!std::isnan(a._r[0]) && !std::isinf(a._r[0]));
+            a.set_position(_R * a._r_0 + _x);
+            assert(!std::isnan(a.get_position()[0]) && !std::isinf(a.get_position()[0]));
+        }
+    }
+
+    void apply_orientation(Eigen::Quaternion<float> const& orientation)
+    {
+        _q = orientation;
+        _R = _q.normalized().toRotationMatrix();
+//        _I_inv = _R * _I_body_inv * _R.transpose();
+
+        for (Atom & a : _atoms)
+        {
+            a.set_position(_R * a._r_0 + _x);
+            assert(!std::isnan(a.get_position()[0]) && !std::isinf(a.get_position()[0]));
         }
     }
 
@@ -584,7 +616,7 @@ struct Force_indicator
     Force_indicator(Eigen::Vector3f const& position) :
         _atom(Atom(position, 1.0f, 1.0f, 1.0f)), _force(Eigen::Vector3f(0.0f, 0.0f, 0.0f))
     {
-        _atom._r = position;
+        _atom.set_position(position);
     }
 
     Atom _atom;
@@ -604,7 +636,7 @@ inline float calc_lennard_jones_potential(Atom const& a_0, Atom const& a_1)
 {
     float const vdw_radii = a_0._radius + a_1._radius;
     float const sigma = 2.0f * vdw_radii;
-    float const dist = (a_0._r - a_1._r).norm();
+    float const dist = (a_0.get_position() - a_1.get_position()).norm();
     return 4.0f * (std::pow(sigma / dist, 12.0f) - std::pow(sigma / dist, 6.0f));
 }
 
@@ -614,7 +646,7 @@ struct External_force
     Eigen::Vector3f _force;
 
     template<class Archive>
-    void serialize(Archive & ar, const unsigned int file_version)
+    void serialize(Archive & ar, const unsigned int /* file_version */)
     {
         ar & BOOST_SERIALIZATION_NVP(_origin);
         ar & BOOST_SERIALIZATION_NVP(_force);

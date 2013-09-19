@@ -21,7 +21,7 @@ public:
 
     Eigen::Vector3f calc_force_between_atoms(Atom const& a_0, Atom const& a_1) const
     {
-        Eigen::Vector3f direction = a_0._r - a_1._r;
+        Eigen::Vector3f direction = a_0.get_position() - a_1.get_position();
         float const distance = std::max(1e-5f, direction.norm()); // cap the distance at 1e-5 to avoid the singularity
 
         direction.normalize();

@@ -26,8 +26,6 @@ int main(int argc, char** argv)
 {
     QApplication application(argc,argv);
 
-    Data_config::get_instance()->init();
-
 //    QGLFormat f;
 //    f.setVersion(3, 2);
 //    f.setProfile(QGLFormat::CoreProfile);

@@ -5,6 +5,7 @@
 
 #include "Visitor.h"
 #include "Level_element.h"
+#include "Molecule_releaser.h"
 #include "Data_config.h"
 
 

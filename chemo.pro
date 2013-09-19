@@ -43,7 +43,8 @@ QMAKE_CXXFLAGS += -Wall \
     -fPIC \
     -std=c++11 \
     -stdlib=libc++ \
-    -ftemplate-depth=1024
+    -ftemplate-depth=1024 # \
+#    -ferror-limit=1
 
 QMAKE_CXX = /opt/local/bin/clang++-mp-3.3
 QMAKE_LINK = /opt/local/bin/clang++-mp-3.3
@@ -60,7 +61,11 @@ SOURCES += main.cpp \
     Atom.cpp \
     Data_config.cpp \
     Renderer.cpp \
-    Level_element.cpp
+    Level_element.cpp \
+    Core.cpp \
+    My_viewer.cpp \
+    Draggable.cpp \
+    Molecule_releaser.cpp
 
 OTHER_FILES += TODO.txt \
     data/shaders/picking.vert \
@@ -101,4 +106,5 @@ HEADERS += \
     Progress.h \
     Score.h \
     Data_config.h \
-    Level_element.h
+    Level_element.h \
+    Molecule_releaser.h

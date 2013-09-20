@@ -329,7 +329,10 @@ public:
 
         float const blend_duration = 5.0f;
 
-        _alpha = std::min(_current_time / blend_duration, 1.0f);
+        if (_current_time < blend_duration)
+        {
+            _alpha = std::min(_current_time / blend_duration, 1.0f);
+        }
     }
 
     void notify() override

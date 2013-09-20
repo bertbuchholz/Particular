@@ -159,14 +159,16 @@ void My_viewer::update_intro(const float timestep)
     {
         if (_intro_time > 5.0f)
         {
-            for (boost::shared_ptr<Draggable_label> & label : _labels[int(Level_state::Intro)])
-            {
-                label->set_alpha(0.0f);
-            }
+            _labels[int(Level_state::Intro)].clear();
+
+//            for (boost::shared_ptr<Draggable_label> & label : _labels[int(Level_state::Intro)])
+//            {
+//                label->set_alpha(0.0f);
+//            }
 
             for (int i = 0; i < 2; ++i)
             {
-                _core.add_molecule(Molecule::create_water(Eigen::Vector3f(-20.0f, -33.0f - i * 4.0f, 0.0f)));
+                _core.add_molecule(Molecule::create_water(Eigen::Vector3f(-20.0f, -32.5f - i * 5.0f, 0.0f)));
                 Molecule & m = _core.get_molecules().back();
                 Eigen::Transform<float, 3, Eigen::Affine> t = Eigen::Transform<float, 3, Eigen::Affine>::Identity();
                 t.rotate(Eigen::AngleAxisf(M_PI * 0.5f, Eigen::Vector3f(0.0f, 1.0f, 0.0f)));
@@ -181,20 +183,6 @@ void My_viewer::update_intro(const float timestep)
                 }
 
                 m.apply_orientation(Eigen::Quaternion<float>(t.rotation()));
-
-                for (Atom & a : m._atoms)
-                {
-                    std::string sign = "-";
-
-                    if (a._charge > 0.0f)
-                    {
-                        sign = "+";
-                    }
-
-                    Draggable_label * label = new Draggable_atom_label(Eigen::Vector3f(0.5f, 0.8f, 0.0f), Eigen::Vector2f(0.1f, 0.1f), sign, &a, camera());
-                    generate_label_texture(label);
-                    _labels[int(Level_state::Intro)].push_back(boost::shared_ptr<Draggable_label>(label));
-                }
             }
 
             qglviewer::KeyFrameInterpolator * kfi = new qglviewer::KeyFrameInterpolator(camera()->frame());
@@ -217,6 +205,7 @@ void My_viewer::update_intro(const float timestep)
             // damp a lot to force standstill, but don't disable the simulation to keep getting notification for the labels' position updates
             _parameters["Core/rotation_damping"]->set_value(100.0f);
             _parameters["Core/translation_damping"]->set_value(100.0f);
+            set_simulation_state(false);
         }
     }
     else if (_intro_state == Intro_state::Two_molecules_2)
@@ -226,9 +215,28 @@ void My_viewer::update_intro(const float timestep)
             // remove excessive damping
             _parameters["Core/rotation_damping"]->set_value(0.5f);
             _parameters["Core/translation_damping"]->set_value(0.1f);
+            set_simulation_state(true);
 
             _intro_time = 0.0f;
             _intro_state = Intro_state::Two_molecules_3;
+
+            for (Molecule & m : _core.get_molecules())
+            {
+                for (Atom & a : m._atoms)
+                {
+                    std::string sign = "-";
+
+                    if (a._charge > 0.0f)
+                    {
+                        sign = "+";
+                    }
+
+                    Draggable_label * label = new Draggable_atom_label(Eigen::Vector3f(0.5f, 0.8f, 0.0f), Eigen::Vector2f(0.1f, 0.1f), sign, &a, camera());
+                    generate_label_texture(label);
+
+                    _labels[int(Level_state::Intro)].push_back(boost::shared_ptr<Draggable_label>(label));
+                }
+            }
         }
     }
     else if (_intro_state == Intro_state::Two_molecules_3)
@@ -242,6 +250,11 @@ void My_viewer::update_intro(const float timestep)
 //        if ((m0._x - m1._x).norm() < 4.0f)
         if (_intro_time > 10.0f)
         {
+            for (boost::shared_ptr<Draggable_label> & label : _labels[int(Level_state::Intro)])
+            {
+                label->set_alpha(0.0f);
+            }
+
             _intro_time = 0.0f;
             _intro_state = Intro_state::Finishing;
         }

@@ -8,7 +8,7 @@ class Sensor_data
 public:
     enum class Type { ColMol = 0, RelMol, AvgTemp, EnergyCon };
 
-    Sensor_data()
+    Sensor_data() : _check_interval(0.2f)
     {
         _data.resize(4);
     }
@@ -36,6 +36,25 @@ public:
         return _data.size();
     }
 
+    float get_check_interval()
+    {
+        return _check_interval;
+    }
+
+    int calculate_score(float const time_factor) const
+    {
+        float score = 0.0f;
+
+        for (size_t i = 0; i < _data.size(); ++i)
+        {
+            score += std::exp(-i / time_factor) * _data[int(Type::ColMol)][i];
+        }
+
+        score *= _check_interval;
+
+        return score * 100;
+    }
+
     template<class Archive>
     void serialize(Archive & ar, const unsigned int /* version */)
     {
@@ -44,10 +63,7 @@ public:
 
 private:
     std::vector< std::vector<float> > _data;
-//    int num_collected_molecules;
-//    int num_released_molecules;
-//    float average_temperature;
-//    float energy_consumption; // including tractors?
+    float _check_interval;
 };
 
 #endif // SENSOR_DATA_H

@@ -691,6 +691,25 @@ Blow_barrier::Axis Blow_barrier::get_direction() const
     return _direction;
 }
 
+float Brownian_element::get_strength() const
+{
+    return _strength;
+}
+
+void Brownian_element::set_strength(const float strength)
+{
+    _strength = strength;
+}
+
+float Brownian_element::get_radius() const
+{
+    return _radius;
+}
+
+void Brownian_element::set_radius(const float radius)
+{
+    _radius = radius;
+}
 
 float Brownian_plane::get_brownian_motion_factor(const Eigen::Vector3f &point) const
 {
@@ -700,11 +719,6 @@ float Brownian_plane::get_brownian_motion_factor(const Eigen::Vector3f &point) c
 const Eigen::Hyperplane<float, 3> &Brownian_plane::get_plane() const
 {
     return _plane;
-}
-
-float Brownian_plane::get_strength() const
-{
-    return _strength;
 }
 
 void Brownian_plane::accept(const Level_element_visitor *visitor)
@@ -719,8 +733,7 @@ float Brownian_plane::falloff_function(const float distance) const
 
 
 Brownian_box::Brownian_box(const Eigen::Vector3f &min, const Eigen::Vector3f &max, const float strength, const float radius) :
-    //        _box(Eigen::AlignedBox<float, 3>(min, max)),
-    _strength(strength), _radius(radius)
+    Brownian_element(strength, radius)
 {
     set_transform(Eigen::Transform<float, 3, Eigen::Isometry>::Identity());
 
@@ -766,26 +779,6 @@ Eigen::Vector3f Brownian_box::get_extent() const
 const Eigen::AlignedBox<float, 3> &Brownian_box::get_box() const
 {
     return _box;
-}
-
-float Brownian_box::get_strength() const
-{
-    return _strength;
-}
-
-void Brownian_box::set_strength(const float strength)
-{
-    _strength = strength;
-}
-
-float Brownian_box::get_radius() const
-{
-    return _radius;
-}
-
-void Brownian_box::set_radius(const float radius)
-{
-    _radius = radius;
 }
 
 void Brownian_box::animate(const float timestep)

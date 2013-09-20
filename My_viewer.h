@@ -677,6 +677,8 @@ public:
         update_active_draggables();
 
         startAnimation();
+
+        _parameters["ui_state"]->set_value(std::string("Playing"));
     }
 
     void init_game()
@@ -1010,13 +1012,13 @@ public:
 
         for (i = 0; i < time; ++i)
         {
-            glVertex2f(i / float(values.size()), values[i] / b.get_max_value());
+            glVertex2f(i / float(values.size()), values[i] / (b.get_max_value() - b.get_min_value()) + b.get_min_value());
         }
 
         --i;
-        Eigen::Vector2f v0(i / float(values.size()), values[i] / b.get_max_value());
+        Eigen::Vector2f v0(i / float(values.size()), values[i] / (b.get_max_value() - b.get_min_value()) + b.get_min_value());
         i = std::min(values.size() - 1, i + 1);
-        Eigen::Vector2f v1(i / float(values.size()), values[i] / b.get_max_value());
+        Eigen::Vector2f v1(i / float(values.size()), values[i] / (b.get_max_value() - b.get_min_value()) + b.get_min_value());
 
         float const alpha = time - int(time);
 
@@ -2617,8 +2619,8 @@ public:
         }
 
         {
-            Draggable_statistics stat(Eigen::Vector3f(0.25f, 0.2f + 0.35f * 0.5f, 0.0f), Eigen::Vector2f(0.45f, 0.35f), "Avg. Temperature");
-            _statistics[int(Level_state::Statistics)][int(Sensor_data::Type::AvgTemp)] = stat;
+            Draggable_statistics stat(Eigen::Vector3f(0.75f, 0.2f + 0.35f * 0.5f, 0.0f), Eigen::Vector2f(0.45f, 0.35f), "Energy Consumption");
+            _statistics[int(Level_state::Statistics)][int(Sensor_data::Type::EnergyCon)] = stat;
         }
 
         {
@@ -2675,7 +2677,7 @@ public Q_SLOTS:
 
             QTimer::singleShot(3000, this, SLOT(show_afterstate_ui_elements()));
 
-            int const score_count = 12345; // TODO: get from core
+            int const score_count = _core.get_sensor_data().calculate_score(_core.get_level_data()._score_time_factor);
 
             _particle_systems[int(Level_state::After_finish)].clear();
             _particle_systems[int(Level_state::After_finish)].push_back(Targeted_particle_system(3.0f));

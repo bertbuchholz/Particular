@@ -9,11 +9,13 @@ struct Score
     Sensor_data sensor_data;
 
     template<class Archive>
-    void serialize(Archive & ar, const unsigned int /* version */)
+    void serialize(Archive & ar, const unsigned int version)
     {
         ar & BOOST_SERIALIZATION_NVP(final_score);
         ar & BOOST_SERIALIZATION_NVP(sensor_data);
     }
 };
+
+BOOST_CLASS_VERSION(Score, 1)
 
 #endif // SCORE_H

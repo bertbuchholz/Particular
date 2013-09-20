@@ -548,29 +548,42 @@ private:
 class Brownian_element : public Level_element
 {
 public:
+    Brownian_element() {}
+
+    Brownian_element(float const strength, float const radius) : _strength(strength), _radius(radius) {}
+
     virtual ~Brownian_element() {}
 
     virtual float get_brownian_motion_factor(Eigen::Vector3f const& point) const = 0;
+
+    float get_strength() const;
+    void set_strength(float const strength);
+
+    float get_radius() const;
+    void set_radius(float const radius);
 
     template<class Archive>
     void serialize(Archive & ar, const unsigned int /* version */)
     {
         ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Level_element);
     }
+
+protected:
+    float _strength;
+    float _radius;
 };
 
 class Brownian_plane : public Brownian_element
 {
 public:
     Brownian_plane(Eigen::Vector3f const& position, Eigen::Vector3f const& normal, float const strength, float const radius) :
-        _plane(Eigen::Hyperplane<float, 3>(normal, position)), _strength(strength), _radius(radius)
+        Brownian_element(strength, radius),
+        _plane(Eigen::Hyperplane<float, 3>(normal, position))
     { }
 
     float get_brownian_motion_factor(Eigen::Vector3f const& point) const override;
 
     Eigen::Hyperplane<float, 3> const& get_plane() const;
-
-    float get_strength() const;
 
     void accept(Level_element_visitor const* visitor) override;
 
@@ -578,8 +591,6 @@ private:
     float falloff_function(float const distance) const;
 
     Eigen::Hyperplane<float, 3> _plane;
-    float _strength;
-    float _radius;
 };
 
 
@@ -602,12 +613,6 @@ public:
     Eigen::Vector3f get_extent() const;
 
     Eigen::AlignedBox<float, 3> const& get_box() const;
-
-    float get_strength() const;
-    void set_strength(float const strength);
-
-    float get_radius() const;
-    void set_radius(float const radius);
 
     void animate(const float timestep) override;
 
@@ -665,8 +670,6 @@ private:
     float falloff_function(float const distance) const;
 
     Eigen::AlignedBox<float, 3> _box;
-    float _strength;
-    float _radius;
 
     std::vector<Particle> _particles;
 };

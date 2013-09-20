@@ -525,7 +525,7 @@ void Core::update(const float time_step)
         }
     }
 
-    if (_game_state == Game_state::Running && _current_time - _last_sensor_check > 1.0f)
+    if (_game_state == Game_state::Running && _current_time - _last_sensor_check > _sensor_data.get_check_interval())
     {
         _last_sensor_check = _current_time;
         do_sensor_check();
@@ -556,10 +556,11 @@ void Core::do_sensor_check()
         num_released_molecules += p->get_num_released_molecules();
     }
 
-    //        for (Brownian_element const* p : _level_data._brownian_elements)
-    //        {
-    //            // data.energy_consumption += std::abs(p->get_strength()) * radius // TODO: get the data
-    //        }
+    for (Brownian_element const* p : _level_data._brownian_elements)
+    {
+        energy_consumption += std::abs(p->get_strength()) * p->get_radius(); // TODO: get the data
+        average_temperature += p->get_strength() * p->get_radius();
+    }
 
     _sensor_data.add_value(Sensor_data::Type::AvgTemp, average_temperature);
     _sensor_data.add_value(Sensor_data::Type::ColMol, num_collected_molecules);

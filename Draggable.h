@@ -410,24 +410,20 @@ public:
 
         auto iter = std::max_element(_values.begin(), _values.end());
 
+        _max_value = 0.0f;
+
         if (iter != _values.end())
         {
             _max_value = *iter;
         }
-        else
-        {
-            _max_value = 0.0f;
-        }
 
         iter = std::min_element(_values.begin(), _values.end());
+
+        _min_value = 0.0f;
 
         if (iter != _values.end())
         {
             _min_value = *iter;
-        }
-        else
-        {
-            _min_value = 0.0f;
         }
     }
 

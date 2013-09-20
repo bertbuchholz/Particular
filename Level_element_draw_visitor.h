@@ -620,6 +620,8 @@ class Level_element_ui_draw_visitor : public Level_element_visitor
 public:
     void visit(Brownian_box * b) const override
     {
+        if (!(int(b->is_user_editable()) & int(Level_element::Edit_type::Property))) return;
+
         glEnable(GL_TEXTURE_2D);
 
         glPushMatrix();
@@ -641,6 +643,8 @@ public:
 
     void visit(Tractor_barrier * b) const override
     {
+        if (!(int(b->is_user_editable()) & int(Level_element::Edit_type::Property))) return;
+
         glEnable(GL_TEXTURE_2D);
 
         glPushMatrix();

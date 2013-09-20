@@ -235,11 +235,15 @@ public:
 
         set_simulation_state(false);
 
-        std::string const filename = (_level_names[_progress.last_level] + ".data").toStdString();
+        std::string const filename = (Data_config::get_instance()->get_qdata_path() + "/levels/" + _level_names[_progress.last_level] + ".data").toStdString();
 
         load_level(filename);
 
         reset_level();
+
+        _particle_systems[int(Level_state::Before_start)].clear();
+        _particle_systems[int(Level_state::Before_start)].push_back(Targeted_particle_system(3.0f));
+        _particle_systems[int(Level_state::Before_start)].back().generate(QString("Level %1").arg(_progress.last_level + 1).toStdString(), _particle_font, QRectF(0.0f, 0.1f, 1.0f, 0.3f));
 
         change_level_state(Level_state::Before_start);
 
@@ -526,6 +530,29 @@ public:
         std::map<Level_data::Plane, Plane_barrier*> _game_field_borders;
     };
 
+    Eigen::Vector3f calc_camera_starting_point_from_borders()
+    {
+        float const game_field_width_x = _core.get_level_data()._game_field_borders[Level_data::Plane::Pos_X]->get_position()[0]
+                - _core.get_level_data()._game_field_borders[Level_data::Plane::Neg_X]->get_position()[0];
+        float const game_field_width_y = _core.get_level_data()._game_field_borders[Level_data::Plane::Pos_Y]->get_position()[1]
+                - _core.get_level_data()._game_field_borders[Level_data::Plane::Neg_Y]->get_position()[1];
+        float const game_field_width_z = _core.get_level_data()._game_field_borders[Level_data::Plane::Pos_Z]->get_position()[2]
+                - _core.get_level_data()._game_field_borders[Level_data::Plane::Neg_Z]->get_position()[2];
+
+        float const margin = 25.0f;
+
+        float const full_width[2] = { game_field_width_x + 2.0f * margin, game_field_width_z + 2.0f * margin };
+
+        float const aspect_ratio = camera()->aspectRatio();
+
+        float const fov_horizontal = 90.0f / 360.0f * 2.0f * M_PI;
+        float const fov_vertical = fov_horizontal / aspect_ratio;
+
+        float const y_max = -std::max(full_width[0] * 0.5f / std::tan(fov_horizontal * 0.5f),
+                full_width[1] * 0.5f / std::tan(fov_vertical * 0.5f)) - game_field_width_y * 0.5f;
+
+        return Eigen::Vector3f(0.0f, y_max, 0.0f);
+    }
 
     void change_ui_state()
     {
@@ -559,7 +586,9 @@ public:
 //        _my_camera->setViewDirection(qglviewer::Vec(0.0f, 1.0f, 0.0f));
 //        _my_camera->setPosition(qglviewer::Vec(0.0f, -80.0f, z));
 
-        qglviewer::Vec position(0.0f, -80.0f, z);
+        Eigen::Vector3f cam_start_position = calc_camera_starting_point_from_borders();
+
+        qglviewer::Vec position(0.0f, cam_start_position[1], z);
 
 //        qglviewer::KeyFrameInterpolator * kfi = new qglviewer::KeyFrameInterpolator(camera()->frame());
 //        kfi->addKeyFrame(*camera()->frame());
@@ -1677,6 +1706,8 @@ public:
         {
             if (_level_state == Level_state::Intro) // skip intro
             {
+                camera()->deletePath(0);
+
                 load_next_level();
             }
             else if (_level_state == Level_state::Running) // go to pause menu
@@ -2447,9 +2478,9 @@ public:
 
         change_level_state(Level_state::Intro);
 
-        setup_intro();
+        _core.clear();
 
-//        load_next_level();
+        setup_intro();
     }
 
     void continue_game()
@@ -2536,7 +2567,12 @@ public:
 
         // start level screen
         {
-            Draggable_button * button = new Draggable_button(Eigen::Vector3f(0.5f, 0.75f, 0.0f), Eigen::Vector2f(0.5f, 0.2f), "Start Level",  std::bind(&My_viewer::start_level, this));
+            Draggable_button * button = new Draggable_button(Eigen::Vector3f(0.5f, 0.35f, 0.0f), Eigen::Vector2f(0.5f, 0.2f), "Start Level",  std::bind(&My_viewer::start_level, this));
+            _buttons[int(Level_state::Before_start)].push_back(boost::shared_ptr<Draggable_button>(button));
+        }
+
+        {
+            Draggable_button * button = new Draggable_button(Eigen::Vector3f(0.5f, 0.15f, 0.0f), Eigen::Vector2f(0.5f, 0.2f), "Back to Main Menu",  std::bind(&My_viewer::change_state_to_main_menu, this));
             _buttons[int(Level_state::Before_start)].push_back(boost::shared_ptr<Draggable_button>(button));
         }
 

@@ -285,11 +285,16 @@ public:
     void reset() override;
 
     template<class Archive>
-    void serialize(Archive & ar, const unsigned int /* version */)
+    void serialize(Archive & ar, const unsigned int version)
     {
         ar & BOOST_SERIALIZATION_BASE_OBJECT_NVP(Level_element);
         ar & BOOST_SERIALIZATION_NVP(_end_condition);
         ar & BOOST_SERIALIZATION_NVP(_score_factor);
+
+        if (version > 0)
+        {
+            ar & BOOST_SERIALIZATION_NVP(_destroy_on_entering);
+        }
     }
 
 private:
@@ -298,6 +303,7 @@ private:
     bool _destroy_on_entering;
 };
 
+BOOST_CLASS_VERSION(Portal, 1)
 
 class Box_portal : public Portal
 {

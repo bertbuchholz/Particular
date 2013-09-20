@@ -50,6 +50,24 @@ Eigen::Vector3f Core::apply_forces_brute_force(const Atom &receiver_atom) const
 }
 
 
+Eigen::Vector3f Core::apply_forces_using_ann_tree(Atom const& receiver_atom) const
+{
+    Eigen::Vector3f force_i = Eigen::Vector3f::Zero();
+
+    std::vector<Atom const*> const closest_atoms = _ann_wrapper.find_closest_atoms(receiver_atom);
+
+    for (Atom const* sender_atom : closest_atoms)
+    {
+        if (receiver_atom._parent_id == sender_atom->_parent_id) continue;
+
+        force_i += calc_forces_between_atoms(receiver_atom, *sender_atom);
+    }
+
+    return force_i;
+}
+
+
+
 Eigen::Vector3f Core::apply_forces_using_tree(const Atom &receiver_atom) const
 {
     Eigen::Vector3f force_i = Eigen::Vector3f::Zero();
@@ -188,9 +206,9 @@ Eigen::Vector3f Core::force_on_atom(const Atom &receiver_atom) const
     Eigen::Vector3f force_i = Eigen::Vector3f::Zero();
 
     //        force_i = apply_forces_brute_force(receiver_atom, parent_molecule_id);
-    force_i = apply_forces_using_tree(receiver_atom);
+//    force_i = apply_forces_using_tree(receiver_atom);
     //        force_i = apply_forces_from_vector(receiver_atom, get_atoms_from_tree(receiver_atom));
-
+    force_i = apply_forces_using_ann_tree(receiver_atom);
 
     // per atom force application, replaced by per molecule application
     //        for (Barrier const* b : _level_data._barriers)
@@ -403,6 +421,9 @@ void Core::update(const float time_step)
     }
 
     update_tree();
+
+    _ann_wrapper = ANN_wrapper();
+    _ann_wrapper.generate_tree_from_molecules(_level_data._molecules);
 
     if (time_debug)
     {

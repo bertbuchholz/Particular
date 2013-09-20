@@ -15,7 +15,8 @@ CONFIG += qt \
     QGLViewer \
     OpenMesh \
     eigen3 \
-    BertSharedLib  #\
+    BertSharedLib \
+    ANN  #\
 #    MacOSg++
 
 # to relink external libs used by the exetubale to copies inside of the bundle Contents/Frameworks dir
@@ -67,7 +68,8 @@ SOURCES += main.cpp \
     Core.cpp \
     My_viewer.cpp \
     Draggable.cpp \
-    Molecule_releaser.cpp
+    Molecule_releaser.cpp \
+    ANN_wrapper_functions.cpp
 
 OTHER_FILES += TODO.txt \
     data/shaders/picking.vert \
@@ -109,4 +111,5 @@ HEADERS += \
     Score.h \
     Data_config.h \
     Level_element.h \
-    Molecule_releaser.h
+    Molecule_releaser.h \
+    ANN_wrapper_functions.h

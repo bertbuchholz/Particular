@@ -160,6 +160,7 @@ void My_viewer::update_intro(const float timestep)
         if (_intro_time > 5.0f)
         {
             _labels[int(Level_state::Intro)].clear();
+            _core.get_molecules().clear();
 
 //            for (boost::shared_ptr<Draggable_label> & label : _labels[int(Level_state::Intro)])
 //            {
@@ -241,13 +242,6 @@ void My_viewer::update_intro(const float timestep)
     }
     else if (_intro_state == Intro_state::Two_molecules_3)
     {
-//        auto iter = _core.get_molecules().begin();
-//        std::advance(iter, 2);
-//        Molecule const& m0 = *iter;
-//        std::advance(iter, 1);
-//        Molecule const& m1 = *iter;
-
-//        if ((m0._x - m1._x).norm() < 4.0f)
         if (_intro_time > 10.0f)
         {
             for (boost::shared_ptr<Draggable_label> & label : _labels[int(Level_state::Intro)])

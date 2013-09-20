@@ -26,6 +26,7 @@
 #include "Level_data.h"
 #include "End_condition.h"
 #include "Sensor_data.h"
+#include "ANN_wrapper_functions.h"
 
 
 
@@ -54,6 +55,7 @@ public:
     Eigen::Vector3f apply_forces_brute_force(Atom const& receiver_atom) const;
     Eigen::Vector3f apply_forces_using_tree(Atom const& receiver_atom) const;
     Eigen::Vector3f apply_forces_from_vector(Atom const& receiver_atom, std::vector<Atom const*> const& atoms) const;
+    Eigen::Vector3f apply_forces_using_ann_tree(const Atom &receiver_atom) const;
 
     std::vector<Atom const*> get_atoms_from_tree(Atom const& receiver_atom) const;
 
@@ -310,6 +312,8 @@ private:
 
 //    Molecule_atom_hash _molecule_hash;
     My_tree _tree;
+
+    ANN_wrapper _ann_wrapper;
 
     mutable int _debug_leaf_usage_count;
     mutable int _debug_inner_node_usage_count;

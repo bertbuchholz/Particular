@@ -967,16 +967,16 @@ void Core::set_parameters(const Parameter_list &parameters)
 
 void Core::update_parameter_list(Parameter_list &parameters) const
 {
-    parameters["rotation_damping"]->set_value(_rotation_damping);
-    parameters["translation_damping"]->set_value(_translation_damping);
-    parameters["rotation_fluctuation"]->set_value(_rotation_fluctuation);
-    parameters["translation_fluctuation"]->set_value(_translation_fluctuation);
+    parameters["rotation_damping"]->set_value_no_update(_rotation_damping);
+    parameters["translation_damping"]->set_value_no_update(_translation_damping);
+    parameters["rotation_fluctuation"]->set_value_no_update(_rotation_fluctuation);
+    parameters["translation_fluctuation"]->set_value_no_update(_translation_fluctuation);
 
     auto iter = _external_forces.find("gravity");
 
     if (iter != _external_forces.end())
     {
-        parameters["gravity"]->set_value(-iter->second._force[2]);
+        parameters["gravity"]->set_value_no_update(-iter->second._force[2]);
     }
 }
 

@@ -186,6 +186,7 @@ public:
         clear();
         set_simulation_state(false);
         _core.load_level(filename);
+        _core.update_parameter_list(*_parameters.get_child("Core"));
         _core.reset_level();
 
         update_level_element_buttons();

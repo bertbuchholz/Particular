@@ -71,6 +71,7 @@ SOURCES += main.cpp \
     Molecule_releaser.cpp \
     ANN_wrapper_functions.cpp \
     fp_exception_glibc_extension.c
+    Main_game_state.cpp
 
 OTHER_FILES += TODO.txt \
     data/shaders/picking.vert \
@@ -113,4 +114,5 @@ HEADERS += \
     Data_config.h \
     Level_element.h \
     Molecule_releaser.h \
-    ANN_wrapper_functions.h
+    ANN_wrapper_functions.h \
+    Main_game_state.h

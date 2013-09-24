@@ -20,10 +20,10 @@
 #include "Level_element_draw_visitor.h"
 #include "Data_config.h"
 
-class Molecule_renderer
+class World_renderer
 {
 public:
-    ~Molecule_renderer() {}
+    ~World_renderer() {}
 
     virtual void init(QGLContext const* /* context */, QSize const& /* size */) {}
 
@@ -44,7 +44,7 @@ public:
     }
 };
 
-class Stick_renderer : Molecule_renderer
+class Stick_renderer : World_renderer
 {
 public:
     void draw_molecule(Molecule const& m, float const alpha = 1.0f) const
@@ -91,16 +91,16 @@ public:
         return "Stick Renderer";
     }
 
-    static Molecule_renderer * create()
+    static World_renderer * create()
     {
         return new Stick_renderer;
     }
 };
 
 
-REGISTER_CLASS_WITH_PARAMETERS(Molecule_renderer, Stick_renderer);
+REGISTER_CLASS_WITH_PARAMETERS(World_renderer, Stick_renderer);
 
-class Ball_renderer : Molecule_renderer
+class Ball_renderer : World_renderer
 {
 public:
     Ball_renderer()
@@ -194,7 +194,7 @@ public:
         return "Ball Renderer";
     }
 
-    static Molecule_renderer * create()
+    static World_renderer * create()
     {
         return new Ball_renderer;
     }
@@ -205,10 +205,10 @@ private:
     float _scale;
 };
 
-REGISTER_CLASS_WITH_PARAMETERS(Molecule_renderer, Ball_renderer);
+REGISTER_CLASS_WITH_PARAMETERS(World_renderer, Ball_renderer);
 
 
-class Distance_renderer : Molecule_renderer
+class Distance_renderer : World_renderer
 {
 public:
     void render(Level_data const& level_data, float const /* time */, StandardCamera const* camera) override
@@ -305,7 +305,7 @@ public:
         return "Distance Renderer";
     }
 
-    static Molecule_renderer * create()
+    static World_renderer * create()
     {
         return new Distance_renderer;
     }
@@ -317,10 +317,10 @@ private:
     Stick_renderer stick_renderer;
 };
 
-REGISTER_CLASS_WITH_PARAMETERS(Molecule_renderer, Distance_renderer);
+REGISTER_CLASS_WITH_PARAMETERS(World_renderer, Distance_renderer);
 
 
-class Editor_renderer : public Molecule_renderer, public QGLFunctions
+class Editor_renderer : public World_renderer, public QGLFunctions
 {
 public:
     Editor_renderer()
@@ -704,7 +704,7 @@ public:
         return "Editor Renderer";
     }
 
-    static Molecule_renderer * create()
+    static World_renderer * create()
     {
         return new Editor_renderer;
     }
@@ -738,11 +738,11 @@ private:
     Level_element_ui_draw_visitor _level_element_ui_draw_visitor;
 };
 
-REGISTER_CLASS_WITH_PARAMETERS(Molecule_renderer, Editor_renderer);
+REGISTER_CLASS_WITH_PARAMETERS(World_renderer, Editor_renderer);
 
 
 
-class Shader_renderer : public Molecule_renderer, public QGLFunctions
+class Shader_renderer : public World_renderer, public QGLFunctions
 {
 public:
     Shader_renderer()
@@ -1203,7 +1203,7 @@ public:
         return "Shader Renderer";
     }
 
-    static Molecule_renderer * create()
+    static World_renderer * create()
     {
         return new Shader_renderer;
     }
@@ -1239,7 +1239,7 @@ private:
     Level_element_ui_draw_visitor _level_element_ui_draw_visitor;
 };
 
-REGISTER_CLASS_WITH_PARAMETERS(Molecule_renderer, Shader_renderer);
+REGISTER_CLASS_WITH_PARAMETERS(World_renderer, Shader_renderer);
 
 void setup_gl_points(bool const distance_dependent);
 

@@ -25,7 +25,7 @@
 #include "Draggable.h"
 #include "Level_element_draw_visitor.h"
 #include "Progress.h"
-//#include "State.h"
+#include "State.h"
 
 
 
@@ -213,7 +213,7 @@ public:
 
         _current_level_name = filename;
 
-        _renderer->update(_core.get_level_data());
+//        _renderer->update(_core.get_level_data());
 
         update_game_camera();
 
@@ -809,6 +809,16 @@ public:
 //        draw_closest_force();
 
 //        draw_temperature();
+
+        for (State * s : _state_stack)
+        {
+            s->draw();
+
+            if (int(s->get_type()) & int(State::Type::Fullscreen))
+            {
+                break;
+            }
+        }
     }
 
     void draw_textured_quad(GLuint const tex_id)
@@ -2864,8 +2874,6 @@ private:
 
     StandardCamera * _my_camera;
 
-    std::unique_ptr<Molecule_renderer> _renderer;
-
     std::vector<Draggable*> _active_draggables;
 
     std::unordered_map<Draggable*, Level_element*> _draggable_to_level_element;
@@ -2888,6 +2896,8 @@ private:
 
     float _intro_time;
     Intro_state _intro_state;
+
+    std::vector<State*> _state_stack;
 };
 
 

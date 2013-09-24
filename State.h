@@ -2,33 +2,21 @@
 #define STATE_H
 
 #include <QtGui>
-#include <QtOpenGL>
-#include <QGLWidget>
-#include <iostream>
 
-#include <Eigen/Geometry>
-
-#include <Options_viewer.h>
-#include <Draw_functions.h>
-
-#include <Picking.h>
-#include <Registry_parameters.h>
-#include <Geometry_utils.h>
-
-#include "Core.h"
-#include "Atom.h"
-#include "Spatial_hash.h"
-#include "Renderer.h"
-#include "My_viewer.h"
-
-#include "Draggable.h"
-#include "Level_element_draw_visitor.h"
+class My_viewer;
 
 class State
 {
 public:
+    enum class Type { Modal = 0b01, Fullscreen = 0b10 };
+
     State(My_viewer & viewer) : _viewer(viewer)
     { }
+
+    Type get_type() const
+    {
+        return _type;
+    }
 
     virtual bool mousePressEvent(QMouseEvent *) { return false; }
     virtual bool mouseMoveEvent(QMouseEvent *) { return false; }
@@ -40,9 +28,11 @@ public:
 
 protected:
     My_viewer & _viewer;
-    StandardCamera & _camera;
+
+    Type _type;
 };
 
+/*
 class Main_game_state : public State
 {
 public:
@@ -303,6 +293,7 @@ private:
 
     std::unordered_map<Draggable*, Level_element*> _draggable_to_level_element;
 };
+*/
 
 
 #endif // STATE_H

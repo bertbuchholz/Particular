@@ -62,8 +62,8 @@ public:
         _parameters.add_parameter(new Parameter("game_field_front", -20.0f, -1000.0f, 1000.0f, std::bind(&My_viewer::change_game_field_borders, this)));
         _parameters.add_parameter(new Parameter("game_field_back", 20.0f, -1000.0f, 1000.0f, std::bind(&My_viewer::change_game_field_borders, this)));
 
-        _parameters.add_parameter(new Parameter("game_field_bottom", 0.0f, -1000.0f, 1000.0f, std::bind(&My_viewer::change_game_field_borders, this)));
-        _parameters.add_parameter(new Parameter("game_field_top", 40.0f, -1000.0f, 1000.0f, std::bind(&My_viewer::change_game_field_borders, this)));
+        _parameters.add_parameter(new Parameter("game_field_bottom", -20.0f, -1000.0f, 1000.0f, std::bind(&My_viewer::change_game_field_borders, this)));
+        _parameters.add_parameter(new Parameter("game_field_top", 20.0f, -1000.0f, 1000.0f, std::bind(&My_viewer::change_game_field_borders, this)));
 
         Parameter_registry<Core>::create_normal_instance("Core", &_parameters, std::bind(&My_viewer::change_core_settings, this));
 
@@ -2172,8 +2172,8 @@ public:
         _parameters["game_field_right"]->set_value(40.0f);
         _parameters["game_field_front"]->set_value(-20.0f);
         _parameters["game_field_back"]->set_value(20.0f);
-        _parameters["game_field_bottom"]->set_value(0.0f);
-        _parameters["game_field_top"]->set_value(40.0f);
+        _parameters["game_field_bottom"]->set_value(-20.0f);
+        _parameters["game_field_top"]->set_value(20.0f);
 
 //        _core.add_barrier(new Box_barrier(Eigen::Vector3f(-10.0f, -20.0f, 0.0f), Eigen::Vector3f(10.0f, 20.0f, 20.0f), strength, radius));
 

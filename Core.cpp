@@ -248,11 +248,11 @@ void Core::compute_force_and_torque(Molecule &receiver)
         receiver._force += b->calc_force_on_molecule(receiver);
     }
 
-    receiver._force += -_translation_damping * receiver._v;
-    receiver._torque += -_rotation_damping * receiver._omega;
+    receiver._force += -_level_data._translation_damping * receiver._v;
+    receiver._torque += -_level_data._rotation_damping * receiver._omega;
 
-    float brownian_translation_factor = _translation_fluctuation;
-    float brownian_rotation_factor = _rotation_fluctuation;
+    float brownian_translation_factor = _level_data._translation_fluctuation;
+    float brownian_rotation_factor = _level_data._rotation_fluctuation * translation_to_rotation_ratio;
 
     for (Brownian_element const* element : _level_data._brownian_elements)
     {
@@ -943,10 +943,10 @@ void Core::load_level(const std::string &file_name)
 void Core::set_parameters(const Parameter_list &parameters)
 {
     _use_indicators = parameters["use_indicators"]->get_value<bool>();
-    _rotation_damping = parameters["rotation_damping"]->get_value<float>();
-    _translation_damping = parameters["translation_damping"]->get_value<float>();
-    _rotation_fluctuation = parameters["rotation_fluctuation"]->get_value<float>();
-    _translation_fluctuation = parameters["translation_fluctuation"]->get_value<float>();
+//    _rotation_damping = parameters["rotation_damping"]->get_value<float>();
+//    _translation_damping = parameters["translation_damping"]->get_value<float>();
+//    _rotation_fluctuation = parameters["rotation_fluctuation"]->get_value<float>();
+//    _translation_fluctuation = parameters["translation_fluctuation"]->get_value<float>();
     _do_constrain_forces = parameters["do_constrain_forces"]->get_value<bool>();
     _max_force = parameters["max_force"]->get_value<float>();
 
@@ -967,10 +967,10 @@ void Core::set_parameters(const Parameter_list &parameters)
 
 void Core::update_parameter_list(Parameter_list &parameters) const
 {
-    parameters["rotation_damping"]->set_value_no_update(_rotation_damping);
-    parameters["translation_damping"]->set_value_no_update(_translation_damping);
-    parameters["rotation_fluctuation"]->set_value_no_update(_rotation_fluctuation);
-    parameters["translation_fluctuation"]->set_value_no_update(_translation_fluctuation);
+//    parameters["rotation_damping"]->set_value_no_update(_rotation_damping);
+//    parameters["translation_damping"]->set_value_no_update(_translation_damping);
+//    parameters["rotation_fluctuation"]->set_value_no_update(_rotation_fluctuation);
+//    parameters["translation_fluctuation"]->set_value_no_update(_translation_fluctuation);
 
     auto iter = _external_forces.find("gravity");
 

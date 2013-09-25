@@ -634,7 +634,7 @@ public:
 
         glRotatef(90, 1.0, 0.0, 0.0);
         glBindTexture(GL_TEXTURE_2D, _brownian_panel_tex);
-        glColor3f(1.0f, 1.0f, 1.0f);
+        glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
         draw_quad_with_tex_coords();
         glBindTexture(GL_TEXTURE_2D, 0);
 
@@ -657,7 +657,7 @@ public:
 
         glRotatef(90, 1.0, 0.0, 0.0);
         glBindTexture(GL_TEXTURE_2D, _tractor_panel_tex);
-        glColor3f(1.0f, 1.0f, 1.0f);
+        glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
         draw_quad_with_tex_coords();
         glBindTexture(GL_TEXTURE_2D, 0);
 

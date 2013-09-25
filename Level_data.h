@@ -52,6 +52,15 @@ public:
         {
             ar & BOOST_SERIALIZATION_NVP(_background_name);
         }
+
+        if (version > 1)
+        {
+            ar & BOOST_SERIALIZATION_NVP(_translation_damping);
+            ar & BOOST_SERIALIZATION_NVP(_rotation_damping);
+
+            ar & BOOST_SERIALIZATION_NVP(_rotation_fluctuation);
+            ar & BOOST_SERIALIZATION_NVP(_translation_fluctuation);
+        }
     }
 
     bool validate_elements()
@@ -105,6 +114,11 @@ public:
         _score_time_factor = parameters["score_time_factor"]->get_value<float>();
         _background_name = parameters["background_name"]->get_value<std::string>();
 
+        _rotation_damping = parameters["rotation_damping"]->get_value<float>();
+        _translation_damping = parameters["translation_damping"]->get_value<float>();
+        _rotation_fluctuation = parameters["rotation_fluctuation"]->get_value<float>();
+        _translation_fluctuation = parameters["translation_fluctuation"]->get_value<float>();
+
         Parameter_list const* available_list = parameters.get_child("Available elements");
 
         for (auto const& iter : *available_list)
@@ -120,6 +134,11 @@ public:
         result["score_time_factor"]->set_value_no_update(_score_time_factor);
         result["background_name"]->set_value_no_update(_background_name);
 
+        result["rotation_damping"]->set_value_no_update(_rotation_damping);
+        result["translation_damping"]->set_value_no_update(_translation_damping);
+        result["rotation_fluctuation"]->set_value_no_update(_rotation_fluctuation);
+        result["translation_fluctuation"]->set_value_no_update(_translation_fluctuation);
+
         Parameter_list * available_list = result.get_child("Available elements");
 
         for (auto & iter : *available_list)
@@ -134,6 +153,11 @@ public:
     {
         Parameter_list parameters;
         parameters.add_parameter(new Parameter("score_time_factor", 60.0f, 1.0f, 3000.0f));
+
+        parameters.add_parameter(new Parameter("rotation_damping", 0.17f, 0.0f, 10.0f));
+        parameters.add_parameter(new Parameter("translation_damping", 0.5f, 0.0f, 10.0f));
+        parameters.add_parameter(new Parameter("rotation_fluctuation", 0.0f, -10.0f, 100.0f));
+        parameters.add_parameter(new Parameter("translation_fluctuation", 0.0f, -10.0f, 100.0f));
 
         parameters.add_parameter(new Parameter("background_name", std::string("iss_interior_1.png")));
 
@@ -177,10 +201,16 @@ public:
     float _score_time_factor;
 
     std::string _background_name;
+
+    float _translation_damping;
+    float _rotation_damping;
+
+    float _rotation_fluctuation;
+    float _translation_fluctuation;
 };
 
 REGISTER_BASE_CLASS_WITH_PARAMETERS(Level_data);
 
-BOOST_CLASS_VERSION(Level_data, 1)
+BOOST_CLASS_VERSION(Level_data, 2)
 
 #endif // LEVEL_DATA_H

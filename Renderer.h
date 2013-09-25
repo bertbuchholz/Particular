@@ -423,9 +423,9 @@ public:
         }
     }
 
-    float get_brownian_strength(Eigen::Vector3f const& pos, std::vector<Brownian_element*> const& elements) const
+    float get_brownian_strength(Eigen::Vector3f const& pos, std::vector<Brownian_element*> const& elements, float const general_temperature) const
     {
-        float factor = 0.0f;
+        float factor = general_temperature;
 
         for (Brownian_element const* element : elements)
         {
@@ -446,6 +446,8 @@ public:
             std::cout << __PRETTY_FUNCTION__ << " no game field borders or too many/few, not drawing temperature mesh" << std::endl;
             return;
         }
+
+        float const general_temperature = 0.5f * (level_data._translation_fluctuation + level_data._rotation_fluctuation);
 
         glDisable(GL_DEPTH_TEST);
 
@@ -482,21 +484,21 @@ public:
             p = p.cwiseProduct(extent) + front_face->get_position();
 //            glColor4f(1.0f, 0.0f, 0.0f, 1.0f);
             glTexCoord2fv(mesh.texcoord2D(fvIt.handle()).data());
-            glColor3fv(Color(get_brownian_strength(p, elements)).data());
+            glColor3fv(Color(get_brownian_strength(p, elements, general_temperature)).data());
             glVertex3fv(p.data());
             ++fvIt;
             p = OM2Eigen(mesh.point(fvIt.handle()));
             p = p.cwiseProduct(extent) + front_face->get_position();
 //            glColor4f(1.0f, 0.0f, 0.0f, 1.0f);
             glTexCoord2fv(mesh.texcoord2D(fvIt.handle()).data());
-            glColor3fv(Color(get_brownian_strength(p, elements)).data());
+            glColor3fv(Color(get_brownian_strength(p, elements, general_temperature)).data());
             glVertex3fv(p.data());
             ++fvIt;
             p = OM2Eigen(mesh.point(fvIt.handle()));
             p = p.cwiseProduct(extent) + front_face->get_position();
 //            glColor4f(1.0f, 0.0f, 0.0f, 1.0f);
             glTexCoord2fv(mesh.texcoord2D(fvIt.handle()).data());
-            glColor3fv(Color(get_brownian_strength(p, elements)).data());
+            glColor3fv(Color(get_brownian_strength(p, elements, general_temperature)).data());
             glVertex3fv(p.data());
         }
         glEnd();
@@ -515,6 +517,8 @@ public:
 
         assert(front_face_iter != level_data._game_field_borders.end());
 
+        float const general_temperature = 0.5f * (level_data._translation_fluctuation + level_data._rotation_fluctuation);
+
         Plane_barrier const* front_face = front_face_iter->second;
         Eigen::Vector3f extent(front_face->get_extent().get()[0] * 0.5f, 0.0f, front_face->get_extent().get()[1] * 0.5f);
 
@@ -531,7 +535,7 @@ public:
             {
                 Eigen::Vector3f pos(x, front_face->get_position()[1], z);
 
-                float const strength = get_brownian_strength(pos, level_data._brownian_elements);
+                float const strength = get_brownian_strength(pos, level_data._brownian_elements, general_temperature);
 
                 Color c(strength, 0.0f, 1.0f - strength);
 
@@ -842,9 +846,9 @@ public:
         }
     }
 
-    float get_brownian_strength(Eigen::Vector3f const& pos, std::vector<Brownian_element*> const& elements) const
+    float get_brownian_strength(Eigen::Vector3f const& pos, std::vector<Brownian_element*> const& elements, float const general_temperature) const
     {
-        float factor = 0.0f;
+        float factor = general_temperature;
 
         for (Brownian_element const* element : elements)
         {
@@ -865,6 +869,8 @@ public:
             std::cout << __PRETTY_FUNCTION__ << " no game field borders or too many/few, not drawing temperature mesh" << std::endl;
             return;
         }
+
+        float const general_temperature = 0.5f * (level_data._translation_fluctuation + level_data._rotation_fluctuation);
 
         glDisable(GL_DEPTH_TEST);
 
@@ -904,21 +910,21 @@ public:
             p = p.cwiseProduct(extent) + front_face->get_position();
 //            glColor4f(1.0f, 0.0f, 0.0f, 1.0f);
             glTexCoord2fv(mesh.texcoord2D(fvIt.handle()).data());
-            glColor3fv(Color(get_brownian_strength(p, elements)).data());
+            glColor3fv(Color(get_brownian_strength(p, elements, general_temperature)).data());
             glVertex3fv(p.data());
             ++fvIt;
             p = OM2Eigen(mesh.point(fvIt.handle()));
             p = p.cwiseProduct(extent) + front_face->get_position();
 //            glColor4f(1.0f, 0.0f, 0.0f, 1.0f);
             glTexCoord2fv(mesh.texcoord2D(fvIt.handle()).data());
-            glColor3fv(Color(get_brownian_strength(p, elements)).data());
+            glColor3fv(Color(get_brownian_strength(p, elements, general_temperature)).data());
             glVertex3fv(p.data());
             ++fvIt;
             p = OM2Eigen(mesh.point(fvIt.handle()));
             p = p.cwiseProduct(extent) + front_face->get_position();
 //            glColor4f(1.0f, 0.0f, 0.0f, 1.0f);
             glTexCoord2fv(mesh.texcoord2D(fvIt.handle()).data());
-            glColor3fv(Color(get_brownian_strength(p, elements)).data());
+            glColor3fv(Color(get_brownian_strength(p, elements, general_temperature)).data());
             glVertex3fv(p.data());
         }
         glEnd();
@@ -937,6 +943,8 @@ public:
 
         assert(front_face_iter != level_data._game_field_borders.end());
 
+        float const general_temperature = 0.5f * (level_data._translation_fluctuation + level_data._rotation_fluctuation);
+
         Plane_barrier const* front_face = front_face_iter->second;
         Eigen::Vector3f extent(front_face->get_extent().get()[0] * 0.5f, 0.0f, front_face->get_extent().get()[1] * 0.5f);
 
@@ -953,7 +961,7 @@ public:
             {
                 Eigen::Vector3f pos(x, front_face->get_position()[1], z);
 
-                float const strength = get_brownian_strength(pos, level_data._brownian_elements);
+                float const strength = get_brownian_strength(pos, level_data._brownian_elements, general_temperature);
 
                 Color c(strength, 0.0f, 1.0f - strength);
 

@@ -257,11 +257,11 @@ public:
 
         if (version > 0)
         {
-            ar & BOOST_SERIALIZATION_NVP(_translation_damping);
-            ar & BOOST_SERIALIZATION_NVP(_rotation_damping);
+//            ar & BOOST_SERIALIZATION_NVP(_translation_damping);
+//            ar & BOOST_SERIALIZATION_NVP(_rotation_damping);
 
-            ar & BOOST_SERIALIZATION_NVP(_rotation_fluctuation);
-            ar & BOOST_SERIALIZATION_NVP(_translation_fluctuation);
+//            ar & BOOST_SERIALIZATION_NVP(_rotation_fluctuation);
+//            ar & BOOST_SERIALIZATION_NVP(_translation_fluctuation);
 
             ar & BOOST_SERIALIZATION_NVP(_external_forces);
         }
@@ -292,11 +292,11 @@ private:
 //    std::unique_ptr<Atomic_force> _atomic_force;
     std::vector<Atomic_force*> _atomic_forces;
 
-    float _translation_damping;
-    float _rotation_damping;
+//    float _translation_damping;
+//    float _rotation_damping;
 
-    float _rotation_fluctuation;
-    float _translation_fluctuation;
+//    float _rotation_fluctuation;
+//    float _translation_fluctuation;
 
     float _mass_factor;
 

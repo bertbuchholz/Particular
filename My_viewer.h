@@ -821,14 +821,12 @@ public:
                 {
                     for (Draggable_point const& p : corners)
                     {
-                        //                    glColor3f(0.7f, 0.7f, 0.7f);
-                        //                    draw_box_from_center(p.get_position(), Eigen::Vector3f(scale, scale, scale));
-
                         glPushMatrix();
 
                         glTranslatef(p.get_position()[0] + z_offset, p.get_position()[1] + z_offset, p.get_position()[2] + z_offset);
                         glScalef(scale, scale, scale);
                         glRotatef(90, 1.0, 0.0, 0.0);
+                        glColor4f(1.0f, 1.0f, 1.0f, 0.5f);
                         draw_textured_quad(_scale_tex);
 
                         glPopMatrix();
@@ -839,13 +837,12 @@ public:
                 {
                     for (Draggable_disc const& d_disc : d_box->get_position_points())
                     {
-                        //                    draw_sphere_ico(Eigen2OM(d_disc.get_position()), 2.0f, Color(0.7f, 0.7f, 1.0f));
-
                         glPushMatrix();
 
                         glTranslatef(d_disc.get_position()[0] + z_offset, d_disc.get_position()[1] + z_offset, d_disc.get_position()[2] + z_offset);
                         glScalef(scale, scale, scale);
                         glRotatef(90, 1.0, 0.0, 0.0);
+                        glColor4f(1.0f, 1.0f, 1.0f, 0.5f);
                         draw_textured_quad(_move_tex);
 
                         glPopMatrix();
@@ -856,12 +853,12 @@ public:
                 {
                     for (Draggable_disc const& d_disc : d_box->get_rotation_handles())
                     {
-                        //                    draw_sphere_ico(Eigen2OM(d_disc.get_position()), 2.0f, Color(1.0f, 0.7f, 0.7f));
                         glPushMatrix();
 
                         glTranslatef(d_disc.get_position()[0] + z_offset, d_disc.get_position()[1] + z_offset, d_disc.get_position()[2] + z_offset);
                         glScalef(scale, scale, scale);
                         glRotatef(90, 1.0, 0.0, 0.0);
+                        glColor4f(1.0f, 1.0f, 1.0f, 0.5f);
                         draw_textured_quad(_rotate_tex);
 
                         glPopMatrix();
@@ -872,9 +869,6 @@ public:
                 {
                     for (auto iter : d_box->get_property_handles())
                     {
-                        //                    glColor3f(0.8f, 0.8f, 0.8f);
-                        //                    draw_box_from_center(iter.second.get_position(), Eigen::Vector3f(scale, scale, scale));
-
                         Eigen::Vector3f const& p = iter.second.get_position();
 
                         glPushMatrix();
@@ -882,6 +876,7 @@ public:
                         glTranslatef(p[0] + z_offset, p[1] - 0.03f, p[2] + z_offset);
                         glScalef(0.9f, 0.9f, 0.9f);
                         glRotatef(90.0f, 1.0f, 0.0f, 0.0f);
+                        glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
                         draw_textured_quad(_slider_tex);
 
                         glPopMatrix();

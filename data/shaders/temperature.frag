@@ -38,7 +38,7 @@ void main(void)
     {
         float f = 1.2 * (0.5 - mix_factor);
 
-        vec2 ice_tex_size = vec2(498.0, 329.0);
+        vec2 ice_tex_size = vec2(498.0, 329.0); // hard coded texture size :(
 
         float tex_value = length(texture2D(ice_texture, tex_coord).rgb);
         float dx = length(texture2D(ice_texture, tex_coord + vec2(1.0 / ice_tex_size.x, 0.0)).rgb) - tex_value;

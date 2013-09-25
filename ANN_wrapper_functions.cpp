@@ -41,7 +41,7 @@ void ANN_wrapper::generate_tree_from_molecules(std::list<Molecule> const& molecu
 
 std::vector<const Atom *> ANN_wrapper::find_closest_atoms(Atom const& atom) const
 {
-    int const k = std::min(8, int(_index_to_atom.size())); // number of nearest neighbors
+    int const k = std::min(15, int(_index_to_atom.size())); // number of nearest neighbors
     int const dim = 3; // dimension
     double const eps = 0; // error boun
 

@@ -45,7 +45,7 @@ public:
     {
         float score = 0.0f;
 
-        for (size_t i = 0; i < _data.size(); ++i)
+        for (size_t i = 0; i < _data[int(Type::ColMol)].size(); ++i)
         {
             score += std::exp(-i / time_factor) * _data[int(Type::ColMol)][i];
         }

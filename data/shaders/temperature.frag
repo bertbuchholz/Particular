@@ -36,21 +36,23 @@ void main(void)
 
     if (mix_factor < 0.5)
     {
-        float f = 1.2 * (0.5 - mix_factor);
+        float f = 2.0 * (0.5 - mix_factor); // f in [0 .. 1.0]
 
         vec2 ice_tex_size = vec2(498.0, 329.0); // hard coded texture size :(
 
         float tex_value = length(texture2D(ice_texture, tex_coord).rgb);
         float dx = length(texture2D(ice_texture, tex_coord + vec2(1.0 / ice_tex_size.x, 0.0)).rgb) - tex_value;
         float dy = length(texture2D(ice_texture, tex_coord + vec2(0.0, 1.0 / ice_tex_size.y)).rgb) - tex_value;
-        vec2 refracted_coord = vec2(dx, dy) * f * 0.1;
+
+        float refraction_strength = 0.02;
+        vec2 refracted_coord = vec2(dx, dy) * f * refraction_strength;
 
         vec4 scene_color = texture2D(scene_texture, screen_coords + refracted_coord);
 
+        vec4 tint = vec4(1.0, 1.0, 1.0, 1.0) * (1.0 - f) + vec4(0.6, 0.8, 1.0, 1.0) * f * 1.2;
 
-        color = texture2D(ice_texture, tex_coord) * f + scene_color * (1.0 - f);
-        color = scene_color;
-
+//        color = ice_color * f + scene_color * (1.0 - f);
+        color = scene_color * tint;
     }
     else if (mix_factor > 0.5)
     {
@@ -59,8 +61,9 @@ void main(void)
 //        color = vec4(1.0, 0.0, 0.0, 1.0) * f + color * (1.0 - f);
 
 //        float refraction = 0.5 + 0.5 * sin(tex_coord.x + 200.0 * f); // + time * 10.0 * f);
-        float refraction = sin(200.0 * tex_coord.x + time * 10.0) * 0.002 * f;
-        float refraction2 = sin(200.0 * tex_coord.y + time * 10.0) * 0.002 * f;
+        float refraction_strength = 0.002;
+        float refraction = sin(200.0 * tex_coord.x + time * 10.0) * refraction_strength * f;
+        float refraction2 = sin(200.0 * tex_coord.y + time * 10.0) * refraction_strength * f;
 
         vec2 refracted_coord = vec2(screen_coords.x + refraction, screen_coords.y + refraction2);
 

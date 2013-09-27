@@ -295,7 +295,7 @@ public:
 
         glDisable(GL_LIGHTING);
 
-        glPointSize(24.0f * _scale_factor);
+        glPointSize(12.0f * _scale_factor);
 
 //        draw_box(b->get_box().min(), b->get_box().max());
         glBegin(GL_POINTS);

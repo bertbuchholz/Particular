@@ -35,7 +35,7 @@ void main(void)
 
     float fresnel = min(1.0, dot(normalize(vec_to_camera), world_normal) * 0.5 + 0.5);
 
-    float theta = acos(ref_view_dir.z);
+    float theta = PI - acos(ref_view_dir.z);
     float phi = atan(ref_view_dir.y, ref_view_dir.x);
 
     vec4 bg_color = texture2D(bg_texture, vec2((phi + PI) / (2.0 * PI), theta / PI));

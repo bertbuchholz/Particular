@@ -812,8 +812,13 @@ public:
     void update(Level_data const& level_data) override
     {
         glDeleteTextures(1, &_backdrop_texture);
-        Frame_buffer<Color> backdrop_tex_fb = convert<QColor_to_Color_converter, Color>(QImage(Data_config::get_instance()->get_qdata_path() + "/textures/" + QString::fromStdString(level_data._background_name)));
+        QImage background(Data_config::get_instance()->get_qdata_path() + "/textures/" + QString::fromStdString(level_data._background_name));
+        Frame_buffer<Color> backdrop_tex_fb = convert<QColor_to_Color_converter, Color>(background);
         _backdrop_texture = create_texture(backdrop_tex_fb);
+
+        QImage blurred_background = background.scaled(background.size() * 0.05f);
+        Frame_buffer<Color> blurred_backdrop_tex_fb = convert<QColor_to_Color_converter, Color>(blurred_background);
+        _blurred_backdrop_texture = create_texture(blurred_backdrop_tex_fb);
     }
 
     void draw_atom(Atom const& atom, float const scale, float const alpha = 1.0f)

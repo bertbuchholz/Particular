@@ -39,7 +39,7 @@ public:
     enum class Mouse_state { None, Init_drag_handle, Init_drag_molecule, Dragging_molecule, Dragging_handle };
     enum class Selection { None, Level_element, Molecule };
     enum class Ui_state { Level_editor, Playing };
-    enum class Level_state { Main_menu, Intro, Before_start, Running, After_finish, Statistics };
+    enum class Level_state { Main_menu, Pause_menu, Intro, Before_start, Running, After_finish, Statistics };
     enum class Intro_state { Beginning, Single_molecule, Two_molecules_0, Two_molecules_1, Two_molecules_2, Two_molecules_3, Finishing, Finished };
 
     My_viewer(QGLFormat const& format = QGLFormat()) : Options_viewer(format),
@@ -1498,7 +1498,7 @@ public:
 
             handled = true;
         }
-        else
+        else if (event->buttons() & Qt::LeftButton)
         {
             _picked_index = _picking.do_pick(event->pos().x() / float(camera()->screenWidth()), (height() - event->pos().y())  / float(camera()->screenHeight()),
                                              std::bind(&My_viewer::draw_draggables_for_picking, this));
@@ -1710,13 +1710,41 @@ public:
             }
             else if (_level_state == Level_state::Running) // go to pause menu
             {
-
+                enter_pause_menu();
             }
         }
         else
         {
             Base::keyPressEvent(event);
         }
+    }
+
+    void enter_pause_menu()
+    {
+        set_simulation_state(false);
+
+        change_level_state(Level_state::Pause_menu);
+    }
+
+    void continue_game_from_pause()
+    {
+        set_simulation_state(true);
+
+        change_level_state(Level_state::Running);
+    }
+
+    void restart_level()
+    {
+        reset_level();
+
+        continue_game_from_pause();
+    }
+
+    void return_to_main_menu()
+    {
+        set_simulation_state(false);
+
+        change_level_state(Level_state::Main_menu);
     }
 
     void delete_selected_element()
@@ -2560,6 +2588,23 @@ public:
         {
             Draggable_button * button = new Draggable_button(Eigen::Vector3f(0.5f, 0.45f, 0.0f), Eigen::Vector2f(0.5f, 0.15f), "Quit", std::bind(&My_viewer::quit_game, this));
             _buttons[int(Level_state::Main_menu)].push_back(boost::shared_ptr<Draggable_button>(button));
+        }
+
+
+        // Pause menu
+        {
+            Draggable_button * button = new Draggable_button(Eigen::Vector3f(0.5f, 0.85f, 0.0f), Eigen::Vector2f(0.5f, 0.15f), "Restart Level",  std::bind(&My_viewer::restart_level, this));
+            _buttons[int(Level_state::Pause_menu)].push_back(boost::shared_ptr<Draggable_button>(button));
+        }
+
+        {
+            Draggable_button * button = new Draggable_button(Eigen::Vector3f(0.5f, 0.65f, 0.0f), Eigen::Vector2f(0.5f, 0.15f), "Back to Main Menu",  std::bind(&My_viewer::return_to_main_menu, this));
+            _buttons[int(Level_state::Pause_menu)].push_back(boost::shared_ptr<Draggable_button>(button));
+        }
+
+        {
+            Draggable_button * button = new Draggable_button(Eigen::Vector3f(0.5f, 0.45f, 0.0f), Eigen::Vector2f(0.5f, 0.15f), "Continue", std::bind(&My_viewer::continue_game_from_pause, this));
+            _buttons[int(Level_state::Pause_menu)].push_back(boost::shared_ptr<Draggable_button>(button));
         }
 
 

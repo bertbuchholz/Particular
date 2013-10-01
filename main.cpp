@@ -1,12 +1,12 @@
 #include <QObject>
 #include <QApplication>
 
+#include <boost/serialization/nvp.hpp>
+
 #include "My_viewer.h"
 #include "Spatial_hash.h"
 #include "End_condition.h"
 #include "Data_config.h"
-
-#include <boost/serialization/nvp.hpp>
 
 BOOST_CLASS_EXPORT_GUID(Box_barrier, "Box_barrier")
 BOOST_CLASS_EXPORT_GUID(Plane_barrier, "Plane_barrier")

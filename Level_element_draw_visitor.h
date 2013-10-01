@@ -444,9 +444,6 @@ public:
         }
         glEnd();
 
-//        glColor3f(0.3f, 0.8f, 0.4f);
-//        draw_box(b->get_box().min(), b->get_box().max());
-
         if (b->is_selected())
         {
             glColor3f(0.3f, 1.0f, 0.4f);
@@ -474,8 +471,6 @@ public:
         glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
         draw_mesh(_icosphere_3_mesh);
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-
-        glDisable(GL_LIGHTING);
 
         glPushMatrix();
         glRotatef(90.0f, 1.0f, 0.0f, 0.0f);
@@ -517,15 +512,17 @@ public:
         }
         glEnd();
 
-//        glColor3f(0.3f, 0.8f, 0.4f);
-//        draw_box(b->get_box().min(), b->get_box().max());
+        glDisable(GL_LIGHTING);
 
         if (b->is_selected())
         {
             glColor3f(0.3f, 1.0f, 0.4f);
-            draw_mesh(_icosphere_3_mesh);
+            draw_box(b->get_box().min(), b->get_box().max(), 1.0f, true);
             glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
         }
+
+//        glColor3f(0.3f, 0.8f, 0.4f);
+//        draw_box(b->get_box().min(), b->get_box().max());
 
         glPopMatrix();
     }
@@ -563,13 +560,13 @@ public:
 
     void init(QGLContext const* context, QSize const& size)
     {
-        Frame_buffer<Color> molecule_releaser_tex_fb = convert<QColor_to_Color_converter, Color>(QImage(Data_config::get_instance()->get_qdata_path() + "/textures/molecule_releaser.png"));
+        Frame_buffer<Color> molecule_releaser_tex_fb = convert<QColor_to_Color_converter, Color>(QImage(Data_config::get_instance()->get_absolute_qfilename("textures/molecule_releaser.png")));
         _molecule_releaser_tex = create_texture(molecule_releaser_tex_fb);
 
-        Frame_buffer<Color4> brownian_panel_tex_fb = convert<QRgb_to_Color4_converter, Color4>(QImage(Data_config::get_instance()->get_qdata_path() + "/textures/brownian_panel.png"));
+        Frame_buffer<Color4> brownian_panel_tex_fb = convert<QRgb_to_Color4_converter, Color4>(QImage(Data_config::get_instance()->get_absolute_qfilename("textures/brownian_panel.png")));
         _brownian_panel_tex = create_texture(brownian_panel_tex_fb);
 
-        _molecule_releaser_mesh = load_mesh<MyMesh>(Data_config::get_instance()->get_data_path() +  "/meshes/molecule_releaser.obj");
+        _molecule_releaser_mesh = load_mesh<MyMesh>(Data_config::get_instance()->get_absolute_filename("meshes/molecule_releaser.obj"));
 
 //        typename MyMesh::ConstVertexIter vIt(_molecule_releaser_mesh.vertices_begin()), vEnd(_molecule_releaser_mesh.vertices_end());
 
@@ -581,13 +578,13 @@ public:
 //            std::cout << vIt.handle() << " normal " << _molecule_releaser_mesh.normal(vIt.handle()) << std::endl;
 //        }
 
-        _tractor_circle_mesh = load_mesh<MyMesh>(Data_config::get_instance()->get_data_path() +  "/meshes/tractor_circle.obj");
+        _tractor_circle_mesh = load_mesh<MyMesh>(Data_config::get_instance()->get_absolute_filename("meshes/tractor_circle.obj"));
 
-        _icosphere_3_mesh = load_mesh<MyMesh>(Data_config::get_instance()->get_data_path() +  "/meshes/icosphere_3.obj");
+        _icosphere_3_mesh = load_mesh<MyMesh>(Data_config::get_instance()->get_absolute_filename("meshes/icosphere_3.obj"));
 
-        _texture_program = std::unique_ptr<QGLShaderProgram>(init_program(context, Data_config::get_instance()->get_qdata_path() + "/shaders/temperature.vert", Data_config::get_instance()->get_qdata_path() + "/shaders/test.frag"));
+        _texture_program = std::unique_ptr<QGLShaderProgram>(init_program(context, Data_config::get_instance()->get_absolute_qfilename("shaders/temperature.vert"), Data_config::get_instance()->get_absolute_qfilename("shaders/test.frag")));
 
-        Frame_buffer<Color4> particle_tex_fb = convert<QRgb_to_Color4_converter, Color4>(QImage(Data_config::get_instance()->get_qdata_path() + "/textures/particle.png"));
+        Frame_buffer<Color4> particle_tex_fb = convert<QRgb_to_Color4_converter, Color4>(QImage(Data_config::get_instance()->get_absolute_qfilename("textures/particle.png")));
         _particle_tex = create_texture(particle_tex_fb);
 
         resize(size);
@@ -666,10 +663,10 @@ public:
 
     void init(QGLContext const* /* context */)
     {
-        Frame_buffer<Color4> brownian_panel_tex_fb = convert<QRgb_to_Color4_converter, Color4>(QImage(Data_config::get_instance()->get_qdata_path() +  "/textures/brownian_panel.png"));
+        Frame_buffer<Color4> brownian_panel_tex_fb = convert<QRgb_to_Color4_converter, Color4>(QImage(Data_config::get_instance()->get_absolute_qfilename("textures/brownian_panel.png")));
         _brownian_panel_tex = create_texture(brownian_panel_tex_fb);
 
-        Frame_buffer<Color4> tractor_panel_tex_fb = convert<QRgb_to_Color4_converter, Color4>(QImage(Data_config::get_instance()->get_qdata_path() +  "/textures/tractor_panel.png"));
+        Frame_buffer<Color4> tractor_panel_tex_fb = convert<QRgb_to_Color4_converter, Color4>(QImage(Data_config::get_instance()->get_absolute_qfilename("textures/tractor_panel.png")));
         _tractor_panel_tex = create_texture(tractor_panel_tex_fb);
     }
 

@@ -8,41 +8,32 @@ void My_viewer::setup_intro()
     _my_camera->setViewDirection(qglviewer::Vec(0.0f, 1.0f, 0.0f));
     _my_camera->setPosition(qglviewer::Vec(0.0f, -80.0f, 0.0f));
 
-    Eigen::Vector3f grid_start(-10.0f, -10.0f, -10.0f);
-    Eigen::Vector3f grid_end  ( 10.0f,  10.0f, 10.0f);
 
-    int const resolution = 5;
+    Eigen::Vector3f grid_start(-20.0f, -20.0f, -20.0f);
+    Eigen::Vector3f grid_end  ( 20.0f,  20.0f, 20.0f);
 
-    // add bunch of water molecules
-    for (float x = grid_start[0]; x < grid_end[0]; x += resolution)
-    {
-        for (float y = grid_start[1]; y < grid_end[1]; y += resolution)
-        {
-            for (float z = grid_start[2]; z < grid_end[2]; z += resolution)
-            {
-                _core.add_molecule(Molecule::create_water(Eigen::Vector3f(x, y, z)));
-            }
-        }
-    }
-
-    _parameters["Core/rotation_fluctuation"]->set_value(0.5f);
-    _parameters["Core/translation_fluctuation"]->set_value(2.0f);
-
-    _parameters["Core/rotation_damping"]->set_value(0.5f);
-    _parameters["Core/translation_damping"]->set_value(0.1f);
-
-    _parameters["Core/mass_factor"]->set_value(0.1f);
-
-    _parameters["game_field_left"]->set_value(-50.0f);
-    _parameters["game_field_right"]->set_value(50.0f);
-    _parameters["game_field_front"]->set_value(-50.0f);
-    _parameters["game_field_back"]->set_value(50.0f);
-    _parameters["game_field_bottom"]->set_value(-50.0f);
-    _parameters["game_field_top"]->set_value(50.0f);
+    Eigen::AlignedBox3f box(grid_start, grid_end);
 
     for (int i = 0; i < 100; ++i)
     {
-        _core.update(0.05f);
+        _core.add_molecule(Molecule::create_water(box.sample()));
+    }
+
+    _parameters["Level_data/rotation_fluctuation"]->set_value(0.5f);
+    _parameters["Level_data/translation_fluctuation"]->set_value(2.0f);
+
+    _parameters["Level_data/rotation_damping"]->set_value(0.5f);
+    _parameters["Level_data/translation_damping"]->set_value(0.1f);
+
+    _parameters["Core/mass_factor"]->set_value(0.1f);
+
+    _parameters["Game Field Width"]->set_value(100.0f);
+    _parameters["Game Field Height"]->set_value(100.0f);
+    _parameters["Game Field Depth"]->set_value(100.0f);
+
+    for (int i = 0; i < 100; ++i)
+    {
+        _core.update(0.01f);
     }
 
     qglviewer::KeyFrameInterpolator * kfi = new qglviewer::KeyFrameInterpolator(camera()->frame());
@@ -78,8 +69,8 @@ void My_viewer::update_intro(const float timestep)
     {
         if (_intro_time > 10.0f)
         {
-            _parameters["Core/rotation_fluctuation"]->set_value(0.0f);
-            _parameters["Core/translation_fluctuation"]->set_value(0.0f);
+            _parameters["Level_data/rotation_fluctuation"]->set_value(0.0f);
+            _parameters["Level_data/translation_fluctuation"]->set_value(0.0f);
 
 //            qglviewer::KeyFrameInterpolator * kfi = new qglviewer::KeyFrameInterpolator(camera()->frame());
 //            kfi->addKeyFrame(*camera()->frame());
@@ -204,8 +195,8 @@ void My_viewer::update_intro(const float timestep)
             _intro_state = Intro_state::Two_molecules_2;
 
             // damp a lot to force standstill, but don't disable the simulation to keep getting notification for the labels' position updates
-            _parameters["Core/rotation_damping"]->set_value(100.0f);
-            _parameters["Core/translation_damping"]->set_value(100.0f);
+            _parameters["Level_data/rotation_damping"]->set_value(100.0f);
+            _parameters["Level_data/translation_damping"]->set_value(100.0f);
             set_simulation_state(false);
         }
     }
@@ -214,8 +205,8 @@ void My_viewer::update_intro(const float timestep)
         if (_intro_time > 8.0f)
         {
             // remove excessive damping
-            _parameters["Core/rotation_damping"]->set_value(0.5f);
-            _parameters["Core/translation_damping"]->set_value(0.1f);
+            _parameters["Level_data/rotation_damping"]->set_value(0.5f);
+            _parameters["Level_data/translation_damping"]->set_value(0.1f);
             set_simulation_state(true);
 
             _intro_time = 0.0f;

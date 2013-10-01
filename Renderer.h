@@ -332,14 +332,24 @@ public:
     {
         initializeGLFunctions(context);
 
-        _molecule_program = std::unique_ptr<QGLShaderProgram>(init_program(context, Data_config::get_instance()->get_qdata_path() + "/shaders/simple.vert", Data_config::get_instance()->get_qdata_path() + "/shaders/molecule.frag"));
-        _temperature_program = std::unique_ptr<QGLShaderProgram>(init_program(context, Data_config::get_instance()->get_qdata_path() + "/shaders/temperature.vert", Data_config::get_instance()->get_qdata_path() + "/shaders/temperature.frag"));
-        _screen_quad_program = std::unique_ptr<QGLShaderProgram>(init_program(context, Data_config::get_instance()->get_qdata_path() + "/shaders/fullscreen_square.vert", Data_config::get_instance()->get_qdata_path() + "/shaders/simple_texture.frag"));
-        _post_program = std::unique_ptr<QGLShaderProgram>(init_program(context, Data_config::get_instance()->get_qdata_path() + "/shaders/fullscreen_square.vert", Data_config::get_instance()->get_qdata_path() + "/shaders/post.frag"));
-        _blur_program = std::unique_ptr<QGLShaderProgram>(init_program(context, Data_config::get_instance()->get_qdata_path() + "/shaders/fullscreen_square.vert", Data_config::get_instance()->get_qdata_path() + "/shaders/blur_1D.frag"));
+        _molecule_program = std::unique_ptr<QGLShaderProgram>(init_program(context,
+                                                                           Data_config::get_instance()->get_absolute_qfilename("shaders/simple.vert"),
+                                                                           Data_config::get_instance()->get_absolute_qfilename("shaders/molecule.frag")));
+        _temperature_program = std::unique_ptr<QGLShaderProgram>(init_program(context,
+                                                                              Data_config::get_instance()->get_absolute_qfilename("shaders/temperature.vert"),
+                                                                              Data_config::get_instance()->get_absolute_qfilename("shaders/temperature.frag")));
+        _screen_quad_program = std::unique_ptr<QGLShaderProgram>(init_program(context,
+                                                                              Data_config::get_instance()->get_absolute_qfilename("shaders/fullscreen_square.vert"),
+                                                                              Data_config::get_instance()->get_absolute_qfilename("shaders/simple_texture.frag")));
+        _post_program = std::unique_ptr<QGLShaderProgram>(init_program(context,
+                                                                       Data_config::get_instance()->get_absolute_qfilename("shaders/fullscreen_square.vert"),
+                                                                       Data_config::get_instance()->get_absolute_qfilename("shaders/post.frag")));
+        _blur_program = std::unique_ptr<QGLShaderProgram>(init_program(context,
+                                                                       Data_config::get_instance()->get_absolute_qfilename("shaders/fullscreen_square.vert"),
+                                                                       Data_config::get_instance()->get_absolute_qfilename("shaders/blur_1D.frag")));
 
-        _sphere_mesh = load_mesh<MyMesh>(Data_config::get_instance()->get_data_path() + "/meshes/icosphere_3.obj");
-        _grid_mesh = load_mesh<MyMesh>(Data_config::get_instance()->get_data_path() + "/meshes/grid_10x10.obj");
+        _sphere_mesh = load_mesh<MyMesh>(Data_config::get_instance()->get_absolute_filename("meshes/icosphere_3.obj"));
+        _grid_mesh = load_mesh<MyMesh>(Data_config::get_instance()->get_absolute_filename("meshes/grid_10x10.obj"));
 
         typename MyMesh::ConstVertexIter vIt(_grid_mesh.vertices_begin()), vEnd(_grid_mesh.vertices_end());
 
@@ -351,10 +361,10 @@ public:
             _grid_mesh.set_texcoord2D(vIt.handle(), t);
         }
 
-        Frame_buffer<Color> ice_tex_fb = convert<QColor_to_Color_converter, Color>(QImage(Data_config::get_instance()->get_qdata_path() + "/textures/ice_texture.png"));
+        Frame_buffer<Color> ice_tex_fb = convert<QColor_to_Color_converter, Color>(QImage(Data_config::get_instance()->get_absolute_qfilename("textures/ice_texture.png")));
         _ice_texture = create_texture(ice_tex_fb);
 
-        Frame_buffer<Color> backdrop_tex_fb = convert<QColor_to_Color_converter, Color>(QImage(Data_config::get_instance()->get_qdata_path() + "/textures/iss_interior_1.png"));
+        Frame_buffer<Color> backdrop_tex_fb = convert<QColor_to_Color_converter, Color>(QImage(Data_config::get_instance()->get_absolute_qfilename("textures/iss_interior_1.png")));
         _backdrop_texture = create_texture(backdrop_tex_fb);
 
         resize(size);
@@ -744,15 +754,25 @@ public:
     {
         initializeGLFunctions(context);
 
-        _molecule_program = std::unique_ptr<QGLShaderProgram>(init_program(context, Data_config::get_instance()->get_qdata_path() + "/shaders/simple.vert", Data_config::get_instance()->get_qdata_path() + "/shaders/molecule.frag"));
-        _temperature_program = std::unique_ptr<QGLShaderProgram>(init_program(context, Data_config::get_instance()->get_qdata_path() + "/shaders/temperature.vert", Data_config::get_instance()->get_qdata_path() + "/shaders/temperature.frag"));
-        _screen_quad_program = std::unique_ptr<QGLShaderProgram>(init_program(context, Data_config::get_instance()->get_qdata_path() + "/shaders/fullscreen_square.vert", Data_config::get_instance()->get_qdata_path() + "/shaders/simple_texture.frag"));
-        _post_program = std::unique_ptr<QGLShaderProgram>(init_program(context, Data_config::get_instance()->get_qdata_path() + "/shaders/fullscreen_square.vert", Data_config::get_instance()->get_qdata_path() + "/shaders/post.frag"));
-        _blur_program = std::unique_ptr<QGLShaderProgram>(init_program(context, Data_config::get_instance()->get_qdata_path() + "/shaders/fullscreen_square.vert", Data_config::get_instance()->get_qdata_path() + "/shaders/blur_1D.frag"));
+        _molecule_program = std::unique_ptr<QGLShaderProgram>(init_program(context,
+                                                                           Data_config::get_instance()->get_absolute_qfilename("shaders/simple.vert"),
+                                                                           Data_config::get_instance()->get_absolute_qfilename("shaders/molecule.frag")));
+        _temperature_program = std::unique_ptr<QGLShaderProgram>(init_program(context,
+                                                                              Data_config::get_instance()->get_absolute_qfilename("shaders/temperature.vert"),
+                                                                              Data_config::get_instance()->get_absolute_qfilename("shaders/temperature.frag")));
+        _screen_quad_program = std::unique_ptr<QGLShaderProgram>(init_program(context,
+                                                                              Data_config::get_instance()->get_absolute_qfilename("shaders/fullscreen_square.vert"),
+                                                                              Data_config::get_instance()->get_absolute_qfilename("shaders/simple_texture.frag")));
+        _post_program = std::unique_ptr<QGLShaderProgram>(init_program(context,
+                                                                       Data_config::get_instance()->get_absolute_qfilename("shaders/fullscreen_square.vert"),
+                                                                       Data_config::get_instance()->get_absolute_qfilename("shaders/post.frag")));
+        _blur_program = std::unique_ptr<QGLShaderProgram>(init_program(context,
+                                                                       Data_config::get_instance()->get_absolute_qfilename("shaders/fullscreen_square.vert"),
+                                                                       Data_config::get_instance()->get_absolute_qfilename("shaders/blur_1D.frag")));
 
-        _sphere_mesh = load_mesh<MyMesh>(Data_config::get_instance()->get_data_path() + "/meshes/icosphere_3.obj");
-        _grid_mesh = load_mesh<MyMesh>(Data_config::get_instance()->get_data_path() + "/meshes/grid_10x10.obj");
-        _bg_hemisphere_mesh = load_mesh<MyMesh>(Data_config::get_instance()->get_data_path() + "/meshes/bg_hemisphere.obj");
+        _sphere_mesh = load_mesh<MyMesh>(Data_config::get_instance()->get_absolute_filename("meshes/icosphere_3.obj"));
+        _grid_mesh = load_mesh<MyMesh>(Data_config::get_instance()->get_absolute_filename("meshes/grid_10x10.obj"));
+        _bg_hemisphere_mesh = load_mesh<MyMesh>(Data_config::get_instance()->get_absolute_filename("meshes/bg_hemisphere.obj"));
 
         typename MyMesh::ConstVertexIter vIt(_grid_mesh.vertices_begin()), vEnd(_grid_mesh.vertices_end());
 
@@ -764,13 +784,13 @@ public:
             _grid_mesh.set_texcoord2D(vIt.handle(), t);
         }
 
-        Frame_buffer<Color> ice_tex_fb = convert<QColor_to_Color_converter, Color>(QImage(Data_config::get_instance()->get_qdata_path() + "/textures/ice_texture.png"));
+        Frame_buffer<Color> ice_tex_fb = convert<QColor_to_Color_converter, Color>(QImage(Data_config::get_instance()->get_absolute_qfilename("textures/ice_texture.png")));
         _ice_texture = create_texture(ice_tex_fb);
 
-        Frame_buffer<Color> backdrop_tex_fb = convert<QColor_to_Color_converter, Color>(QImage(Data_config::get_instance()->get_qdata_path() + "/textures/iss_interior_1.png"));
+        Frame_buffer<Color> backdrop_tex_fb = convert<QColor_to_Color_converter, Color>(QImage(Data_config::get_instance()->get_absolute_qfilename("/textures/iss_interior_1.png")));
         _backdrop_texture = create_texture(backdrop_tex_fb);
 
-        Frame_buffer<Color> blurred_backdrop_tex_fb = convert<QColor_to_Color_converter, Color>(QImage(Data_config::get_instance()->get_qdata_path() + "/textures/iss_interior_1_blurred.png"));
+        Frame_buffer<Color> blurred_backdrop_tex_fb = convert<QColor_to_Color_converter, Color>(QImage(Data_config::get_instance()->get_absolute_qfilename("/textures/iss_interior_1_blurred.png")));
         _blurred_backdrop_texture = create_texture(blurred_backdrop_tex_fb);
 
         resize(size);
@@ -783,7 +803,6 @@ public:
     {
 //        _scene_fbo = std::unique_ptr<QGLFramebufferObject>(new QGLFramebufferObject(size, QGLFramebufferObject::Depth));
         _scene_fbo = std::unique_ptr<QGLFramebufferObject>(new QGLFramebufferObject(size));
-
 
         glGenTextures(1, &_depth_tex); // FIXME: need to delete first
         glBindTexture(GL_TEXTURE_2D, _depth_tex);
@@ -812,7 +831,7 @@ public:
     void update(Level_data const& level_data) override
     {
         glDeleteTextures(1, &_backdrop_texture);
-        QImage background(Data_config::get_instance()->get_qdata_path() + "/textures/" + QString::fromStdString(level_data._background_name));
+        QImage background(Data_config::get_instance()->get_absolute_qfilename("textures/" + QString::fromStdString(level_data._background_name)));
         Frame_buffer<Color> backdrop_tex_fb = convert<QColor_to_Color_converter, Color>(background);
         _backdrop_texture = create_texture(backdrop_tex_fb);
 

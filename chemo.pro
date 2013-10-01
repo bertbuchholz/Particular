@@ -69,7 +69,8 @@ SOURCES += main.cpp \
     My_viewer.cpp \
     Draggable.cpp \
     Molecule_releaser.cpp \
-    ANN_wrapper_functions.cpp
+    ANN_wrapper_functions.cpp \
+    fp_exception_glibc_extension.c
 
 OTHER_FILES += TODO.txt \
     data/shaders/picking.vert \

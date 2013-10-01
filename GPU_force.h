@@ -100,7 +100,7 @@ public:
         _radius_frame = Frame_buffer<float>(_size, _size);
         _parent_id_frame = Frame_buffer<int>(_size, _size);
 
-        _shader = std::unique_ptr<QGLShaderProgram>(init_program(context, Data_config::get_instance()->get_qdata_path() + "/shaders/force_calc.vert", Data_config::get_instance()->get_qdata_path() + "/shaders/force_calc.frag"));
+        _shader = std::unique_ptr<QGLShaderProgram>(init_program(context, Data_config::get_instance()->get_absolute_qfilename("shaders/force_calc.vert"), Data_config::get_instance()->get_absolute_qfilename("shaders/force_calc.frag")));
 
         initializeGLFunctions(context);
 

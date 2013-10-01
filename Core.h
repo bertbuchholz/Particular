@@ -29,8 +29,6 @@
 #include "ANN_wrapper_functions.h"
 
 
-
-
 class Core : public QObject
 {
     Q_OBJECT
@@ -276,7 +274,6 @@ private:
     Game_state _game_state;
     Game_state _previous_game_state;
 
-    bool _use_indicators;
     std::vector<Force_indicator> _indicators;
 
     std::map<std::string, External_force> _external_forces;

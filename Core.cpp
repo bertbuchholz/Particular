@@ -2,6 +2,10 @@
 
 #include "Molecule_releaser.h"
 
+#include "fp_exception_glibc_extension.h"
+#include <fenv.h>
+
+
 Core::Core() :
     _game_state(Game_state::Unstarted),
     _previous_game_state(Game_state::Unstarted),
@@ -248,9 +252,6 @@ void Core::compute_force_and_torque(Molecule &receiver)
         receiver._force += b->calc_force_on_molecule(receiver);
     }
 
-    receiver._force += -_level_data._translation_damping * receiver._v;
-    receiver._torque += -_level_data._rotation_damping * receiver._omega;
-
     float brownian_translation_factor = _level_data._translation_fluctuation;
     float brownian_rotation_factor = _level_data._rotation_fluctuation * translation_to_rotation_ratio;
 
@@ -262,7 +263,9 @@ void Core::compute_force_and_torque(Molecule &receiver)
         brownian_rotation_factor += translation_to_rotation_ratio * factor;
     }
 
-    receiver._force  += std::max(0.0f, brownian_translation_factor) * Eigen::Vector3f::Random().normalized();
+    Eigen::Vector3f random_dir = Eigen::Vector3f::Random().normalized();
+
+    receiver._force  += std::max(0.0f, brownian_translation_factor) * random_dir;
     receiver._torque += std::max(0.0f, brownian_rotation_factor)    * Eigen::Vector3f::Random().normalized();
 
     for (auto const& f : _external_forces)
@@ -307,6 +310,9 @@ void Core::compute_force_and_torque(Molecule &receiver)
             receiver._force  = (_max_force / force_size)  * receiver._force;
         }
     }
+
+    receiver._force += -_level_data._translation_damping * receiver._v;
+    receiver._torque += -_level_data._rotation_damping * receiver._omega;
 }
 
 
@@ -346,7 +352,7 @@ void Core::check_molecules_in_portals()
                     has_been_removed = true;
                 }
 
-                std::cout << __PRETTY_FUNCTION__ << " molecule in portal" << std::endl;
+//                std::cout << __PRETTY_FUNCTION__ << " molecule in portal" << std::endl;
             }
         }
 
@@ -367,25 +373,6 @@ void Core::update(const float time_step)
     int elapsed_milliseconds;
     std::chrono::time_point<std::chrono::system_clock> timer_start, timer_end;
 
-    if (time_debug)
-    {
-        timer_start = std::chrono::system_clock::now();
-    }
-
-    check_molecules_in_portals();
-
-    if (time_debug)
-    {
-        timer_end = std::chrono::system_clock::now();
-
-        elapsed_milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>
-                (timer_end-timer_start).count();
-
-        if (elapsed_milliseconds > 1)
-        {
-            std::cout << "check_molecules_in_portals(): " << elapsed_milliseconds << std::endl;
-        }
-    }
 
     for (Molecule_releaser * m : _level_data._molecule_releasers)
     {
@@ -432,7 +419,7 @@ void Core::update(const float time_step)
         elapsed_milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>
                 (timer_end-timer_start).count();
 
-        //            if (elapsed_milliseconds > 1)
+        if (elapsed_milliseconds > 1)
         {
             std::cout << "update_tree(): " << elapsed_milliseconds << std::endl;
         }
@@ -471,11 +458,11 @@ void Core::update(const float time_step)
         elapsed_milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>
                 (timer_end-timer_start).count();
 
-        //            if (elapsed_milliseconds > 1)
+        if (elapsed_milliseconds > 1)
         {
             std::cout << "compute_force_and_torque(): " << elapsed_milliseconds << std::endl;
-            std::cout << "leaf usage: " << _debug_leaf_usage_count << " ";
-            std::cout << "inner node usage: " << _debug_inner_node_usage_count << std::endl;
+//            std::cout << "leaf usage: " << _debug_leaf_usage_count << " ";
+//            std::cout << "inner node usage: " << _debug_inner_node_usage_count << std::endl;
         }
     }
 
@@ -499,17 +486,21 @@ void Core::update(const float time_step)
     {
         molecule._x += molecule._v * time_step;
 
+        feenableexcept(FE_INVALID | FE_OVERFLOW);
+
         Eigen::Quaternion<float> omega_quaternion(0.0f, molecule._omega[0], molecule._omega[1], molecule._omega[2]);
         Eigen::Quaternion<float> q_dot = scale(omega_quaternion * molecule._q, 0.5f);
         molecule._q = add(molecule._q, scale(q_dot, time_step));
 
-        assert(!std::isnan(molecule._q.w()));
+        assert(!std::isnan(molecule._q.w()) && !std::isinf(molecule._q.w()));
 
         molecule._P += molecule._force * time_step;
 
         molecule._L += molecule._torque * time_step;
 
         molecule.from_state(Body_state(), _mass_factor);
+
+        fedisableexcept(FE_INVALID | FE_OVERFLOW);
     }
 
     if (time_debug)
@@ -519,16 +510,21 @@ void Core::update(const float time_step)
         elapsed_milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>
                 (timer_end-timer_start).count();
 
-        //            if (elapsed_milliseconds > 1)
+        if (elapsed_milliseconds > 1)
         {
             std::cout << "update molecules: " << elapsed_milliseconds << std::endl;
         }
     }
 
-    if (_game_state == Game_state::Running && _current_time - _last_sensor_check > _sensor_data.get_check_interval())
+    if (_current_time - _last_sensor_check > _sensor_data.get_check_interval())
     {
+        check_molecules_in_portals(); // portal checks don't need to be done that often
+
         _last_sensor_check = _current_time;
-        do_sensor_check();
+        if (_game_state == Game_state::Running)
+        {
+            do_sensor_check();
+        }
     }
 
     if (_game_state == Game_state::Running && check_is_finished())
@@ -556,9 +552,11 @@ void Core::do_sensor_check()
         num_released_molecules += p->get_num_released_molecules();
     }
 
+    // TODO: add power consumption of tractors
+
     for (Brownian_element const* p : _level_data._brownian_elements)
     {
-        energy_consumption += std::abs(p->get_strength()) * p->get_radius(); // TODO: get the data
+        energy_consumption += std::abs(p->get_strength()) * p->get_radius();
         average_temperature += p->get_strength() * p->get_radius();
     }
 
@@ -616,8 +614,6 @@ void Core::update_tree()
                 min[i] = std::min(a.get_position()[i], min[i]);
                 max[i] = std::max(a.get_position()[i], max[i]);
             }
-
-            //                assert(a._parent_id >= 0); // debug check
         }
     }
 
@@ -630,31 +626,11 @@ void Core::update_tree()
     {
         for (Atom const& a : m._atoms)
         {
-            _tree.add_point(a.get_position(), &a); // FIXME: possibly bad, when the vector containing a gets moved, then &a changes
-
-            //                if (!(a._parent_id >= 0))
-            //                {
-            //                    std::cout << &a << " " << a._parent_id << std::endl;
-            //                }
-
-            //                assert(a._parent_id >= 0);
+            _tree.add_point(a.get_position(), &a);
         }
     }
 
     My_tree::average_data(&_tree, Atom_averager());
-
-    // TODO: debug check, costly, REMOVE
-    //        std::vector<My_tree const*> leafs;
-    //        _tree.get_Leafs(leafs);
-
-    //        for (My_tree const* l : leafs)
-    //        {
-    //            for (Atom const* a : l->get_data())
-    //            {
-
-    //            }
-    //        }
-
 }
 
 
@@ -850,7 +826,7 @@ void Core::reset_level()
     _level_data._molecules.clear();
 
     _molecule_external_forces.clear();
-    _external_forces.clear();
+
     //        _molecule_hash.clear();
     _molecule_id_to_molecule_map.clear();
 
@@ -921,7 +897,6 @@ void Core::load_level(const std::string &file_name)
         //            ia >> BOOST_SERIALIZATION_NVP(_level_data);
         //            ia >> BOOST_SERIALIZATION_NVP(*this);
         ia >> boost::serialization::make_nvp("Core", *this);
-
     }
     catch (boost::archive::archive_exception & e)
     {
@@ -942,11 +917,6 @@ void Core::load_level(const std::string &file_name)
 
 void Core::set_parameters(const Parameter_list &parameters)
 {
-    _use_indicators = parameters["use_indicators"]->get_value<bool>();
-//    _rotation_damping = parameters["rotation_damping"]->get_value<float>();
-//    _translation_damping = parameters["translation_damping"]->get_value<float>();
-//    _rotation_fluctuation = parameters["rotation_fluctuation"]->get_value<float>();
-//    _translation_fluctuation = parameters["translation_fluctuation"]->get_value<float>();
     _do_constrain_forces = parameters["do_constrain_forces"]->get_value<bool>();
     _max_force = parameters["max_force"]->get_value<float>();
 
@@ -967,11 +937,6 @@ void Core::set_parameters(const Parameter_list &parameters)
 
 void Core::update_parameter_list(Parameter_list &parameters) const
 {
-//    parameters["rotation_damping"]->set_value_no_update(_rotation_damping);
-//    parameters["translation_damping"]->set_value_no_update(_translation_damping);
-//    parameters["rotation_fluctuation"]->set_value_no_update(_rotation_fluctuation);
-//    parameters["translation_fluctuation"]->set_value_no_update(_translation_fluctuation);
-
     auto iter = _external_forces.find("gravity");
 
     if (iter != _external_forces.end())
@@ -984,14 +949,9 @@ void Core::update_parameter_list(Parameter_list &parameters) const
 Parameter_list Core::get_parameters()
 {
     Parameter_list parameters;
-    parameters.add_parameter(new Parameter("use_indicators", true));
-    parameters.add_parameter(new Parameter("rotation_damping", 0.1f, 0.0f, 10.0f));
-    parameters.add_parameter(new Parameter("translation_damping", 0.1f, 0.0f, 10.0f));
-    parameters.add_parameter(new Parameter("rotation_fluctuation", 0.1f, 0.0f, 100.0f));
-    parameters.add_parameter(new Parameter("translation_fluctuation", 0.1f, 0.0f, 100.0f));
     parameters.add_parameter(new Parameter("mass_factor", 1.0f, 0.01f, 10.0f));
     parameters.add_parameter(new Parameter("do_constrain_forces", true));
-    parameters.add_parameter(new Parameter("max_force", 10.0f, 0.1f, 30.0f));
+    parameters.add_parameter(new Parameter("max_force", 10.0f, 0.1f, 500.0f));
     parameters.add_parameter(new Parameter("max_force_distance", 10.0f, 1.0f, 1000.0f));
     parameters.add_parameter(new Parameter("gravity", 1.0f, 0.0f, 100.0f));
 

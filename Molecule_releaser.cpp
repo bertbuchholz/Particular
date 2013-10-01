@@ -95,7 +95,7 @@ bool Molecule_releaser::check_do_release(const float time)
         local_pos[0] = _box.center()[0] + _box.sizes()[0] * 0.5f;
 
         _next_molecule._x = get_transform() * local_pos + get_position();
-        _next_molecule._P = get_transform() * Eigen::Vector3f(1.0f, 0.0f, 0.0f) * 4.0f;
+        _next_molecule._P = get_transform() * Eigen::Vector3f(1.0f, 0.0f, 0.0f) * (4.0f + 4.0f * std::rand() / float(RAND_MAX));
 
         _particles.push_back(init_particle_system(_next_molecule, local_pos));
     }

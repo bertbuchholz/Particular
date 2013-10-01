@@ -50,34 +50,41 @@ public:
         _parameters.add_parameter(new Parameter("levels", std::string("")));
 
         _parameters.add_parameter(new Parameter("physics_timestep_ms", 10, 1, 100, std::bind(&My_viewer::update_physics_timestep, this)));
+        _parameters["physics_timestep_ms"]->set_hidden(true);
         _parameters.add_parameter(new Parameter("physics_speed", 1.0f, -10.0f, 100.0f, update));
+        _parameters["physics_speed"]->set_hidden(true);
         _parameters.add_parameter(new Parameter("global_scale", 1.0f, 0.01f, 100.0f, update));
+        _parameters["global_scale"]->set_hidden(true);
 
         _parameters.add_parameter(new Parameter("z_near", 0.1f, 0.01f, 100.0f, std::bind(&My_viewer::change_clipping, this)));
+        _parameters["z_near"]->set_hidden(true);
         _parameters.add_parameter(new Parameter("z_far", 100.0f, 1.0f, 1000.0f, std::bind(&My_viewer::change_clipping, this)));
+        _parameters["z_far"]->set_hidden(true);
 
-        _parameters.add_parameter(new Parameter("game_field_left", -40.0f, -1000.0f, 1000.0f, std::bind(&My_viewer::change_game_field_borders, this)));
-        _parameters.add_parameter(new Parameter("game_field_right", 40.0f, -1000.0f, 1000.0f, std::bind(&My_viewer::change_game_field_borders, this)));
-
-        _parameters.add_parameter(new Parameter("game_field_front", -20.0f, -1000.0f, 1000.0f, std::bind(&My_viewer::change_game_field_borders, this)));
-        _parameters.add_parameter(new Parameter("game_field_back", 20.0f, -1000.0f, 1000.0f, std::bind(&My_viewer::change_game_field_borders, this)));
-
-        _parameters.add_parameter(new Parameter("game_field_bottom", -20.0f, -1000.0f, 1000.0f, std::bind(&My_viewer::change_game_field_borders, this)));
-        _parameters.add_parameter(new Parameter("game_field_top", 20.0f, -1000.0f, 1000.0f, std::bind(&My_viewer::change_game_field_borders, this)));
+        _parameters.add_parameter(new Parameter("Game Field Width",  80.0f, 5.0f, 1000.0f, std::bind(&My_viewer::change_game_field_borders, this)));
+        _parameters.add_parameter(new Parameter("Game Field Height", 40.0f, 5.0f, 1000.0f, std::bind(&My_viewer::change_game_field_borders, this)));
+        _parameters.add_parameter(new Parameter("Game Field Depth",  40.0f, 5.0f, 1000.0f, std::bind(&My_viewer::change_game_field_borders, this)));
 
         Parameter_registry<Core>::create_normal_instance("Core", &_parameters, std::bind(&My_viewer::change_core_settings, this));
 
         Parameter_registry<Level_data>::create_normal_instance("Level_data", &_parameters, std::bind(&My_viewer::change_level_data_settings, this));
 
         _parameters.add_parameter(new Parameter("draw_closest_force", true, update));
+        _parameters["draw_closest_force"]->set_hidden(true);
 
         _parameters.add_parameter(new Parameter("indicator_scale", 0.1f, 0.01f, 10.0f, update));
+        _parameters["indicator_scale"]->set_hidden(true);
 
         _parameters.add_parameter(new Parameter("draw_tree_depth", 1, -1, 10, update));
+        _parameters["draw_tree_depth"]->set_hidden(true);
 
         _parameters.add_parameter(new Parameter("draw_handles", true, update));
+        _parameters["draw_handles"]->set_hidden(true);
 
-        std::vector<std::string> particle_types { "O2", "H2O", "SDS", "Na", "Cl", "Dipole",
+        std::vector<std::string> ui_states { "Level Editor", "Playing" };
+        _parameters.add_parameter(new Parameter("Interface", 0, ui_states, std::bind(&My_viewer::change_ui_state, this)));
+
+        std::vector<std::string> object_types { "O2", "H2O", "SDS", "Na", "Cl", "Dipole",
 //                                                  "Plane_barrier",
                                                   "Box_barrier",
                                                   "Brownian_box",
@@ -90,24 +97,21 @@ public:
                                                   "Charged_barrier",
                                                   "Tractor_barrier" };
 
-        _parameters.add_parameter(new Parameter("particle_type", 0, particle_types, update));
+        _parameters.add_parameter(new Parameter("Object Type", 0, object_types, update));
 
-        std::vector<std::string> ui_states { "Level_editor", "Playing" };
-
-        _parameters.add_parameter(new Parameter("ui_state", 0, ui_states, std::bind(&My_viewer::change_ui_state, this)));
 
         _parameters.add_parameter(new Parameter("Toggle simulation", false, std::bind(&My_viewer::toggle_simulation, this)));
-        _parameters.add_parameter(Parameter::create_button("Save level", std::bind(&My_viewer::save_level, this)));
-        _parameters.add_parameter(Parameter::create_button("Load level", std::bind(static_cast<void (My_viewer::*)()>(&My_viewer::load_level), this)));
-        _parameters.add_parameter(Parameter::create_button("Save settings", std::bind(&My_viewer::save_parameters_with_check, this)));
-        _parameters.add_parameter(Parameter::create_button("Load settings", std::bind(&My_viewer::restore_parameters_with_check, this)));
+        _parameters.add_parameter(Parameter::create_button("Save Level", std::bind(&My_viewer::save_level, this)));
+        _parameters.add_parameter(Parameter::create_button("Load Level", std::bind(static_cast<void (My_viewer::*)()>(&My_viewer::load_level), this)));
+        _parameters.add_parameter(Parameter::create_button("Save Settings", std::bind(&My_viewer::save_parameters_with_check, this)));
+        _parameters.add_parameter(Parameter::create_button("Load Settings", std::bind(&My_viewer::restore_parameters_with_check, this)));
         _parameters.add_parameter(Parameter::create_button("Clear", std::bind(&My_viewer::clear, this)));
-        _parameters.add_parameter(Parameter::create_button("Start Level", std::bind(&My_viewer::start_level, this)));
+//        _parameters.add_parameter(Parameter::create_button("Start Level", std::bind(&My_viewer::start_level, this)));
         _parameters.add_parameter(Parameter::create_button("Reset Level", std::bind(&My_viewer::reset_level, this)));
-        _parameters.add_parameter(Parameter::create_button("Do physics timestep", std::bind(&My_viewer::do_physics_timestep, this)));
-        _parameters.add_parameter(Parameter::create_button("Show cam orientation", std::bind(&My_viewer::print_cam_orientation, this)));
+//        _parameters.add_parameter(Parameter::create_button("Do physics timestep", std::bind(&My_viewer::do_physics_timestep, this)));
+//        _parameters.add_parameter(Parameter::create_button("Show cam orientation", std::bind(&My_viewer::print_cam_orientation, this)));
 
-        Parameter_registry<Molecule_renderer>::create_single_select_instance(&_parameters, "Molecule Renderer", std::bind(&My_viewer::change_renderer, this));
+        Parameter_registry<Molecule_renderer>::create_single_select_instance(&_parameters, "Renderer", std::bind(&My_viewer::change_renderer, this));
 
         setup_ui_elements();
 
@@ -128,11 +132,11 @@ public:
 
     void setup_fonts()
     {
-        int id = QFontDatabase::addApplicationFont(Data_config::get_instance()->get_qdata_path() +  "/fonts/Matiz.ttf");
+        int id = QFontDatabase::addApplicationFont(Data_config::get_instance()->get_absolute_qfilename("fonts/Matiz.ttf"));
         QString family = QFontDatabase::applicationFontFamilies(id).at(0);
         _main_font = QFont(family);
 
-        id = QFontDatabase::addApplicationFont(Data_config::get_instance()->get_qdata_path() +  "/fonts/LondrinaOutline-Regular.otf");
+        id = QFontDatabase::addApplicationFont(Data_config::get_instance()->get_absolute_qfilename("fonts/LondrinaOutline-Regular.otf"));
         family = QFontDatabase::applicationFontFamilies(id).at(0);
         _particle_font = QFont(family);
     }
@@ -236,7 +240,7 @@ public:
 
         set_simulation_state(false);
 
-        std::string const filename = (Data_config::get_instance()->get_qdata_path() + "/levels/" + _level_names[_progress.last_level] + ".data").toStdString();
+        std::string const filename = (Data_config::get_instance()->get_absolute_filename("levels/" + _level_names[_progress.last_level] + ".data"));
 
         load_level(filename);
 
@@ -271,7 +275,7 @@ public:
 
             if (image_iter != _element_images.end()) continue;
 
-            _element_images[iter.first] = QImage(Data_config::get_instance()->get_qdata_path() +  "/textures/button_" + QString::fromStdString(iter.first) + ".png");
+            _element_images[iter.first] = QImage(Data_config::get_instance()->get_absolute_qfilename("textures/button_" + QString::fromStdString(iter.first) + ".png"));
         }
 
         for (auto const& iter : _core.get_level_data()._available_elements)
@@ -332,13 +336,19 @@ public:
 
     void change_game_field_borders()
     {
-        Eigen::Vector3f min(_parameters["game_field_left"]->get_value<float>(),
-                _parameters["game_field_front"]->get_value<float>(),
-                _parameters["game_field_bottom"]->get_value<float>());
+//        Eigen::Vector3f min(_parameters["game_field_left"]->get_value<float>(),
+//                _parameters["game_field_front"]->get_value<float>(),
+//                _parameters["game_field_bottom"]->get_value<float>());
 
-        Eigen::Vector3f max(_parameters["game_field_right"]->get_value<float>(),
-                _parameters["game_field_back"]->get_value<float>(),
-                _parameters["game_field_top"]->get_value<float>());
+        Eigen::Vector3f min(-0.5f * _parameters["Game Field Width"]->get_value<float>(),
+                -0.5f * _parameters["Game Field Depth"]->get_value<float>(),
+                -0.5f * _parameters["Game Field Height"]->get_value<float>());
+
+        Eigen::Vector3f max = -min;
+
+//        Eigen::Vector3f max(_parameters["game_field_right"]->get_value<float>(),
+//                _parameters["game_field_back"]->get_value<float>(),
+//                _parameters["game_field_top"]->get_value<float>());
 
         _core.set_game_field_borders(min, max);
         update_draggable_to_level_element();
@@ -348,7 +358,7 @@ public:
 
     void change_renderer()
     {
-        _renderer = std::unique_ptr<Molecule_renderer>(Parameter_registry<Molecule_renderer>::get_class_from_single_select_instance_2(_parameters.get_child("Molecule Renderer")));
+        _renderer = std::unique_ptr<Molecule_renderer>(Parameter_registry<Molecule_renderer>::get_class_from_single_select_instance_2(_parameters.get_child("Renderer")));
         _renderer->init(context(), size());
         _renderer->update(_core.get_level_data());
         update();
@@ -557,7 +567,7 @@ public:
 
     void change_ui_state()
     {
-        if (_parameters["ui_state"]->get_value<std::string>() == "Level_editor")
+        if (_parameters["Interface"]->get_value<std::string>() == "Level Editor")
         {
             _ui_state = Ui_state::Level_editor;
 
@@ -565,7 +575,7 @@ public:
 
             _particle_systems.clear();
         }
-        else if (_parameters["ui_state"]->get_value<std::string>() == "Playing")
+        else if (_parameters["Interface"]->get_value<std::string>() == "Playing")
         {
             _ui_state = Ui_state::Playing;
 
@@ -663,11 +673,11 @@ public:
 
         glEnable(GL_TEXTURE_2D);
 
-        _rotate_tex = bindTexture(QImage(Data_config::get_instance()->get_qdata_path() + "/textures/rotate.png"));
-        _move_tex = bindTexture(QImage(Data_config::get_instance()->get_qdata_path() + "/textures/move.png"));
-        _scale_tex = bindTexture(QImage(Data_config::get_instance()->get_qdata_path() + "/textures/scale.png"));
-        _slider_tex = bindTexture(QImage(Data_config::get_instance()->get_qdata_path() + "/textures/slider.png"));
-        _particle_tex = bindTexture(QImage(Data_config::get_instance()->get_qdata_path() +  "/textures/particle.png"));
+        _rotate_tex = bindTexture(QImage(Data_config::get_instance()->get_absolute_qfilename("textures/rotate.png")));
+        _move_tex = bindTexture(QImage(Data_config::get_instance()->get_absolute_qfilename("textures/move.png")));
+        _scale_tex = bindTexture(QImage(Data_config::get_instance()->get_absolute_qfilename("textures/scale.png")));
+        _slider_tex = bindTexture(QImage(Data_config::get_instance()->get_absolute_qfilename("textures/slider.png")));
+        _particle_tex = bindTexture(QImage(Data_config::get_instance()->get_absolute_qfilename("textures/particle.png")));
 
         generate_ui_textures();
 
@@ -679,14 +689,14 @@ public:
 
         startAnimation();
 
-        _parameters["ui_state"]->set_value(std::string("Playing"));
+        _parameters["Interface"]->set_value(std::string("Playing"));
     }
 
     void init_game()
     {
 //        restore_parameters();
 
-//        _parameters["ui_state"]->set_value(std::string("Playing"));
+//        _parameters["Interface"]->set_value(std::string("Playing"));
 
         _particle_systems[int(_level_state)].clear();
         _particle_systems[int(_level_state)].push_back(Targeted_particle_system(3.0f));
@@ -764,6 +774,13 @@ public:
 //        draw_tree();
 
 //        draw_tree_for_point(Eigen::Vector3f(0.0f, 0.0f, 0.0f));
+
+//        if (_level_state != Level_state::Running)
+//        {
+//            QGLFramebufferObject::blitFramebuffer(_inactive_world_tex, QRect(0, 0, camera()->screenWidth(), camera()->screenHeight()),
+//                                                  0, QRect(0, 0, camera()->screenWidth(), camera()->screenHeight()),
+//                                                  GL_COLOR_BUFFER_BIT);
+//        }
 
         setup_gl_points(false);
         glPointSize(8.0f);
@@ -1344,7 +1361,7 @@ public:
         {
             Eigen::Vector3f const intersect_pos = OM2Eigen(origin + t * dir);
 
-            std::string const element_type = _parameters["particle_type"]->get_value<std::string>();
+            std::string const element_type = _parameters["Object Type"]->get_value<std::string>();
 
             add_element(intersect_pos, element_type);
         }
@@ -1454,12 +1471,12 @@ public:
         {
             handled = true;
         }
-        else if (event->buttons() & Qt::LeftButton && event->modifiers() & Qt::ControlModifier)
+        else if (event->buttons() & Qt::LeftButton && event->modifiers() & Qt::ControlModifier && _ui_state == Ui_state::Level_editor)
         {
             add_element_event(event->pos());
             handled = true;
         }
-        else if (event->buttons() & Qt::LeftButton && event->modifiers() & Qt::AltModifier)
+        else if (event->buttons() & Qt::LeftButton && event->modifiers() & Qt::AltModifier && _ui_state == Ui_state::Level_editor)
         {
             std::cout << __PRETTY_FUNCTION__ << " Drag/Click" << std::endl;
             _dragging_start = event->pos();
@@ -1498,7 +1515,7 @@ public:
 
             handled = true;
         }
-        else if (event->buttons() & Qt::LeftButton)
+        else
         {
             _picked_index = _picking.do_pick(event->pos().x() / float(camera()->screenWidth()), (height() - event->pos().y())  / float(camera()->screenHeight()),
                                              std::bind(&My_viewer::draw_draggables_for_picking, this));
@@ -1539,10 +1556,10 @@ public:
 
         if (_mouse_state == Mouse_state::Init_drag_molecule)
         {
-                if (_picked_index != -1 && (_dragging_start - event->pos()).manhattanLength() > 0)
-                {
-                    _mouse_state = Mouse_state::Dragging_molecule;
-                }
+            if (_picked_index != -1 && (_dragging_start - event->pos()).manhattanLength() > 0)
+            {
+                _mouse_state = Mouse_state::Dragging_molecule;
+            }
         }
         else if (_mouse_state == Mouse_state::Dragging_molecule)
         {
@@ -1575,7 +1592,7 @@ public:
 
             handled = true;
         }
-        else if (_mouse_state == Mouse_state::Init_drag_handle && _active_draggables[_picked_index]->is_draggable())
+        else if (_mouse_state == Mouse_state::Init_drag_handle && _active_draggables[_picked_index]->is_draggable() && event->buttons() & Qt::LeftButton)
         {
             if (_picked_index != -1 && (_dragging_start - event->pos()).manhattanLength() > 0)
             {
@@ -2157,6 +2174,8 @@ public:
 
         _draggable_to_level_element.clear();
 
+        load_defaults();
+
         update();
     }
 
@@ -2180,23 +2199,20 @@ public:
 
     void load_defaults() override
     {
-        External_force gravity;
+//        External_force gravity;
 
-        gravity._force  = Eigen::Vector3f(0.0f, 0.0f, -1.0f);
-        gravity._origin = Eigen::Vector3f(0.0f, 0.0f, 1e6f);
+//        gravity._force  = Eigen::Vector3f(0.0f, 0.0f, -1.0f);
+//        gravity._origin = Eigen::Vector3f(0.0f, 0.0f, 1e6f);
 
-        _core.add_external_force("gravity", gravity);
+//        _core.add_external_force("gravity", gravity);
 
 //        Eigen::AlignedBox<float, 3> play_box(Eigen::Vector3f(-40.0f, -20.0f, 0.0f), Eigen::Vector3f(60.0f, 20.0f, 40.0f));
 
 //        _core.set_game_field_borders(play_box.min(), play_box.max());
 
-        _parameters["game_field_left"]->set_value(-40.0f);
-        _parameters["game_field_right"]->set_value(40.0f);
-        _parameters["game_field_front"]->set_value(-20.0f);
-        _parameters["game_field_back"]->set_value(20.0f);
-        _parameters["game_field_bottom"]->set_value(-20.0f);
-        _parameters["game_field_top"]->set_value(20.0f);
+        _parameters["Game Field Width"]->set_value(80.0f);
+        _parameters["Game Field Height"]->set_value(40.0f);
+        _parameters["Game Field Depth"]->set_value(40.0f);
 
 //        _core.add_barrier(new Box_barrier(Eigen::Vector3f(-10.0f, -20.0f, 0.0f), Eigen::Vector3f(10.0f, 20.0f, 20.0f), strength, radius));
 
@@ -2273,12 +2289,12 @@ public:
         }
 
 
-        Brownian_box * e = new Brownian_box(Eigen::Vector3f(-10.0f, -20.0f, -10.0f), Eigen::Vector3f(10.0f, 20.0f, 10.0f), 10.0f, 25.0f);
-        e->set_user_editable(Level_element::Edit_type::All);
-        e->set_persistent(false);
-        _core.add_brownian_element(e);
+//        Brownian_box * e = new Brownian_box(Eigen::Vector3f(-10.0f, -20.0f, -10.0f), Eigen::Vector3f(10.0f, 20.0f, 10.0f), 10.0f, 25.0f);
+//        e->set_user_editable(Level_element::Edit_type::All);
+//        e->set_persistent(false);
+//        _core.add_brownian_element(e);
 
-        _parameters["Molecule Renderer/type"]->set_value<std::string>("Shader Renderer");
+//        _parameters["Renderer/type"]->set_value<std::string>("Shader Renderer");
 //        change_renderer();
 
         update_draggable_to_level_element();
@@ -2292,6 +2308,11 @@ public:
         _renderer->resize(ev->size());
 
         generate_ui_textures();
+
+//        _inactive_world_fbo = std::unique_ptr<QGLFramebufferObject>(new QGLFramebufferObject(ev->size()));
+
+//        glDeleteTextures(1, &_inactive_world_tex);
+//        _inactive_world_tex = create_texture(size.width(), size.height());
 
         Base::resizeEvent(ev);
     }
@@ -2696,7 +2717,10 @@ public Q_SLOTS:
         int const elapsed_milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>
                 (timer_end-timer_start).count();
 
-        std::cout << __PRETTY_FUNCTION__ << " time elapsed: " << elapsed_milliseconds << std::endl;
+        if (elapsed_milliseconds > 1)
+        {
+            std::cout << __PRETTY_FUNCTION__ << " time elapsed: " << elapsed_milliseconds << std::endl;
+        }
     }
 
     void handle_game_state_change()
@@ -2815,6 +2839,9 @@ private:
     QPoint _dragging_start;
     Eigen::Vector3f _dragging_start_3d;
     int _picked_index;
+
+//    std::unique_ptr<QGLFramebufferObject> _inactive_world_fbo;
+//    GLuint _inactive_world_tex;
 
     GLuint _rotate_tex;
     GLuint _scale_tex;

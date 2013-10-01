@@ -477,26 +477,7 @@ public:
         return state;
     }
 
-    void from_state(Body_state const& /* state */, float const mass_factor)
-    {
-//        _L = state._L;
-//        _P = state._P;
-//        _q = state._q;
-//        _x = state._x;
-
-        _v = _P / (_mass * mass_factor);
-        _R = _q.normalized().toRotationMatrix();
-        _I_inv = _R * _I_body_inv * _R.transpose();
-        _omega = (1.0f / mass_factor) * _I_inv * _L;
-
-        assert(!std::isnan(_omega.x()));
-
-        for (Atom & a : _atoms)
-        {
-            a.set_position(_R * a._r_0 + _x);
-            assert(!std::isnan(a.get_position()[0]) && !std::isinf(a.get_position()[0]));
-        }
-    }
+    void from_state(Body_state const& /* state */, float const mass_factor);
 
     void apply_orientation(Eigen::Quaternion<float> const& orientation)
     {

@@ -189,7 +189,16 @@ public:
 
         clear();
         set_simulation_state(false);
-        _core.load_level(filename);
+        try
+        {
+            _core.load_level(filename);
+        }
+        catch (...)
+        {
+            load_defaults();
+            QMessageBox::warning(this, "Error", QString("Error reading the specified level file ") + QString::fromStdString(filename) + "\nLoading defaults.");
+        }
+
         _core.update_parameter_list(*_parameters.get_child("Core"));
         _core.reset_level();
 
@@ -2548,7 +2557,8 @@ public:
     {
         save_progress();
 
-        QApplication::quit();
+//        QApplication::quit();
+        close();
     }
 
     void change_state_to_main_menu()

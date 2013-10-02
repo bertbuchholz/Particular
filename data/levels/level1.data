@@ -384,9 +384,9 @@
 				<Portal class_id="18" tracking_level="0" version="1">
 					<Level_element>
 						<_position>
-							<v>19.399405</v>
+							<v>19.48085</v>
 							<v>0</v>
-							<v>0.30630639</v>
+							<v>-1.9182786e-14</v>
 						</_position>
 						<transform>
 							<v>1</v>
@@ -435,14 +435,14 @@
 					<_destroy_on_entering>0</_destroy_on_entering>
 				</Portal>
 				<boxmin>
-					<v>-18.786793</v>
+					<v>-20.066113</v>
 					<v>-20</v>
-					<v>-17.66367</v>
+					<v>-19.564461</v>
 				</boxmin>
 				<boxmax>
-					<v>18.786793</v>
+					<v>20.066113</v>
 					<v>20</v>
-					<v>17.66367</v>
+					<v>19.564461</v>
 				</boxmax>
 			</item>
 		</_portals>
@@ -452,9 +452,9 @@
 			<item class_id="22" tracking_level="1" version="1" object_id="_15">
 				<Level_element>
 					<_position>
-						<v>-44.097492</v>
+						<v>-43.560188</v>
 						<v>0</v>
-						<v>-0.30243206</v>
+						<v>-0.836088</v>
 					</_position>
 					<transform>
 						<v>1</v>
@@ -494,14 +494,14 @@
 					</_properties>
 				</Level_element>
 				<boxmin>
-					<v>-2.9733963</v>
+					<v>-2.2574387</v>
 					<v>-20</v>
-					<v>-15.625587</v>
+					<v>-15.802063</v>
 				</boxmin>
 				<boxmax>
-					<v>2.9733963</v>
+					<v>2.2574387</v>
 					<v>20</v>
-					<v>15.625587</v>
+					<v>15.802063</v>
 				</boxmax>
 				<_first_release>1</_first_release>
 				<_last_release>1</_last_release>
@@ -526,22 +526,22 @@
 									<v>0</v>
 								</_position>
 								<transform>
-									<v>5.1119368e-42</v>
-									<v>0</v>
-									<v>5.7397185e-42</v>
-									<v>0</v>
-									<v>-1.2056321e-31</v>
-									<v>4.5794434e-41</v>
-									<v>-1.2056321e-31</v>
-									<v>4.5794434e-41</v>
-									<v>-9.8607613e-32</v>
-									<v>4.5794434e-41</v>
-									<v>-9.8607613e-32</v>
-									<v>4.5794434e-41</v>
-									<v>1.4675586e-30</v>
+									<v>2.4405559e+25</v>
+									<v>4.5823861e-41</v>
+									<v>2.3875513e-32</v>
 									<v>1.4012985e-45</v>
-									<v>-3.2365121e-33</v>
-									<v>4.5794434e-41</v>
+									<v>3.5573624e+25</v>
+									<v>4.5823861e-41</v>
+									<v>0</v>
+									<v>1.4012985e-45</v>
+									<v>2.3207456e-32</v>
+									<v>1.4012985e-45</v>
+									<v>2.4785857e+25</v>
+									<v>4.5823861e-41</v>
+									<v>2.4785857e+25</v>
+									<v>4.5823861e-41</v>
+									<v>2.3207456e-32</v>
+									<v>1.4012985e-45</v>
 								</transform>
 								<_user_editable>0</_user_editable>
 								<_animations>
@@ -581,22 +581,22 @@
 									<v>0</v>
 								</_position>
 								<transform>
-									<v>1.7901368e+11</v>
+									<v>0</v>
+									<v>1.4012985e-45</v>
+									<v>1.4012985e-45</v>
+									<v>0</v>
+									<v>3.9620504e+28</v>
+									<v>4.5823861e-41</v>
+									<v>2.3207456e-32</v>
+									<v>1.4012985e-45</v>
+									<v>1.4012985e-45</v>
+									<v>0</v>
+									<v>1.4012985e-45</v>
+									<v>0</v>
+									<v>2.1283686e+17</v>
 									<v>4.5916347e-41</v>
 									<v>4.5798582e-39</v>
 									<v>2.8025969e-45</v>
-									<v>0</v>
-									<v>0</v>
-									<v>-3.1554436e-30</v>
-									<v>1.4012985e-45</v>
-									<v>0</v>
-									<v>0</v>
-									<v>8.4461712e-27</v>
-									<v>1.4012985e-45</v>
-									<v>-3.1562381e-30</v>
-									<v>4.5794434e-41</v>
-									<v>2.731352e-26</v>
-									<v>1.4012985e-45</v>
 								</transform>
 								<_user_editable>0</_user_editable>
 								<_animations>
@@ -636,22 +636,22 @@
 									<v>0</v>
 								</_position>
 								<transform>
-									<v>0</v>
-									<v>0</v>
-									<v>1.7899933e+11</v>
+									<v>3.4010609e+36</v>
 									<v>4.5916347e-41</v>
-									<v>1.7899926e+11</v>
+									<v>2.128203e+17</v>
 									<v>4.5916347e-41</v>
-									<v>0</v>
-									<v>0</v>
-									<v>6.63133e-38</v>
-									<v>2.8025969e-45</v>
-									<v>1.789992e+11</v>
+									<v>3.4010698e+36</v>
 									<v>4.5916347e-41</v>
-									<v>6.6313457e-38</v>
-									<v>2.8025969e-45</v>
-									<v>6.6313434e-38</v>
-									<v>2.8025969e-45</v>
+									<v>3.4010685e+36</v>
+									<v>4.5916347e-41</v>
+									<v>3.4010711e+36</v>
+									<v>4.5916347e-41</v>
+									<v>1.1613962e-41</v>
+									<v>8.9683102e-44</v>
+									<v>2.2369216e+08</v>
+									<v>0</v>
+									<v>2.5110704e+25</v>
+									<v>4.5823861e-41</v>
 								</transform>
 								<_user_editable>0</_user_editable>
 								<_animations>
@@ -676,7 +676,7 @@
 							<_charge>0.40000001</_charge>
 							<_radius>1.2</_radius>
 							<_type>1</_type>
-							<_parent_id>32680</_parent_id>
+							<_parent_id>2</_parent_id>
 						</item>
 					</_atoms>
 					<_mass>2.992691</_mass>
@@ -703,16 +703,16 @@
 						<v>3.2401381</v>
 					</_I_body_inv>
 					<_x>
-						<v>-41.124096</v>
-						<v>6.0532837</v>
-						<v>7.1624589</v>
+						<v>-41.30275</v>
+						<v>14.131314</v>
+						<v>-0.027739882</v>
 					</_x>
 					<qx>0</qx>
 					<qy>0</qy>
 					<qz>0</qz>
 					<qw>1</qw>
 					<_P>
-						<v>4</v>
+						<v>7.3893023</v>
 						<v>0</v>
 						<v>0</v>
 					</_P>
@@ -722,15 +722,15 @@
 						<v>0</v>
 					</_L>
 					<_I_inv>
-						<v>-2.3357953e-30</v>
+						<v>0</v>
+						<v>0</v>
+						<v>6.63133e-38</v>
+						<v>2.8025969e-45</v>
+						<v>2.1284064e+17</v>
 						<v>4.5916347e-41</v>
-						<v>1.5433698e+36</v>
-						<v>4.5916347e-41</v>
-						<v>1.5433811e+36</v>
-						<v>4.5916347e-41</v>
-						<v>-60.523499</v>
-						<v>3.7618806</v>
-						<v>-5.337399</v>
+						<v>6.6313457e-38</v>
+						<v>2.8025969e-45</v>
+						<v>-2.2983722e-31</v>
 					</_I_inv>
 					<_R>
 						<v>1</v>
@@ -754,14 +754,14 @@
 						<v>0</v>
 					</_omega>
 					<_force>
-						<v>0</v>
-						<v>0</v>
-						<v>-6.2261704e-33</v>
+						<v>2.1284298e+17</v>
+						<v>4.5916347e-41</v>
+						<v>2.1284209e+17</v>
 					</_force>
 					<_torque>
-						<v>4.5794434e-41</v>
-						<v>-6.2265583e-33</v>
-						<v>4.5794434e-41</v>
+						<v>4.5916347e-41</v>
+						<v>-1.0163306e-29</v>
+						<v>4.5916347e-41</v>
 					</_torque>
 					<_connectivity class_id="27" tracking_level="0" version="0">
 						<count>1</count>
@@ -774,7 +774,7 @@
 						</item>
 					</_connectivity>
 					<_accumulated_charge>0</_accumulated_charge>
-					<_id>32680</_id>
+					<_id>2</_id>
 				</_next_molecule>
 				<_next_molecule_prepared>0</_next_molecule_prepared>
 			</item>
@@ -847,7 +847,22 @@
 		<_translation_fluctuation>0</_translation_fluctuation>
 	</_level_data>
 	<_external_forces class_id="34" tracking_level="0" version="0">
-		<count>0</count>
+		<count>1</count>
 		<item_version>0</item_version>
+		<item class_id="35" tracking_level="0" version="0">
+			<first>gravity</first>
+			<second class_id="36" tracking_level="0" version="0">
+				<_origin>
+					<v>0</v>
+					<v>0</v>
+					<v>0</v>
+				</_origin>
+				<_force>
+					<v>0</v>
+					<v>0</v>
+					<v>-0</v>
+				</_force>
+			</second>
+		</item>
 	</_external_forces>
 </Core>

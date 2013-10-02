@@ -3,7 +3,8 @@ Level Editing
 
 - Press "o" to open the editor mode window.
 
-- Switch to "Level editor" mode under "Interface"
+- Switch to "Level editor" mode under "Interface". To set some initial
+  values, it's a good idea to load the template level from "data/levels"
 
 - The size of the bounding box in which the molecules can move around
   can be changed with the "Game Field" values, the depth should be kept
@@ -64,16 +65,16 @@ Level Editing
   moving
 
   Available elements: The elements and their respective quantities the
-  user can use while playing a level.  In most cases, this should be
-  Tractor_barrier and Brownian_box
+  user can use while playing a level.  In most cases, these should only
+  be Tractor_barrier and Brownian_box.
 
 - Save/load a level to the folder data/levels
 
 - To change the levels that are presented to the player in the normal
-  playing mode, add its name to the topmost string entry "levels".  Only
-  give the actual level name, not the file name.  E.g., when the
-  filename is "level1.data", add "level1" to the string. It's a
-  comma-separated list, no spaces between commas and words.
+  playing mode, add the level's name to the topmost string entry
+  "levels". Only give the actual level name, not the file name. E.g.,
+  when the file name is "level1.data", add "level1" to the string. It's
+  a comma-separated list, no spaces between commas and words.
 
 - "Save/Load settings" saves the general settings that will be applied
   at the start of the game. The defaults should be fine, but it can be

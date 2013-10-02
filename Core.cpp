@@ -486,7 +486,7 @@ void Core::update(const float time_step)
     {
         molecule._x += molecule._v * time_step;
 
-        feenableexcept(FE_INVALID | FE_OVERFLOW);
+//        feenableexcept(FE_INVALID | FE_OVERFLOW);
 
         Eigen::Quaternion<float> omega_quaternion(0.0f, molecule._omega[0], molecule._omega[1], molecule._omega[2]);
         Eigen::Quaternion<float> q_dot = scale(omega_quaternion * molecule._q, 0.5f);
@@ -500,7 +500,7 @@ void Core::update(const float time_step)
 
         molecule.from_state(Body_state(), _mass_factor);
 
-        fedisableexcept(FE_INVALID | FE_OVERFLOW);
+//        fedisableexcept(FE_INVALID | FE_OVERFLOW);
     }
 
     if (time_debug)
@@ -900,13 +900,15 @@ void Core::load_level(const std::string &file_name)
     }
     catch (boost::archive::archive_exception & e)
     {
-        std::cout << "Boost Archive Exception. Failed to load level file: " << file_name << ", level reset: " << e.what() << std::endl;
+        std::cout << "Boost Archive Exception. Failed to load level file: " << file_name << ", reason: " << e.what() << std::endl;
         _level_data = Level_data();
+        throw;
     }
     catch (std::exception & e)
     {
         std::cout << "Failed to load level file: " << file_name << ", level reset: " << e.what() << std::endl;
         _level_data = Level_data();
+        throw;
     }
 
     in_file.close();

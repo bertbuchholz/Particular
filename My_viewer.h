@@ -26,7 +26,7 @@
 #include "Level_element_draw_visitor.h"
 #include "Progress.h"
 #include "State.h"
-
+#include "Main_game_state.h"
 
 
 class My_viewer : public Options_viewer // , public QGLFunctions
@@ -65,7 +65,8 @@ public:
         _parameters.add_parameter(new Parameter("Game Field Height", 40.0f, 5.0f, 1000.0f, std::bind(&My_viewer::change_game_field_borders, this)));
         _parameters.add_parameter(new Parameter("Game Field Depth",  40.0f, 5.0f, 1000.0f, std::bind(&My_viewer::change_game_field_borders, this)));
 
-        Parameter_registry<Core>::create_normal_instance("Core", &_parameters, std::bind(&My_viewer::change_core_settings, this));
+//        Parameter_registry<Core>::create_normal_instance("Core", &_parameters, std::bind(&My_viewer::change_core_settings, this));
+        add_widget_to_options(_core.get_parameter_widget());
 
         Parameter_registry<Level_data>::create_normal_instance("Level_data", &_parameters, std::bind(&My_viewer::change_level_data_settings, this));
 
@@ -111,17 +112,19 @@ public:
 //        _parameters.add_parameter(Parameter::create_button("Do physics timestep", std::bind(&My_viewer::do_physics_timestep, this)));
 //        _parameters.add_parameter(Parameter::create_button("Show cam orientation", std::bind(&My_viewer::print_cam_orientation, this)));
 
-        Parameter_registry<Molecule_renderer>::create_single_select_instance(&_parameters, "Renderer", std::bind(&My_viewer::change_renderer, this));
+        Parameter_registry<World_renderer>::create_single_select_instance(&_parameters, "Renderer", std::bind(&My_viewer::change_renderer, this));
 
         setup_ui_elements();
 
         change_renderer();
-        change_core_settings();
+//        change_core_settings();
         change_ui_state();
 
         connect(&_core, SIGNAL(game_state_changed()), this, SLOT(handle_game_state_change()));
 
         setup_fonts();
+
+        _screen_stack.push_front(new Main_game_screen(*this, _core, _renderer));
     }
 
     void print_cam_orientation()
@@ -199,7 +202,7 @@ public:
             QMessageBox::warning(this, "Error", QString("Error reading the specified level file ") + QString::fromStdString(filename) + "\nLoading defaults.");
         }
 
-        _core.update_parameter_list(*_parameters.get_child("Core"));
+//        _core.update_parameter_list(*_parameters.get_child("Core"));
         _core.reset_level();
 
         update_level_element_buttons();
@@ -207,7 +210,7 @@ public:
         update_draggable_to_level_element();
         update_active_draggables();
         change_renderer();
-        change_core_settings();
+//        change_core_settings();
 
         _parameters.get_child(_core.get_level_data().name())->load(_core.get_level_data().get_current_parameters());
 
@@ -367,17 +370,17 @@ public:
 
     void change_renderer()
     {
-        _renderer = std::unique_ptr<Molecule_renderer>(Parameter_registry<Molecule_renderer>::get_class_from_single_select_instance_2(_parameters.get_child("Renderer")));
+        _renderer = std::unique_ptr<World_renderer>(Parameter_registry<World_renderer>::get_class_from_single_select_instance_2(_parameters.get_child("Renderer")));
         _renderer->init(context(), size());
         _renderer->update(_core.get_level_data());
         update();
     }
 
-    void change_core_settings()
-    {
-        _core.set_parameters(*_parameters.get_child("Core"));
-        update();
-    }
+//    void change_core_settings()
+//    {
+//        _core.set_parameters(*_parameters.get_child("Core"));
+//        update();
+//    }
 
     void change_level_data_settings()
     {
@@ -772,11 +775,11 @@ public:
 
     void draw() override
     {
-        setup_gl_points(true);
+//        setup_gl_points(true);
 
-        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+//        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
-        _renderer->render(_core.get_level_data(), _core.get_current_time(), _my_camera);
+//        _renderer->render(_core.get_level_data(), _core.get_current_time(), _my_camera);
 
         // debug displays
 
@@ -790,6 +793,25 @@ public:
 //                                                  0, QRect(0, 0, camera()->screenWidth(), camera()->screenHeight()),
 //                                                  GL_COLOR_BUFFER_BIT);
 //        }
+
+        std::vector<Screen*> reverse_screens;
+
+        for (Screen * s : _screen_stack)
+        {
+            reverse_screens.push_back(s);
+
+            if (int(s->get_type()) & int(Screen::Type::Fullscreen))
+            {
+                break;
+            }
+        }
+
+        std::reverse(reverse_screens.begin(), reverse_screens.end());
+
+        for (Screen * s : reverse_screens)
+        {
+            s->draw();
+        }
 
         setup_gl_points(false);
         glPointSize(8.0f);
@@ -810,15 +832,7 @@ public:
 
 //        draw_temperature();
 
-        for (State * s : _state_stack)
-        {
-            s->draw();
 
-            if (int(s->get_type()) & int(State::Type::Fullscreen))
-            {
-                break;
-            }
-        }
     }
 
     void draw_textured_quad(GLuint const tex_id)
@@ -1242,7 +1256,7 @@ public:
     {
         glLineWidth(1.0f);
 
-        if (_parameters["Core/use_indicators"]->get_value<bool>())
+        if (_core.get_parameters()["use_indicators"]->get_value<bool>())
         {
             glDisable(GL_LIGHTING);
 
@@ -1727,6 +1741,18 @@ public:
 
     void keyPressEvent(QKeyEvent *event) override
     {
+        bool handled = false;
+
+        for (Screen * s : _screen_stack)
+        {
+            handled = s->keyPressEvent(event);
+
+            if (handled || int(s->get_type()) & int(Screen::Type::Modal))
+            {
+                break;
+            }
+        }
+
         if ((event->key() == Qt::Key_Backspace || event->key() == Qt::Key_Delete) && _ui_state == Ui_state::Level_editor)
         {
             delete_selected_element();
@@ -1744,10 +1770,10 @@ public:
 
                 load_next_level();
             }
-            else if (_level_state == Level_state::Running) // go to pause menu
-            {
-                enter_pause_menu();
-            }
+//            else if (_level_state == Level_state::Running) // go to pause menu
+//            {
+//                enter_pause_menu();
+//            }
         }
         else
         {
@@ -2064,6 +2090,8 @@ public:
 
     void animate() override
     {
+        float const time_step = animationPeriod() / 1000.0f;
+
         if (_mouse_state == Mouse_state::Dragging_molecule)
         {
             boost::optional<Molecule const&> picked_molecule = _core.get_molecule(_picked_index);
@@ -2081,25 +2109,42 @@ public:
 
         for (Targeted_particle_system & p : _particle_systems[int(_level_state)])
         {
-            p.animate(animationPeriod() / 1000.0f);
+            p.animate(time_step);
         }
 
         for (auto & stat : _statistics[int(_level_state)])
         {
-            stat.animate(animationPeriod() / 1000.0f);
+            stat.animate(time_step);
         }
 
         for (auto & l : _labels[int(_level_state)])
         {
-            l->animate(animationPeriod() / 1000.0f);
+            l->animate(time_step);
         }
 
         if (_level_state == Level_state::Intro)
         {
-            update_intro(animationPeriod() / 1000.0f);
+            update_intro(time_step);
+        }
+
+        _screen_stack.erase(std::remove_if(_screen_stack.begin(), _screen_stack.end(), Screen::is_dead), _screen_stack.end());
+
+        for (Screen * s : _screen_stack)
+        {
+            s->update(time_step);
+
+            if (int(s->get_type()) & int(Screen::Type::Fullscreen))
+            {
+                break;
+            }
         }
 
         Base::animate();
+    }
+
+    void add_screen(Screen * s)
+    {
+        _screen_stack.push_front(s);
     }
 
     void update_active_draggables()
@@ -2838,6 +2883,11 @@ public Q_SLOTS:
         }
     }
 
+    Level_state get_level_state() const
+    {
+        return _level_state;
+    }
+
     void intro_cam1_end_reached();
     void intro_cam2_end_reached();
 
@@ -2897,7 +2947,9 @@ private:
     float _intro_time;
     Intro_state _intro_state;
 
-    std::vector<State*> _state_stack;
+    std::deque<Screen*> _screen_stack;
+
+    std::unique_ptr<World_renderer> _renderer;
 };
 
 

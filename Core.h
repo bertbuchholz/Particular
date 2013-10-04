@@ -233,9 +233,13 @@ public:
     void save_level(std::string const& file_name) const;
     void load_level(std::string const& file_name);
 
-    void set_parameters(Parameter_list const& parameters);
+    void parameter_changed();
+//    void set_parameters(Parameter_list const& parameters);
     void update_parameter_list(Parameter_list & parameters) const;
-    static Parameter_list get_parameters();
+//    static Parameter_list get_parameters();
+    QWidget * get_parameter_widget() const;
+    Parameter_list & get_parameters() { return _parameters; }
+    Parameter_list const& get_parameters() const { return _parameters; }
 
     static Core * create()
     {
@@ -314,9 +318,11 @@ private:
 
     mutable int _debug_leaf_usage_count;
     mutable int _debug_inner_node_usage_count;
+
+    Parameter_list _parameters;
 };
 
-REGISTER_BASE_CLASS_WITH_PARAMETERS(Core);
+//REGISTER_BASE_CLASS_WITH_PARAMETERS(Core);
 
 BOOST_CLASS_VERSION(Core, 1)
 

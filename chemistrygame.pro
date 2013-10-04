@@ -70,7 +70,7 @@ SOURCES += main.cpp \
     Draggable.cpp \
     Molecule_releaser.cpp \
     ANN_wrapper_functions.cpp \
-    fp_exception_glibc_extension.c
+    fp_exception_glibc_extension.c \
     Main_game_state.cpp
 
 OTHER_FILES += TODO.txt \
@@ -115,4 +115,5 @@ HEADERS += \
     Level_element.h \
     Molecule_releaser.h \
     ANN_wrapper_functions.h \
-    Main_game_state.h
+    Main_game_state.h \
+    Pause_screen.h

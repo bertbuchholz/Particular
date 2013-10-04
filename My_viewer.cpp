@@ -25,7 +25,8 @@ void My_viewer::setup_intro()
     _parameters["Level_data/rotation_damping"]->set_value(0.5f);
     _parameters["Level_data/translation_damping"]->set_value(0.1f);
 
-    _parameters["Core/mass_factor"]->set_value(0.1f);
+    _core.get_parameters()["mass_factor"]->set_value(0.1f);
+//    _parameters["Core/mass_factor"]->set_value(0.1f);
 
     _parameters["Game Field Width"]->set_value(100.0f);
     _parameters["Game Field Height"]->set_value(100.0f);

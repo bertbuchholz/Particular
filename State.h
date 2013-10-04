@@ -5,18 +5,25 @@
 
 class My_viewer;
 
-class State
+class Screen
 {
 public:
     enum class Type { Modal = 0b01, Fullscreen = 0b10 };
+    enum class State { Paused = 0, Resuming, Pausing, Running, Fading_out, Fading_in, Faded_out, Killing, Killed };
 
-    State(My_viewer & viewer) : _viewer(viewer)
+    Screen(My_viewer & viewer) : _viewer(viewer), _state(State::Resuming), _transition_progress(0.0f)
     { }
 
     Type get_type() const
     {
         return _type;
     }
+
+    State get_state() const
+    {
+        return _state;
+    }
+
 
     virtual bool mousePressEvent(QMouseEvent *) { return false; }
     virtual bool mouseMoveEvent(QMouseEvent *) { return false; }
@@ -26,10 +33,97 @@ public:
 //    virtual void draw(qglviewer::Camera const* camera, Parameter_list const& parameters);
     virtual void draw() { }
 
+    virtual void pause()
+    {
+        _state = State::Pausing;
+    }
+
+    virtual void resume()
+    {
+        if (_state == State::Paused || _state == State::Resuming)
+        {
+            _state = State::Resuming;
+        }
+    }
+
+
+    virtual void deactivate() { }
+    virtual void activate() { }
+
+    void update(float const time_step)
+    {
+        _transition_progress += 1.0f * time_step;
+
+        if (_state == State::Resuming)
+        {
+            if (_transition_progress >= 1.0f)
+            {
+                _transition_progress = 0.0f;
+                _state = State::Running;
+
+                state_changed_event(State::Running, State::Resuming);
+            }
+        }
+        else if (_state == State::Pausing)
+        {
+            if (_transition_progress >= 1.0f)
+            {
+                _transition_progress = 0.0f;
+                _state = State::Paused;
+
+                state_changed_event(State::Paused, State::Pausing);
+            }
+        }
+        else if (_state == State::Fading_in)
+        {
+            if (_transition_progress >= 1.0f)
+            {
+                _transition_progress = 0.0f;
+                _state = State::Running;
+
+                state_changed_event(State::Running, State::Fading_in);
+            }
+        }
+        else if (_state == State::Fading_out)
+        {
+            if (_transition_progress >= 1.0f)
+            {
+                _transition_progress = 0.0f;
+                _state = State::Faded_out;
+
+                state_changed_event(State::Faded_out, State::Fading_out);
+            }
+        }
+        else if (_state == State::Killing)
+        {
+            if (_transition_progress >= 1.0f)
+            {
+                _transition_progress = 0.0f;
+                _state = State::Killed;
+
+                state_changed_event(State::Killed, State::Killing);
+            }
+        }
+    }
+
+    virtual void update_event(float const /* time_step */) { }
+
+
+    virtual void state_changed_event(State const /* current_state */, State const /* previous_state */)
+    { }
+
+    static bool is_dead(Screen const* s)
+    {
+        return (s->_state == State::Killed);
+    }
+
 protected:
     My_viewer & _viewer;
 
     Type _type;
+    State _state;
+
+    float _transition_progress;
 };
 
 /*

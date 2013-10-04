@@ -30,7 +30,7 @@ public:
     virtual void resize(QSize const& /* size */) {}
 
 //    virtual void render(std::vector<Molecule> const& molecules, StandardCamera const* = nullptr) const = 0;
-    virtual void render(Level_data const& level_data, float const time, StandardCamera const* = nullptr) = 0;
+    virtual void render(Level_data const& level_data, float const time, qglviewer::Camera const* = nullptr) = 0;
 
     virtual void update(Level_data const& /* level_data */) {}
 
@@ -65,7 +65,7 @@ public:
         }
     }
 
-    void render(Level_data const& level_data, float const /* time */, StandardCamera const* = nullptr) override
+    void render(Level_data const& level_data, float const /* time */, qglviewer::Camera const* = nullptr) override
     {
         std::list<Molecule> const& molecules = level_data._molecules;
 
@@ -165,7 +165,7 @@ public:
         }
     }
 
-    void render(Level_data const& level_data, float const /* time */, StandardCamera const* = nullptr) override
+    void render(Level_data const& level_data, float const /* time */, qglviewer::Camera const* = nullptr) override
     {
         std::list<Molecule> const& molecules = level_data._molecules;
 
@@ -211,7 +211,7 @@ REGISTER_CLASS_WITH_PARAMETERS(World_renderer, Ball_renderer);
 class Distance_renderer : World_renderer
 {
 public:
-    void render(Level_data const& level_data, float const /* time */, StandardCamera const* camera) override
+    void render(Level_data const& level_data, float const /* time */, qglviewer::Camera const* camera) override
     {
         std::list<Molecule> const& molecules = level_data._molecules;
 
@@ -597,7 +597,7 @@ public:
         glPopMatrix();
     }
 
-    void render(Level_data const& level_data, float const time, StandardCamera const* camera) override
+    void render(Level_data const& level_data, float const time, qglviewer::Camera const* camera) override
     {
         glEnable(GL_DEPTH_TEST);
 
@@ -1037,7 +1037,7 @@ public:
         glPopMatrix();
     }
 
-    void render(Level_data const& level_data, float const time, StandardCamera const* camera) override
+    void render(Level_data const& level_data, float const time, qglviewer::Camera const* camera) override
     {
         glEnable(GL_DEPTH_TEST);
 

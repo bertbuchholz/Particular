@@ -1,5 +1,9 @@
 #include "Core.h"
 
+#include <QFrame>
+#include <QVBoxLayout>
+#include <Q_parameter_bridge.h>
+
 #include "Molecule_releaser.h"
 
 #include "fp_exception_glibc_extension.h"
@@ -26,6 +30,16 @@ Core::Core() :
 //            _indicators.push_back(Force_indicator(Eigen::Vector3f(x, y, 0.0f)));
 //        }
 //    }
+
+    std::function<void(void)> update = std::bind(&Core::parameter_changed, this);
+
+    _parameters.add_parameter(new Parameter("mass_factor", 1.0f, 0.01f, 10.0f, update));
+    _parameters.add_parameter(new Parameter("do_constrain_forces", true, update));
+    _parameters.add_parameter(new Parameter("max_force", 10.0f, 0.1f, 500.0f, update));
+    _parameters.add_parameter(new Parameter("max_force_distance", 10.0f, 1.0f, 1000.0f, update));
+    _parameters.add_parameter(new Parameter("gravity", 1.0f, 0.0f, 100.0f, update));
+
+    Parameter_registry<Atomic_force>::create_multi_select_instance(&_parameters, "Atomic Force Type", update);
 }
 
 
@@ -917,23 +931,23 @@ void Core::load_level(const std::string &file_name)
 }
 
 
-void Core::set_parameters(const Parameter_list &parameters)
+void Core::parameter_changed()
 {
-    _do_constrain_forces = parameters["do_constrain_forces"]->get_value<bool>();
-    _max_force = parameters["max_force"]->get_value<float>();
+    _do_constrain_forces = _parameters["do_constrain_forces"]->get_value<bool>();
+    _max_force = _parameters["max_force"]->get_value<float>();
 
-    _mass_factor = parameters["mass_factor"]->get_value<float>();
+    _mass_factor = _parameters["mass_factor"]->get_value<float>();
 
-    _max_force_distance = parameters["max_force_distance"]->get_value<float>();
+    _max_force_distance = _parameters["max_force_distance"]->get_value<float>();
 
     for (auto * f : _atomic_forces)
     {
         delete f;
     }
 
-    _atomic_forces = std::vector<Atomic_force*>(Parameter_registry<Atomic_force>::get_classes_from_multi_select_instance(parameters.get_child("Atomic Force Type")));
+    _atomic_forces = std::vector<Atomic_force*>(Parameter_registry<Atomic_force>::get_classes_from_multi_select_instance(_parameters.get_child("Atomic Force Type")));
 
-    _external_forces["gravity"]._force[2] = -parameters["gravity"]->get_value<float>();
+    _external_forces["gravity"]._force[2] = -_parameters["gravity"]->get_value<float>();
 }
 
 
@@ -947,20 +961,43 @@ void Core::update_parameter_list(Parameter_list &parameters) const
     }
 }
 
-
-Parameter_list Core::get_parameters()
+QWidget * Core::get_parameter_widget() const
 {
-    Parameter_list parameters;
-    parameters.add_parameter(new Parameter("mass_factor", 1.0f, 0.01f, 10.0f));
-    parameters.add_parameter(new Parameter("do_constrain_forces", true));
-    parameters.add_parameter(new Parameter("max_force", 10.0f, 0.1f, 500.0f));
-    parameters.add_parameter(new Parameter("max_force_distance", 10.0f, 1.0f, 1000.0f));
-    parameters.add_parameter(new Parameter("gravity", 1.0f, 0.0f, 100.0f));
+    std::cout << __PRETTY_FUNCTION__ << std::endl;
 
-    Parameter_registry<Atomic_force>::create_multi_select_instance(&parameters, "Atomic Force Type");
+    QFrame * frame = new QFrame;
 
-    return parameters;
+    QFont f = frame->font();
+    f.setPointSize(f.pointSize() * 0.9f);
+    frame->setFont(f);
+
+    QLayout * menu_layout = new QVBoxLayout;
+
+    draw_instance_list(_parameters, menu_layout);
+
+    menu_layout->setSpacing(0);
+    menu_layout->setMargin(0);
+
+//    frame->setWindowTitle(windowTitle() + " Options");
+    frame->setLayout(menu_layout);
+
+    return frame;
 }
+
+
+//Parameter_list Core::get_parameters()
+//{
+//    Parameter_list parameters;
+//    parameters.add_parameter(new Parameter("mass_factor", 1.0f, 0.01f, 10.0f));
+//    parameters.add_parameter(new Parameter("do_constrain_forces", true));
+//    parameters.add_parameter(new Parameter("max_force", 10.0f, 0.1f, 500.0f));
+//    parameters.add_parameter(new Parameter("max_force_distance", 10.0f, 1.0f, 1000.0f));
+//    parameters.add_parameter(new Parameter("gravity", 1.0f, 0.0f, 100.0f));
+
+//    Parameter_registry<Atomic_force>::create_multi_select_instance(&parameters, "Atomic Force Type");
+
+//    return parameters;
+//}
 
 
 const std::vector<Molecule_releaser *> &Core::get_molecule_releasers() const

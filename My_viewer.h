@@ -26,7 +26,7 @@
 #include "Level_element_draw_visitor.h"
 #include "Progress.h"
 #include "State.h"
-#include "Main_game_state.h"
+#include "Main_game_screen.h"
 
 
 class My_viewer : public Options_viewer // , public QGLFunctions

@@ -51,6 +51,8 @@ public:
 
     Core();
 
+    ~Core();
+
     Eigen::Vector3f apply_forces_brute_force(Atom const& receiver_atom) const;
     Eigen::Vector3f apply_forces_using_tree(Atom const& receiver_atom) const;
     Eigen::Vector3f apply_forces_from_vector(Atom const& receiver_atom, std::vector<Atom const*> const& atoms) const;
@@ -186,10 +188,14 @@ public:
 
     void update_tree();
 
-    void add_barrier(Barrier * barrier);
-    void add_brownian_element(Brownian_element * element);
-    void add_portal(Portal * portal);
-    void add_molecule_releaser(Molecule_releaser * molecule_releaser);
+//    void add_barrier(Barrier * barrier);
+//    void add_brownian_element(Brownian_element * element);
+//    void add_portal(Portal * portal);
+//    void add_molecule_releaser(Molecule_releaser * molecule_releaser);
+
+//    void delete_level_element(Level_element * level_element);
+//    void reset_level_elements();
+
     void add_molecule_external_force(Molecule_external_force const& force);
     void add_external_force(std::string const& name, External_force const& force);
 
@@ -205,11 +211,6 @@ public:
     std::vector<Molecule_releaser*> const& get_molecule_releasers() const;
     std::vector<Brownian_element*> const& get_brownian_elements() const;
     boost::optional<Molecule const&> get_molecule(int const id) const;
-
-    void set_game_field_borders(Eigen::Vector3f const& min, Eigen::Vector3f const& max);
-
-    void delete_level_element(Level_element * level_element);
-    void reset_level_elements();
 
     Eigen::Vector3f calc_forces_between_atoms(Atom const& a_0, Atom const& a_1) const;
 
@@ -243,9 +244,12 @@ public:
 //    void set_parameters(Parameter_list const& parameters);
     void update_parameter_list(Parameter_list & parameters) const;
 //    static Parameter_list get_parameters();
-    QWidget * get_parameter_widget() const;
+//    QWidget * get_parameter_widget() const;
     Parameter_list & get_parameters() { return _parameters; }
     Parameter_list const& get_parameters() const { return _parameters; }
+
+    void update_variables();
+    void update_parameters();
 
     static Core * create()
     {

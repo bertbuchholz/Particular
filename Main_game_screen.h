@@ -104,8 +104,6 @@ private:
     GLuint _scale_tex;
     GLuint _move_tex;
     GLuint _slider_tex;
-
-    QWidget * _parameter_widget;
 };
 
 #endif // MAIN_GAME_STATE_H

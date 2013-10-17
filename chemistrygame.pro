@@ -66,7 +66,6 @@ SOURCES += main.cpp \
     Renderer.cpp \
     Level_element.cpp \
     Core.cpp \
-    My_viewer.cpp \
     Draggable.cpp \
     Molecule_releaser.cpp \
     ANN_wrapper_functions.cpp \
@@ -77,7 +76,8 @@ SOURCES += main.cpp \
     Main_options_screen.cpp \
     After_finish_screen.cpp \
     Particle_system.cpp \
-    Statistics_screen.cpp
+    Statistics_screen.cpp \
+    Main_options_window.cpp
 
 OTHER_FILES += TODO.txt \
     data/shaders/picking.vert \

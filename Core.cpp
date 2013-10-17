@@ -4,6 +4,7 @@
 #include <QVBoxLayout>
 #include <Q_parameter_bridge.h>
 
+#include "Main_options_window.h"
 #include "Molecule_releaser.h"
 
 //#include "fp_exception_glibc_extension.h"
@@ -30,7 +31,7 @@ Core::Core() :
 //        }
 //    }
 
-    std::function<void(void)> update = std::bind(&Core::parameter_changed, this);
+    std::function<void(void)> update = std::bind(&Core::update_variables, this);
 
     _parameters.add_parameter(new Parameter("mass_factor", 1.0f, 0.01f, 10.0f, update));
     _parameters.add_parameter(new Parameter("do_constrain_forces", true, update));
@@ -39,6 +40,13 @@ Core::Core() :
     _parameters.add_parameter(new Parameter("gravity", 1.0f, 0.0f, 100.0f, update));
 
     Parameter_registry<Atomic_force>::create_multi_select_instance(&_parameters, "Atomic Force Type", update);
+
+    Main_options_window::get_instance()->add_parameter_list("Core", _parameters);
+}
+
+Core::~Core()
+{
+    Main_options_window::get_instance()->remove_parameter_list("Core");
 }
 
 
@@ -647,43 +655,6 @@ void Core::update_tree()
 }
 
 
-void Core::set_game_field_borders(const Eigen::Vector3f &min, const Eigen::Vector3f &max)
-{
-    for (auto const& e : _level_data._game_field_borders)
-    {
-        Level_element * b = e.second;
-        delete_level_element(b);
-    }
-
-    _level_data._game_field_borders.clear();
-
-    Eigen::AlignedBox<float, 3> play_box(min, max);
-    Eigen::Vector3f play_box_center(play_box.center());
-    Eigen::Vector3f play_box_extent((play_box.max() - play_box.min()));
-
-    float const strength = 10000.0f;
-    float const radius   = 2.0f;
-
-    for (int axis = 0; axis < 3; ++axis)
-    {
-        for (int sign = -1; sign <= 2; sign += 2)
-        {
-            Eigen::Vector3f normal = Eigen::Vector3f::Zero();
-            normal[axis] = -1.0f * sign;
-            int const first_axis = (axis + 1) % 3;
-            int const second_axis = (axis + 2) % 3;
-            Eigen::Vector2f extent(play_box_extent[first_axis > second_axis ? second_axis : first_axis], play_box_extent[first_axis < second_axis ? second_axis : first_axis]);
-            Plane_barrier * b = new Plane_barrier(play_box_center - normal * play_box_extent[axis] * 0.5f, normal, strength, radius, extent);
-
-            int const sign_axis_to_enum = axis + ((sign < 0) ? 0 : 3);
-            Level_data::Plane const plane = Level_data::Plane(sign_axis_to_enum);
-            _level_data._game_field_borders[plane] = b;
-            add_barrier(b);
-        }
-    }
-}
-
-
 const std::vector<Brownian_element *> &Core::get_brownian_elements() const
 {
     return _level_data._brownian_elements;
@@ -713,31 +684,6 @@ boost::optional<const Molecule &> Core::get_molecule(const int id) const
     }
 
     return boost::optional<Molecule const&>();
-}
-
-
-void Core::delete_level_element(Level_element *level_element)
-{
-    _level_data._molecule_releasers.erase(std::remove(_level_data._molecule_releasers.begin(), _level_data._molecule_releasers.end(), level_element), _level_data._molecule_releasers.end());
-    _level_data._barriers.erase(std::remove(_level_data._barriers.begin(), _level_data._barriers.end(), level_element), _level_data._barriers.end());
-    _level_data._portals.erase(std::remove(_level_data._portals.begin(), _level_data._portals.end(), level_element), _level_data._portals.end());
-    _level_data._brownian_elements.erase(std::remove(_level_data._brownian_elements.begin(), _level_data._brownian_elements.end(), level_element), _level_data._brownian_elements.end());
-
-    _level_data._level_elements.erase(std::remove_if(_level_data._level_elements.begin(), _level_data._level_elements.end(), Ptr_contains_predicate<Level_element>(level_element)), _level_data._level_elements.end());
-
-    assert(_level_data._level_elements.size() == _level_data._barriers.size() +
-           _level_data._brownian_elements.size() +
-           _level_data._portals.size() +
-           _level_data._molecule_releasers.size());
-}
-
-
-void Core::reset_level_elements()
-{
-    for (boost::shared_ptr<Level_element> const& e : _level_data._level_elements)
-    {
-        e->reset();
-    }
 }
 
 
@@ -845,7 +791,7 @@ void Core::reset_level()
 
     _sensor_data.clear();
 
-    reset_level_elements();
+    _level_data.reset_level_elements();
 
     _current_time = 0.0f;
     _last_sensor_check = 0.0f;
@@ -924,6 +870,9 @@ void Core::load_level(const std::string &file_name)
         throw;
     }
 
+    update_parameters();
+    _level_data.update_parameters();
+
     in_file.close();
 
     assert(_level_data.validate_elements());
@@ -966,14 +915,13 @@ void Core::load_progress()
 }
 
 
-void Core::parameter_changed()
+void Core::update_variables()
 {
     _do_constrain_forces = _parameters["do_constrain_forces"]->get_value<bool>();
     _max_force = _parameters["max_force"]->get_value<float>();
-
     _mass_factor = _parameters["mass_factor"]->get_value<float>();
-
     _max_force_distance = _parameters["max_force_distance"]->get_value<float>();
+    _external_forces["gravity"]._force[2] = -_parameters["gravity"]->get_value<float>();
 
     for (auto * f : _atomic_forces)
     {
@@ -981,8 +929,24 @@ void Core::parameter_changed()
     }
 
     _atomic_forces = std::vector<Atomic_force*>(Parameter_registry<Atomic_force>::get_classes_from_multi_select_instance(_parameters.get_child("Atomic Force Type")));
+}
 
-    _external_forces["gravity"]._force[2] = -_parameters["gravity"]->get_value<float>();
+
+void Core::update_parameters()
+{
+    _parameters["do_constrain_forces"]->set_value_no_update(_do_constrain_forces);
+    _parameters["max_force"]->set_value_no_update(_max_force);
+    _parameters["mass_factor"]->set_value_no_update(_mass_factor);
+    _parameters["max_force_distance"]->set_value_no_update(_max_force_distance);
+    _parameters["gravity"]->set_value_no_update<float>(-_external_forces["gravity"]._force[2]);
+
+    for (Atomic_force const* f : _atomic_forces)
+    {
+        Parameter_list * child = _parameters.get_child("Atomic Force Type")->get_child(f->get_instance_name());
+        child->get_parameter("multi_enable")->set_value(true);
+
+        f->get_parameters(*child);
+    }
 }
 
 
@@ -996,28 +960,28 @@ void Core::update_parameter_list(Parameter_list &parameters) const
     }
 }
 
-QWidget * Core::get_parameter_widget() const
-{
-    std::cout << __PRETTY_FUNCTION__ << std::endl;
+//QWidget * Core::get_parameter_widget() const
+//{
+//    std::cout << __PRETTY_FUNCTION__ << std::endl;
 
-    QFrame * frame = new QFrame;
+//    QFrame * frame = new QFrame;
 
-    QFont f = frame->font();
-    f.setPointSize(f.pointSize() * 0.9f);
-    frame->setFont(f);
+//    QFont f = frame->font();
+//    f.setPointSize(f.pointSize() * 0.9f);
+//    frame->setFont(f);
 
-    QLayout * menu_layout = new QVBoxLayout;
+//    QLayout * menu_layout = new QVBoxLayout;
 
-    draw_instance_list(_parameters, menu_layout);
+//    draw_instance_list(_parameters, menu_layout);
 
-    menu_layout->setSpacing(0);
-    menu_layout->setMargin(0);
+//    menu_layout->setSpacing(0);
+//    menu_layout->setMargin(0);
 
-//    frame->setWindowTitle(windowTitle() + " Options");
-    frame->setLayout(menu_layout);
+////    frame->setWindowTitle(windowTitle() + " Options");
+//    frame->setLayout(menu_layout);
 
-    return frame;
-}
+//    return frame;
+//}
 
 
 //Parameter_list Core::get_parameters()
@@ -1088,30 +1052,3 @@ const std::vector<Force_indicator> &Core::get_force_indicators() const
     return _indicators;
 }
 
-
-void Core::add_molecule_releaser(Molecule_releaser *molecule_releaser)
-{
-    _level_data._molecule_releasers.push_back(molecule_releaser);
-    _level_data._level_elements.push_back(boost::shared_ptr<Level_element>(molecule_releaser));
-}
-
-
-void Core::add_portal(Portal *portal)
-{
-    _level_data._portals.push_back(portal);
-    _level_data._level_elements.push_back(boost::shared_ptr<Level_element>(portal));
-}
-
-
-void Core::add_brownian_element(Brownian_element *element)
-{
-    _level_data._brownian_elements.push_back(element);
-    _level_data._level_elements.push_back(boost::shared_ptr<Level_element>(element));
-}
-
-
-void Core::add_barrier(Barrier *barrier)
-{
-    _level_data._barriers.push_back(barrier);
-    _level_data._level_elements.push_back(boost::shared_ptr<Level_element>(barrier));
-}

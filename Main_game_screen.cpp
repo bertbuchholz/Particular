@@ -56,7 +56,7 @@ Main_game_screen::Main_game_screen(My_viewer &viewer, Core &core, Ui_state ui_st
 
     Parameter_registry<World_renderer>::create_single_select_instance(&_parameters, "Renderer", std::bind(&Main_game_screen::change_renderer, this));
 
-    _parameter_widget = Main_options_window::get_instance()->add_parameter_list(_parameters);
+    Main_options_window::get_instance()->add_parameter_list("Main_game_screen", _parameters);
 
     change_renderer();
 
@@ -68,9 +68,7 @@ Main_game_screen::Main_game_screen(My_viewer &viewer, Core &core, Ui_state ui_st
 Main_game_screen::~Main_game_screen()
 {
     std::cout << __PRETTY_FUNCTION__ << std::endl;
-    _parameter_widget->hide();
-    Main_options_window::get_instance()->remove_widget(_parameter_widget);
-    delete _parameter_widget;
+    Main_options_window::get_instance()->remove_parameter_list("Main_game_screen");
 }
 
 bool Main_game_screen::mousePressEvent(QMouseEvent * event)
@@ -422,7 +420,7 @@ void Main_game_screen::delete_selected_element()
         Draggable * parent = _active_draggables[_picked_index]->get_parent();
         assert(_draggable_to_level_element.find(parent) != _draggable_to_level_element.end());
 
-        _core.delete_level_element(_draggable_to_level_element.find(parent)->second);
+        _core.get_level_data().delete_level_element(_draggable_to_level_element.find(parent)->second);
 
         update_draggable_to_level_element();
         update_active_draggables();
@@ -968,14 +966,14 @@ void Main_game_screen::add_element(const Eigen::Vector3f &position, const std::s
         float const strength = 10000.0f;
         float const radius   = 2.0f;
 
-        _core.add_barrier(new Box_barrier(Eigen::Vector3f(-10.0f, front_pos, -10.0f) + position, Eigen::Vector3f(10.0f, back_pos, 10.0f) + position, strength, radius));
+        _core.get_level_data().add_barrier(new Box_barrier(Eigen::Vector3f(-10.0f, front_pos, -10.0f) + position, Eigen::Vector3f(10.0f, back_pos, 10.0f) + position, strength, radius));
     }
     else if (element_type == std::string("Moving_box_barrier"))
     {
         float const strength = 10000.0f;
         float const radius   = 2.0f;
 
-        _core.add_barrier(new Moving_box_barrier(Eigen::Vector3f(-10.0f, front_pos, -10.0f) + position, Eigen::Vector3f(10.0f, back_pos, 10.0f) + position, strength, radius));
+        _core.get_level_data().add_barrier(new Moving_box_barrier(Eigen::Vector3f(-10.0f, front_pos, -10.0f) + position, Eigen::Vector3f(10.0f, back_pos, 10.0f) + position, strength, radius));
     }
     else if (element_type == std::string("Blow_barrier"))
     {
@@ -986,14 +984,14 @@ void Main_game_screen::add_element(const Eigen::Vector3f &position, const std::s
                                             Blow_barrier::Axis::X, 30.0f,
                                             strength, radius);
         e->set_user_editable(Level_element::Edit_type::All);
-        _core.add_barrier(e);
+        _core.get_level_data().add_barrier(e);
     }
     else if (element_type == std::string("Plane_barrier"))
     {
         float const strength = 10000.0f;
         float const radius   = 5.0f;
 
-        _core.add_barrier(new Plane_barrier(position, Eigen::Vector3f::UnitZ(), strength, radius, Eigen::Vector2f(10.0f, 20.0)));
+        _core.get_level_data().add_barrier(new Plane_barrier(position, Eigen::Vector3f::UnitZ(), strength, radius, Eigen::Vector2f(10.0f, 20.0)));
     }
     else if (element_type == std::string("Brownian_box"))
     {
@@ -1003,26 +1001,26 @@ void Main_game_screen::add_element(const Eigen::Vector3f &position, const std::s
         Brownian_box * e = new Brownian_box(Eigen::Vector3f(-10.0f, front_pos, -10.0f) + position, Eigen::Vector3f(10.0f, back_pos, 10.0f) + position, strength, radius);
         e->set_user_editable(Level_element::Edit_type::All);
         e->set_persistent(false);
-        _core.add_brownian_element(e);
+        _core.get_level_data().add_brownian_element(e);
     }
     else if (element_type == std::string("Box_portal"))
     {
-        _core.add_portal(new Box_portal(Eigen::Vector3f(-10.0f, front_pos, -10.0f) + position, Eigen::Vector3f(10.0f, back_pos, 10.0f) + position));
+        _core.get_level_data().add_portal(new Box_portal(Eigen::Vector3f(-10.0f, front_pos, -10.0f) + position, Eigen::Vector3f(10.0f, back_pos, 10.0f) + position));
     }
     else if (element_type == std::string("Sphere_portal"))
     {
-        _core.add_portal(new Sphere_portal(Eigen::Vector3f(-10.0f, front_pos, -10.0f) + position, Eigen::Vector3f(10.0f, back_pos, 10.0f) + position));
+        _core.get_level_data().add_portal(new Sphere_portal(Eigen::Vector3f(-10.0f, front_pos, -10.0f) + position, Eigen::Vector3f(10.0f, back_pos, 10.0f) + position));
     }
     else if (element_type == std::string("Molecule_releaser"))
     {
         Molecule_releaser * m = new Molecule_releaser(Eigen::Vector3f(-10.0f, front_pos, -10.0f) + position, Eigen::Vector3f(10.0f, back_pos, 10.0f) + position, 1.0f, 1.0f);
         m->set_molecule_type("H2O");
-        _core.add_molecule_releaser(m);
+        _core.get_level_data().add_molecule_releaser(m);
     }
     else if (element_type == std::string("Atom_cannon"))
     {
         Atom_cannon * m = new Atom_cannon(Eigen::Vector3f(-10.0f, front_pos, -10.0f) + position, Eigen::Vector3f(10.0f, back_pos, 10.0f) + position, 1.0f, 1.0f, 10.0f, 0.0f);
-        _core.add_molecule_releaser(m);
+        _core.get_level_data().add_molecule_releaser(m);
     }
     else if (element_type == std::string("Charged_barrier"))
     {
@@ -1030,7 +1028,7 @@ void Main_game_screen::add_element(const Eigen::Vector3f &position, const std::s
         float const radius   = 2.0f;
 
         Charged_barrier * b = new Charged_barrier(Eigen::Vector3f(-10.0f, front_pos, -10.0f) + position, Eigen::Vector3f(10.0f, 20.0f, 10.0f) + position, strength, radius, 10.0f);
-        _core.add_barrier(b);
+        _core.get_level_data().add_barrier(b);
     }
     else if (element_type == std::string("Tractor_barrier"))
     {
@@ -1039,7 +1037,7 @@ void Main_game_screen::add_element(const Eigen::Vector3f &position, const std::s
         Tractor_barrier * b = new Tractor_barrier(Eigen::Vector3f(-10.0f, front_pos, -10.0f) + position, Eigen::Vector3f(10.0f, 20.0f, 10.0f) + position, strength);
         b->set_user_editable(Level_element::Edit_type::All);
         b->set_persistent(false);
-        _core.add_barrier(b);
+        _core.get_level_data().add_barrier(b);
     }
     else
     {
@@ -1184,18 +1182,25 @@ void Main_game_screen::setup_intro()
         _core.add_molecule(Molecule::create_water(box.sample()));
     }
 
-    _parameters["Level_data/rotation_fluctuation"]->set_value(0.5f);
-    _parameters["Level_data/translation_fluctuation"]->set_value(2.0f);
+    _core.get_level_data()._rotation_fluctuation = 0.5f;
+    _core.get_level_data()._translation_fluctuation = 2.0f;
 
-    _parameters["Level_data/rotation_damping"]->set_value(0.5f);
-    _parameters["Level_data/translation_damping"]->set_value(0.1f);
+    _core.get_level_data()._rotation_damping = 0.5f;
+    _core.get_level_data()._translation_damping = 0.1f;
+
+//    _parameters["Level_data/rotation_fluctuation"]->set_value(0.5f);
+//    _parameters["Level_data/translation_fluctuation"]->set_value(2.0f);
+
+//    _parameters["Level_data/rotation_damping"]->set_value(0.5f);
+//    _parameters["Level_data/translation_damping"]->set_value(0.1f);
 
     _core.get_parameters()["mass_factor"]->set_value(0.1f);
+
 //    _parameters["Core/mass_factor"]->set_value(0.1f);
 
-    _parameters["Game Field Width"]->set_value(100.0f);
-    _parameters["Game Field Height"]->set_value(100.0f);
-    _parameters["Game Field Depth"]->set_value(100.0f);
+    _core.get_level_data()._parameters["Game Field Width"]->set_value(100.0f);
+    _core.get_level_data()._parameters["Game Field Height"]->set_value(100.0f);
+    _core.get_level_data()._parameters["Game Field Depth"]->set_value(100.0f);
 
     for (int i = 0; i < 100; ++i)
     {
@@ -1235,8 +1240,11 @@ void Main_game_screen::update_intro(const float timestep)
     {
         if (_intro_time > 10.0f)
         {
-            _parameters["Level_data/rotation_fluctuation"]->set_value(0.0f);
-            _parameters["Level_data/translation_fluctuation"]->set_value(0.0f);
+//            _parameters["Level_data/rotation_fluctuation"]->set_value(0.0f);
+//            _parameters["Level_data/translation_fluctuation"]->set_value(0.0f);
+
+            _core.get_level_data()._rotation_fluctuation = 0.0f;
+            _core.get_level_data()._translation_fluctuation = 0.0f;
 
 //            qglviewer::KeyFrameInterpolator * kfi = new qglviewer::KeyFrameInterpolator(camera()->frame());
 //            kfi->addKeyFrame(*camera()->frame());
@@ -1361,8 +1369,12 @@ void Main_game_screen::update_intro(const float timestep)
             _intro_state = Intro_state::Two_molecules_2;
 
             // damp a lot to force standstill, but don't disable the simulation to keep getting notification for the labels' position updates
-            _parameters["Level_data/rotation_damping"]->set_value(100.0f);
-            _parameters["Level_data/translation_damping"]->set_value(100.0f);
+//            _parameters["Level_data/rotation_damping"]->set_value(100.0f);
+//            _parameters["Level_data/translation_damping"]->set_value(100.0f);
+
+            _core.get_level_data()._rotation_damping = 100.0f;
+            _core.get_level_data()._translation_damping = 100.0f;
+
             _viewer.set_simulation_state(false);
         }
     }
@@ -1371,8 +1383,12 @@ void Main_game_screen::update_intro(const float timestep)
         if (_intro_time > 8.0f)
         {
             // remove excessive damping
-            _parameters["Level_data/rotation_damping"]->set_value(0.5f);
-            _parameters["Level_data/translation_damping"]->set_value(0.1f);
+//            _parameters["Level_data/rotation_damping"]->set_value(0.5f);
+//            _parameters["Level_data/translation_damping"]->set_value(0.1f);
+
+            _core.get_level_data()._rotation_damping = 0.5f;
+            _core.get_level_data()._translation_damping = 0.1f;
+
             _viewer.set_simulation_state(true);
 
             _intro_time = 0.0f;

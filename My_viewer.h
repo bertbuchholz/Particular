@@ -56,16 +56,12 @@ public:
         _parameters.add_parameter(new Parameter("z_far", 100.0f, 1.0f, 1000.0f, std::bind(&My_viewer::change_clipping, this)));
         _parameters["z_far"]->set_hidden(true);
 
-        _parameters.add_parameter(new Parameter("Game Field Width",  80.0f, 5.0f, 1000.0f, std::bind(&My_viewer::change_game_field_borders, this)));
-        _parameters.add_parameter(new Parameter("Game Field Height", 40.0f, 5.0f, 1000.0f, std::bind(&My_viewer::change_game_field_borders, this)));
-        _parameters.add_parameter(new Parameter("Game Field Depth",  40.0f, 5.0f, 1000.0f, std::bind(&My_viewer::change_game_field_borders, this)));
-
 //        Parameter_registry<Core>::create_normal_instance("Core", &_parameters, std::bind(&My_viewer::change_core_settings, this));
 //        add_widget_to_options(_core.get_parameter_widget());
-        Main_options_window::get_instance()->add_widget(_core.get_parameter_widget());
+//        Main_options_window::get_instance()->add_widget(_core.get_parameter_widget());
 
 
-        Parameter_registry<Level_data>::create_normal_instance("Level_data", &_parameters, std::bind(&My_viewer::change_level_data_settings, this));
+//        Parameter_registry<Level_data>::create_normal_instance("Level_data", &_parameters, std::bind(&My_viewer::change_level_data_settings, this));
 
         _parameters.add_parameter(new Parameter("draw_closest_force", true, update));
         _parameters["draw_closest_force"]->set_hidden(true);
@@ -195,15 +191,8 @@ public:
 //        _core.update_parameter_list(*_parameters.get_child("Core"));
         _core.reset_level();
 
-//        update_level_element_buttons();
-
-//        update_draggable_to_level_element();
-//        update_active_draggables();
-
-//        change_renderer();
-//        change_core_settings();
-
-        _parameters.get_child(_core.get_level_data().name())->load(_core.get_level_data().get_current_parameters());
+//        _parameters.get_child(_core.get_level_data().name())->load(_core.get_level_data().get_current_parameters());
+        _core.get_level_data().update_parameters();
 
         _current_level_name = filename;
 
@@ -223,16 +212,6 @@ public:
         update();
     }
 
-//    void start_level()
-//    {
-////        assert(_level_state == Level_state::Before_start);
-
-//        _core.start_level();
-//        set_simulation_state(true);
-
-//        update();
-//    }
-
     void load_next_level()
     {
         std::cout << __PRETTY_FUNCTION__ << " next level: " << _core.get_progress().last_level << std::endl;
@@ -251,12 +230,6 @@ public:
 
         reset_level();
 
-//        _particle_systems[int(Level_state::Before_start)].clear();
-//        _particle_systems[int(Level_state::Before_start)].push_back(Targeted_particle_system(3.0f));
-//        _particle_systems[int(Level_state::Before_start)].back().generate(QString("Level %1").arg(_core.get_progress().last_level + 1).toStdString(), _particle_font, QRectF(0.0f, 0.1f, 1.0f, 0.3f));
-
-//        change_level_state(Level_state::Before_start);
-
         update();
     }
 
@@ -271,27 +244,6 @@ public:
         update();
     }
 
-    void change_game_field_borders()
-    {
-//        Eigen::Vector3f min(_parameters["game_field_left"]->get_value<float>(),
-//                _parameters["game_field_front"]->get_value<float>(),
-//                _parameters["game_field_bottom"]->get_value<float>());
-
-        Eigen::Vector3f min(-0.5f * _parameters["Game Field Width"]->get_value<float>(),
-                -0.5f * _parameters["Game Field Depth"]->get_value<float>(),
-                -0.5f * _parameters["Game Field Height"]->get_value<float>());
-
-        Eigen::Vector3f max = -min;
-
-//        Eigen::Vector3f max(_parameters["game_field_right"]->get_value<float>(),
-//                _parameters["game_field_back"]->get_value<float>(),
-//                _parameters["game_field_top"]->get_value<float>());
-
-        _core.set_game_field_borders(min, max);
-
-        update();
-    }
-
 //    void change_core_settings()
 //    {
 //        _core.set_parameters(*_parameters.get_child("Core"));
@@ -300,7 +252,7 @@ public:
 
     void change_level_data_settings()
     {
-        _core.get_level_data().set_parameters(*_parameters.get_child("Level_data"));
+//        _core.get_level_data().set_parameters(*_parameters.get_child("Level_data"));
         update();
     }
 
@@ -1129,9 +1081,9 @@ public:
 
 //        _core.set_game_field_borders(play_box.min(), play_box.max());
 
-        _parameters["Game Field Width"]->set_value(80.0f);
-        _parameters["Game Field Height"]->set_value(40.0f);
-        _parameters["Game Field Depth"]->set_value(40.0f);
+        _core.get_level_data()._parameters["Game Field Width"]->set_value(80.0f);
+        _core.get_level_data()._parameters["Game Field Height"]->set_value(40.0f);
+        _core.get_level_data()._parameters["Game Field Depth"]->set_value(40.0f);
 
 //        _core.add_barrier(new Box_barrier(Eigen::Vector3f(-10.0f, -20.0f, 0.0f), Eigen::Vector3f(10.0f, 20.0f, 20.0f), strength, radius));
 
@@ -1422,41 +1374,6 @@ public:
 ////        change_level_state(Level_state::Main_menu);
 //    }
 
-    void setup_ui_elements()
-    {
-        // Statistics
-//        _statistics[int(Level_state::Statistics)].resize(_core.get_sensor_data().get_num_data_types());
-
-//        {
-//            Draggable_statistics stat(Eigen::Vector3f(0.25f, 0.6f + 0.35f * 0.5f, 0.0f), Eigen::Vector2f(0.45f, 0.35f), "Released Molecules");
-//            _statistics[int(Level_state::Statistics)][int(Sensor_data::Type::RelMol)] = stat;
-//        }
-
-//        {
-//            Draggable_statistics stat(Eigen::Vector3f(0.75f, 0.6f + 0.35f * 0.5f, 0.0f), Eigen::Vector2f(0.45f, 0.35f), "Collected Molecules");
-//            _statistics[int(Level_state::Statistics)][int(Sensor_data::Type::ColMol)] = stat;
-//        }
-
-//        {
-//            Draggable_statistics stat(Eigen::Vector3f(0.25f, 0.2f + 0.35f * 0.5f, 0.0f), Eigen::Vector2f(0.45f, 0.35f), "Avg. Temperature");
-//            _statistics[int(Level_state::Statistics)][int(Sensor_data::Type::AvgTemp)] = stat;
-//        }
-
-//        {
-//            Draggable_statistics stat(Eigen::Vector3f(0.75f, 0.2f + 0.35f * 0.5f, 0.0f), Eigen::Vector2f(0.45f, 0.35f), "Energy Consumption");
-//            _statistics[int(Level_state::Statistics)][int(Sensor_data::Type::EnergyCon)] = stat;
-//        }
-
-//        {
-//            Draggable_button * button = new Draggable_button(Eigen::Vector3f(0.50f, 0.1f, 0.0f), Eigen::Vector2f(0.25f, 0.1f), "Back",  std::bind(&My_viewer::return_from_stats, this));
-//            _buttons[int(Level_state::Statistics)].push_back(boost::shared_ptr<Draggable_button>(button));
-//        }
-
-//        {
-////            Draggable_button * button = new Draggable_button(Eigen::Vector3f(0.25f, 0.1f, 0.0f), Eigen::Vector2f(0.25f, 0.1f), "Repeat",  std::bind(&My_viewer::change_state_to_statistics, this));
-////            _buttons[int(Level_state::Statistics)].push_back(boost::shared_ptr<Draggable_button>(button));
-//        }
-    }
 
 public Q_SLOTS:
     void update_physics()

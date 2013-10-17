@@ -2,6 +2,7 @@
 #define STATE_H
 
 #include <QtGui>
+#include <memory>
 
 class My_viewer;
 

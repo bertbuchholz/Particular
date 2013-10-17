@@ -107,11 +107,9 @@ void Main_menu_screen::start_new_game()
 
     _core.get_progress().reset();
 
-    _viewer.change_level_state(My_viewer::Level_state::Intro);
+    _viewer.change_level_state(Main_game_screen::Level_state::Intro);
 
     _core.clear();
-
-    _viewer.setup_intro();
 
     _state = State::Killing;
 }

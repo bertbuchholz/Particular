@@ -36,11 +36,7 @@ class My_viewer : public Options_viewer // , public QGLFunctions
 public:
     typedef Options_viewer Base;
 
-//    enum class Mouse_state { None, Init_drag_handle, Init_drag_molecule, Dragging_molecule, Dragging_handle };
-//    enum class Selection { None, Level_element, Molecule };
-//    enum class Ui_state { Level_editor, Playing };
-    enum class Level_state { /* Main_menu, Pause_menu, */ Intro, /* Before_start, */ Running, After_finish, Statistics };
-    enum class Intro_state { Beginning, Single_molecule, Two_molecules_0, Two_molecules_1, Two_molecules_2, Two_molecules_3, Finishing, Finished };
+    enum class Level_state { /* Main_menu, Pause_menu, */ Intro, /* Before_start, */ Running /* , After_finish, Statistics */ };
 
     My_viewer(QGLFormat const& format = QGLFormat()) : Options_viewer(format)
     {
@@ -117,8 +113,6 @@ public:
 
 //        change_core_settings();
 //        change_ui_state();
-
-        connect(&_core, SIGNAL(game_state_changed()), this, SLOT(handle_game_state_change()));
 
         setup_fonts();
     }
@@ -217,7 +211,7 @@ public:
 
         update_game_camera();
 
-        Q_EMIT level_changed();
+        Q_EMIT level_changed(Main_game_screen::Level_state::Running);
 
         update();
     }
@@ -272,7 +266,7 @@ public:
 //        update_draggable_to_level_element();
 //        update_active_draggables();
 
-        Q_EMIT level_changed();
+        Q_EMIT level_changed(Main_game_screen::Level_state::Running);
 
         update();
     }
@@ -523,7 +517,7 @@ public:
             init_game();
         }
 
-        Q_EMIT level_changed();
+        Q_EMIT level_changed(Main_game_screen::Level_state::Running);
 
         update();
     }
@@ -613,15 +607,13 @@ public:
 
 //        _particle_tex = bindTexture(QImage(Data_config::get_instance()->get_absolute_qfilename("textures/particle.png")));
 
-        generate_ui_textures();
-
         restore_parameters();
 //        init_game();
 
 //        update_draggable_to_level_element();
 //        update_active_draggables();
 
-        Q_EMIT level_changed();
+        Q_EMIT level_changed(Main_game_screen::Level_state::Running);
 
         startAnimation();
 
@@ -651,9 +643,9 @@ public:
                     + _core.get_level_data()._game_field_borders[Level_data::Plane::Neg_Z]->get_position()[2]);
         }
 
-        _my_camera->setUpVector(qglviewer::Vec(0.0f, 0.0f, 1.0f));
-        _my_camera->setViewDirection(qglviewer::Vec(0.0f, 1.0f, 0.0f));
-        _my_camera->setPosition(qglviewer::Vec(0.0f, -80.0f, z));
+        camera()->setUpVector(qglviewer::Vec(0.0f, 0.0f, 1.0f));
+        camera()->setViewDirection(qglviewer::Vec(0.0f, 1.0f, 0.0f));
+        camera()->setPosition(qglviewer::Vec(0.0f, -80.0f, z));
     }
 
     struct Reject_condition
@@ -801,81 +793,6 @@ public:
         glEnd();
 
         glPopMatrix();
-    }
-
-    void draw_portals()
-    {
-        Level_element_draw_visitor v;
-
-        for (Portal * element : _core.get_portals())
-        {
-            element->accept(&v);
-        }
-    }
-
-    void draw_molecule_releasers()
-    {
-        Level_element_draw_visitor v;
-
-        for (Molecule_releaser * element : _core.get_molecule_releasers())
-        {
-            element->accept(&v);
-        }
-    }
-
-    void draw_temperature()
-    {
-        Eigen::Vector2f grid_start(-40.0f, 0.0f);
-        Eigen::Vector2f grid_end  ( 40.0f, 40.0f);
-
-        float resolution = 1.0f;
-
-        for (float x = grid_start[0]; x < grid_end[0]; x += resolution)
-        {
-            for (float z = grid_start[1]; z < grid_end[1]; z += resolution)
-            {
-                float factor = 0.0f;
-
-                Eigen::Vector3f pos(x, 0, z);
-
-                for (Brownian_element const* element : _core.get_brownian_elements())
-                {
-                    factor += element->get_brownian_motion_factor(pos);
-                }
-
-                float const max_strength = 50.0f;
-
-                float const strength = into_range(factor / max_strength, -1.0f, 1.0f) * 0.5f + 0.5f;
-
-                Color c(strength, 0.0f, 1.0f - strength);
-
-                glColor3fv(c.data());
-
-                glBegin(GL_POINTS);
-                glVertex3fv(pos.data());
-                glEnd();
-            }
-        }
-    }
-
-    void draw_brownian_elements()
-    {
-        Level_element_draw_visitor v;
-
-        for (Brownian_element * element : _core.get_brownian_elements())
-        {
-            element->accept(&v);
-        }
-    }
-
-    void draw_barriers()
-    {
-        Level_element_draw_visitor v;
-
-        for (Barrier * barrier : _core.get_barriers())
-        {
-            barrier->accept(&v);
-        }
     }
 
 //    void draw_user_force() const
@@ -1150,16 +1067,6 @@ public:
     {
         float const time_step = animationPeriod() / 1000.0f;
 
-        for (auto & l : _labels[int(_level_state)])
-        {
-            l->animate(time_step);
-        }
-
-        if (_level_state == Level_state::Intro)
-        {
-            update_intro(time_step);
-        }
-
         _screen_stack.erase(std::remove_if(_screen_stack.begin(), _screen_stack.end(), Screen::is_dead), _screen_stack.end());
 
         for (std::unique_ptr<Screen> const& s : _screen_stack)
@@ -1186,7 +1093,7 @@ public:
 
         load_defaults();
 
-        Q_EMIT level_changed();
+        Q_EMIT level_changed(Main_game_screen::Level_state::Running);
 
         update();
     }
@@ -1312,7 +1219,7 @@ public:
 //        update_draggable_to_level_element();
 //        update_active_draggables();
 
-        Q_EMIT level_changed();
+        Q_EMIT level_changed(Main_game_screen::Level_state::Running);
 
         update();
     }
@@ -1324,43 +1231,12 @@ public:
             screen->resize(ev->size());
         }
 
-        generate_ui_textures();
-
 //        _inactive_world_fbo = std::unique_ptr<QGLFramebufferObject>(new QGLFramebufferObject(ev->size()));
 
 //        glDeleteTextures(1, &_inactive_world_tex);
 //        _inactive_world_tex = create_texture(size.width(), size.height());
 
         Base::resizeEvent(ev);
-    }
-
-    void generate_ui_textures()
-    {
-//        for (auto & iter : _buttons)
-//        {
-//            for (boost::shared_ptr<Draggable_button> const& button : iter.second)
-//            {
-//                generate_button_texture(button.get());
-//            }
-//        }
-
-        for (auto & iter : _labels)
-        {
-            for (boost::shared_ptr<Draggable_label> const& label : iter.second)
-            {
-                generate_label_texture(label.get());
-            }
-        }
-
-//        for (auto & iter : _statistics)
-//        {
-//            for (auto & stat : iter.second)
-//            {
-//                generate_statistics_texture(stat);
-//            }
-//        }
-
-//        update_level_element_buttons();
     }
 
     QSize adapt_bounding_size(QSize b_size, QSize const& target_size) const
@@ -1530,37 +1406,9 @@ public:
         b.set_texture(bindTexture(img));
     }
 
-    void setup_intro();
-
-    void update_intro(float const timestep);
-
-    void start_new_game()
+    void change_level_state(Main_game_screen::Level_state const new_level_state)
     {
-        // set level to 0 (including introduction part) and start game
-
-        _core.get_progress().last_level = 0;
-
-        change_level_state(Level_state::Intro);
-
-        _core.clear();
-
-        setup_intro();
-    }
-
-    void continue_game()
-    {
-        // load current progress and start game
-        load_next_level();
-    }
-
-    void change_level_state(Level_state const new_level_state)
-    {
-        _level_state = new_level_state;
-
-//        update_draggable_to_level_element();
-//        update_active_draggables();
-
-        Q_EMIT level_changed();
+        Q_EMIT level_changed(new_level_state);
     }
 
     void quit_game()
@@ -1689,15 +1537,10 @@ public Q_SLOTS:
 //        }
 //    }
 
-    void return_from_stats()
-    {
-        change_level_state(Level_state::After_finish);
-    }
-
-    Level_state get_level_state() const
-    {
-        return _level_state;
-    }
+//    Level_state get_level_state() const
+//    {
+//        return _level_state;
+//    }
 
     QFont const& get_particle_font() const
     {
@@ -1719,11 +1562,8 @@ public Q_SLOTS:
         return _current_level_name;
     }
 
-    void intro_cam1_end_reached();
-    void intro_cam2_end_reached();
-
 Q_SIGNALS:
-    void level_changed();
+    void level_changed(Main_game_screen::Level_state);
 
 private:
     QTimer * _physics_timer;
@@ -1731,35 +1571,7 @@ private:
 
     Core _core;
 
-//    IcoSphere<OpenMesh::Vec3f, Color> _icosphere;
-
-//    Picking _picking;
-//    Mouse_state _mouse_state;
-//    Selection _selection;
-//    Level_element * _selected_level_element;
-//    Ui_state _ui_state;
-    Level_state _level_state;
-
-//    QPoint _dragging_start;
-//    Eigen::Vector3f _dragging_start_3d;
-//    int _picked_index;
-
-//    std::unique_ptr<QGLFramebufferObject> _inactive_world_fbo;
-//    GLuint _inactive_world_tex;
-
-//    GLuint _particle_tex;
-
     StandardCamera * _my_camera;
-
-//    std::vector<Draggable*> _active_draggables;
-
-//    std::unordered_map<Draggable*, Level_element*> _draggable_to_level_element;
-
-//    std::unordered_map<int, std::vector< boost::shared_ptr<Draggable_button> > > _buttons;
-    std::unordered_map<int, std::vector< boost::shared_ptr<Draggable_label> > > _labels;
-//    std::unordered_map<int, std::vector<Targeted_particle_system> > _particle_systems;
-
-//    boost::shared_ptr<Draggable_button> _next_level_button;
 
     std::string _current_level_name;
 
@@ -1767,9 +1579,6 @@ private:
 
     QFont _main_font;
     QFont _particle_font;
-
-    float _intro_time;
-    Intro_state _intro_state;
 
     std::deque< std::unique_ptr<Screen> > _screen_stack;
 };

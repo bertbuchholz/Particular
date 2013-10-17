@@ -1015,9 +1015,5 @@ private:
 };
 
 
-void generate_button_texture(const QSize &screen_size, QFont font, Draggable_button * b);
-void generate_label_texture(QSize const& screen_size, QFont font, Draggable_label * b);
-void generate_statistics_texture(const QSize &screen_size, QFont font, Draggable_statistics & b);
-
 #endif // DRAGGABLE_H
 

@@ -58,9 +58,20 @@ public:
     void resize(QSize const& size) override;
 
 public Q_SLOTS:
-    void handle_level_change();
+    void handle_level_change(Main_game_screen::Level_state);
+    void handle_game_state_change();
 
 private:
+    // Intro ---------------------
+    void intro_cam2_end_reached();
+    void intro_cam1_end_reached();
+    void update_intro(const float timestep);
+    void setup_intro();
+
+    float _intro_time;
+    Intro_state _intro_state;
+    // ---------------------------
+
     Core & _core;
 
     Parameter_list _parameters;

@@ -6,9 +6,8 @@
 
 #include "Molecule_releaser.h"
 
-#include "fp_exception_glibc_extension.h"
+//#include "fp_exception_glibc_extension.h"
 #include <fenv.h>
-
 
 Core::Core() :
     _game_state(Game_state::Unstarted),
@@ -928,6 +927,42 @@ void Core::load_level(const std::string &file_name)
     in_file.close();
 
     assert(_level_data.validate_elements());
+}
+
+void Core::save_progress()
+{
+    std::ofstream out_file("progress.data");
+    boost::archive::xml_oarchive oa(out_file);
+
+    oa << BOOST_SERIALIZATION_NVP(_progress);
+
+    out_file.close();
+}
+
+void Core::load_progress()
+{
+    std::ifstream in_file("progress.data");
+
+    if (in_file)
+    {
+        boost::archive::xml_iarchive ia(in_file);
+
+        try
+        {
+            ia >> BOOST_SERIALIZATION_NVP(_progress);
+        }
+        catch (std::exception e)
+        {
+            std::cout << "Failed to load progress file, progress reset: " << e.what() << std::endl;
+            _progress = Progress();
+        }
+
+        in_file.close();
+    }
+    else
+    {
+        std::cout << "No progress file found" << std::endl;
+    }
 }
 
 

@@ -2,6 +2,304 @@
 
 #include "My_viewer.h"
 #include "Pause_screen.h"
+#include "Before_start_screen.h"
+
+class Widget_text_combination : public QWidget
+{
+    public:
+    Widget_text_combination(QString const& text, QWidget * widget)
+    {
+        QHBoxLayout * layout = new QHBoxLayout;
+        layout->addWidget(new QLabel(text));
+        layout->addWidget(widget);
+        setLayout(layout);
+    }
+};
+
+//Main_game_screen::Main_game_screen(My_viewer &viewer, Core &core, std::unique_ptr<World_renderer> &renderer) : Screen(viewer),
+Main_game_screen::Main_game_screen(My_viewer &viewer, Core &core, Ui_state ui_state) : Screen(viewer),
+    _core(core),
+//    _renderer(renderer),
+    _mouse_state(Mouse_state::None),
+    _selection(Selection::None),
+    _selected_level_element(nullptr),
+    _ui_state(ui_state)
+{
+    std::cout << __PRETTY_FUNCTION__ << std::endl;
+
+    _type = Screen::Type::Fullscreen;
+    _state = State::Running;
+
+    _picking.init(_viewer.context());
+
+    _icosphere = IcoSphere<OpenMesh::Vec3f, Color>(2);
+
+    _rotate_tex = _viewer.bindTexture(QImage(Data_config::get_instance()->get_absolute_qfilename("textures/rotate.png"))); // do this in a separate init() that's called after opengl has been initialized
+    _move_tex = _viewer.bindTexture(QImage(Data_config::get_instance()->get_absolute_qfilename("textures/move.png")));
+    _scale_tex = _viewer.bindTexture(QImage(Data_config::get_instance()->get_absolute_qfilename("textures/scale.png")));
+    _slider_tex = _viewer.bindTexture(QImage(Data_config::get_instance()->get_absolute_qfilename("textures/slider.png")));
+
+    std::vector<std::string> object_types { "O2", "H2O", "SDS", "Na", "Cl", "Dipole",
+//                                                  "Plane_barrier",
+                                              "Box_barrier",
+                                              "Brownian_box",
+                                              "Box_portal",
+                                              "Sphere_portal",
+//                                                  "Blow_barrier",
+//                                                  "Moving_box_barrier",
+                                              "Molecule_releaser",
+//                                                  "Atom_cannon",
+                                              "Charged_barrier",
+                                              "Tractor_barrier" };
+
+    _parameters.add_parameter(new Parameter("Object Type", 0, object_types));
+
+    Parameter_registry<World_renderer>::create_single_select_instance(&_parameters, "Renderer", std::bind(&Main_game_screen::change_renderer, this));
+
+    _parameter_widget = Main_options_window::get_instance()->add_parameter_list(_parameters);
+
+    change_renderer();
+
+    connect(&_viewer, SIGNAL(level_changed()), this, SLOT(handle_level_change()));
+}
+
+Main_game_screen::~Main_game_screen()
+{
+    std::cout << __PRETTY_FUNCTION__ << std::endl;
+    _parameter_widget->hide();
+    Main_options_window::get_instance()->remove_widget(_parameter_widget);
+    delete _parameter_widget;
+}
+
+bool Main_game_screen::mousePressEvent(QMouseEvent * event)
+{
+    bool handled = false;
+
+    if (_level_state == Level_state::Intro)
+    {
+        handled = true;
+    }
+    else if (event->buttons() & Qt::LeftButton && event->modifiers() & Qt::ControlModifier && _ui_state == Ui_state::Level_editor)
+    {
+        add_element_event(event->pos());
+        handled = true;
+    }
+    else if (event->buttons() & Qt::LeftButton && event->modifiers() & Qt::AltModifier && _ui_state == Ui_state::Level_editor)
+    {
+        std::cout << __PRETTY_FUNCTION__ << " Drag/Click" << std::endl;
+        _dragging_start = event->pos();
+
+//            _picked_index = _picking.do_pick(event->pos().x(), height() - event->pos().y(), std::bind(&My_viewer::draw_molecules_for_picking, this));
+        _picked_index = _picking.do_pick(event->pos().x() / float(_viewer.camera()->screenWidth()), (_viewer.camera()->screenHeight() - event->pos().y())  / float(_viewer.camera()->screenHeight()), std::bind(&Main_game_screen::draw_molecules_for_picking, this));
+//            _picked_index = _picking.do_pick(event->pos().x(), height() - event->pos().y(), std::bind(&Molecule_renderer::picking_draw, _molecule_renderer));
+
+        std::cout << __PRETTY_FUNCTION__ << " index: " << _picked_index << std::endl;
+
+        if (_picked_index != -1)
+        {
+            bool found;
+            qglviewer::Vec world_pos = _viewer.camera()->pointUnderPixel(event->pos(), found);
+
+            if (found)
+            {
+                boost::optional<Molecule const&> picked_molecule = _core.get_molecule(_picked_index);
+
+                assert(picked_molecule);
+
+                Molecule_external_force & f = _core.get_user_force();
+                f._molecule_id = _picked_index;
+//                    qglviewer::Vec dir = world_pos - camera()->position();
+//                    dir.normalize();
+                f._force.setZero();
+                f._origin = QGLV2Eigen(world_pos);
+                f._local_origin = picked_molecule->_R.transpose() * (f._origin - picked_molecule->_x);
+                f._end_time = _core.get_current_time();
+
+                _mouse_state = Mouse_state::Init_drag_molecule;
+
+                std::cout << "Apply force: " << f._origin << std::endl;
+            }
+        }
+
+        handled = true;
+    }
+    else
+    {
+        _picked_index = _picking.do_pick(event->pos().x() / float(_viewer.camera()->screenWidth()), (_viewer.camera()->screenHeight() - event->pos().y())  / float(_viewer.camera()->screenHeight()),
+                                         std::bind(&Main_game_screen::draw_draggables_for_picking, this));
+
+//            _picked_index = _picking.do_pick(event->pos().x(), height() - event->pos().y(),
+//                      std::bind(&My_viewer::draw_draggables_for_picking, this));
+
+        std::cout << __PRETTY_FUNCTION__ << " picked_index: " << _picked_index << std::endl;
+
+        if (_picked_index != -1)
+        {
+            _dragging_start = event->pos();
+
+            bool found;
+            qglviewer::Vec world_pos = _viewer.camera()->pointUnderPixel(event->pos(), found);
+
+            _mouse_state = Mouse_state::Init_drag_handle;
+            std::cout << __PRETTY_FUNCTION__ << " Init_drag_handle" << std::endl;
+
+            if (found)
+            {
+                _dragging_start_3d = QGLV2Eigen(world_pos);
+            }
+
+            handled = true;
+        }
+    }
+
+    return handled;
+}
+
+bool Main_game_screen::mouseMoveEvent(QMouseEvent * event)
+{
+    bool handled = false;
+
+    if (_mouse_state == Mouse_state::Init_drag_molecule)
+    {
+        if (_picked_index != -1 && (_dragging_start - event->pos()).manhattanLength() > 0)
+        {
+            _mouse_state = Mouse_state::Dragging_molecule;
+        }
+    }
+    else if (_mouse_state == Mouse_state::Dragging_molecule)
+    {
+        boost::optional<Molecule const&> picked_molecule = _core.get_molecule(_picked_index);
+
+        assert(picked_molecule);
+
+        Molecule_external_force & f = _core.get_user_force();
+
+        f._plane_normal = -1.0f * QGLV2Eigen(_viewer.camera()->viewDirection());
+
+        Eigen::Hyperplane<float, 3> view_plane(f._plane_normal, f._origin);
+
+        qglviewer::Vec qglv_origin; // camera pos
+        qglviewer::Vec qglv_dir;    // origin - camera_pos
+
+        _viewer.camera()->convertClickToLine(event->pos(), qglv_origin, qglv_dir);
+
+        Eigen::Vector3f origin = QGLV2Eigen(qglv_origin);
+        Eigen::Vector3f dir    = QGLV2Eigen(qglv_dir).normalized();
+
+        Eigen::ParametrizedLine<float, 3> line(origin, dir);
+
+        Eigen::Vector3f new_force_target = line.intersectionPoint(view_plane);
+
+        f._origin = picked_molecule->_R * f._local_origin + picked_molecule->_x;
+        //                f._force = 1.0f * (new_force_target - f._origin).normalized();
+        f._force = new_force_target - f._origin;
+        f._end_time = _core.get_current_time() + 0.1f;
+
+        handled = true;
+    }
+    else if (_mouse_state == Mouse_state::Init_drag_handle && _active_draggables[_picked_index]->is_draggable() && event->buttons() & Qt::LeftButton)
+    {
+        if (_picked_index != -1 && (_dragging_start - event->pos()).manhattanLength() > 0)
+        {
+            _mouse_state = Mouse_state::Dragging_handle;
+        }
+    }
+    else if (_mouse_state == Mouse_state::Dragging_handle) // TODO: currently has Y plane constraint, move constraints into Draggable, consider giving it the viewline instead of a single position
+    {
+        Eigen::Hyperplane<float, 3> y_plane(Eigen::Vector3f(0.0f, 1.0f, 0.0f), _active_draggables[_picked_index]->get_position());
+
+        qglviewer::Vec qglv_origin; // camera pos
+        qglviewer::Vec qglv_dir;    // normalize(origin - camera_pos)
+
+        _viewer.camera()->convertClickToLine(event->pos(), qglv_origin, qglv_dir);
+
+        Eigen::ParametrizedLine<float, 3> view_ray(QGLV2Eigen(qglv_origin), QGLV2Eigen(qglv_dir).normalized());
+
+        Eigen::Vector3f new_position = view_ray.intersectionPoint(y_plane);
+
+        Draggable * parent = _active_draggables[_picked_index]->get_parent();
+
+        auto iter = _draggable_to_level_element.find(parent);
+
+        assert(iter != _draggable_to_level_element.end());
+
+        Level_element * level_element = iter->second;
+
+//            if (!check_for_collision(level_element))
+        {
+            _active_draggables[_picked_index]->set_position_from_world(new_position);
+            _active_draggables[_picked_index]->update();
+
+            std::cout << __PRETTY_FUNCTION__ << ": " << parent << std::endl;
+
+            level_element->accept(parent);
+
+//            update();
+        }
+    }
+
+    return handled;
+}
+
+bool Main_game_screen::mouseReleaseEvent(QMouseEvent * event)
+{
+    bool handled = false;
+
+    if (_mouse_state == Mouse_state::Init_drag_molecule)
+    {
+        std::cout << __PRETTY_FUNCTION__ << " click on molecule" << std::endl;
+
+        if (_picked_index != -1)
+        {
+            _selection = Selection::Molecule;
+
+            Molecule_external_force & f = _core.get_user_force();
+
+            f._end_time = _core.get_current_time() + 0.5f;
+
+            handled = true;
+        }
+    }
+    else if (_mouse_state == Mouse_state::Init_drag_handle)
+    {
+        std::cout << __PRETTY_FUNCTION__ << " click on handle" << std::endl;
+
+        if (_picked_index != -1)
+        {
+            _selection = Selection::Level_element;
+            Draggable * parent = _active_draggables[_picked_index]->get_parent();
+            parent->clicked();
+
+            auto iter = _draggable_to_level_element.find(parent);
+            if (iter != _draggable_to_level_element.end())
+            {
+                _selected_level_element = iter->second;
+                _selected_level_element->set_selected(true);
+
+                if (event->button() == Qt::RightButton && _ui_state == Ui_state::Level_editor)
+                {
+                    show_context_menu_for_element();
+                }
+            }
+
+            handled = true;
+        }
+    }
+    else
+    {
+        if (_selected_level_element)
+        {
+            _selected_level_element->set_selected(false);
+            _selected_level_element = nullptr;
+        }
+
+        _selection = Selection::None;
+    }
+
+    _mouse_state = Mouse_state::None;
+
+    return handled;
+}
 
 bool Main_game_screen::keyPressEvent(QKeyEvent * event)
 {
@@ -11,44 +309,41 @@ bool Main_game_screen::keyPressEvent(QKeyEvent * event)
 
     if (event->key() == Qt::Key_Escape)
     {
-        if (_state == State::Running && _viewer.get_level_state() != My_viewer::Level_state::Intro)
+        if (_ui_state == Ui_state::Playing)
         {
-            // go into pause and start pause menu
-            _state = State::Pausing;
+            if (_state == State::Running && _viewer.get_level_state() != My_viewer::Level_state::Intro)
+            {
+                // go into pause and start pause menu
+                _state = State::Pausing;
 
-            _viewer.add_screen(new Pause_screen(_viewer, _core, this));
+                _viewer.add_screen(new Pause_screen(_viewer, _core, this));
 
-            _viewer.set_simulation_state(false);
+                _viewer.set_simulation_state(false);
 
-            handled = true;
+                handled = true;
+            }
+            else if ((_state == State::Paused || _state == State::Pausing) && _viewer.get_level_state() != My_viewer::Level_state::Intro)
+            {
+                // go into pause and start pause menu
+                _state = State::Resuming;
+
+                handled = true;
+            }
+            else if (_viewer.get_level_state() == My_viewer::Level_state::Intro)
+            {
+                _viewer.camera()->deletePath(0);
+
+                _viewer.load_next_level();
+
+                _viewer.add_screen(new Before_start_screen(_viewer, _core));
+
+                handled = true;
+            }
         }
-        else if ((_state == State::Paused || _state == State::Pausing) && _viewer.get_level_state() != My_viewer::Level_state::Intro)
-        {
-            // go into pause and start pause menu
-            _state = State::Resuming;
-
-//            _viewer.set_simulation_state(true);
-
-            handled = true;
-        }
-        else if (_viewer.get_level_state() == My_viewer::Level_state::Intro)
-        {
-            _viewer.camera()->deletePath(0);
-
-            _viewer.load_next_level();
-        }
-
-//        if (_level_state == Level_state::Intro) // skip intro
-//        {
-//            camera()->deletePath(0);
-
-//            load_next_level();
-//        }
-//        else if (_level_state == Level_state::Running) // go to pause menu
-//        {
-//            enter_pause_menu();
-
-//        }
+    }
+    if ((event->key() == Qt::Key_Backspace || event->key() == Qt::Key_Delete) && _ui_state == Ui_state::Level_editor)
+    {
+        delete_selected_element();
     }
 
     return handled;
@@ -61,13 +356,19 @@ void Main_game_screen::draw()
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
     _renderer->render(_core.get_level_data(), _core.get_current_time(), _viewer.camera());
+
+    setup_gl_points(false);
+    glPointSize(8.0f);
+
+    glDisable(GL_LIGHTING);
+    draw_draggables();
 }
 
-void Main_game_screen::state_changed_event(const Screen::State current_state, const Screen::State previous_state)
+void Main_game_screen::state_changed_event(const Screen::State new_state, const Screen::State previous_state)
 {
-    std::cout << __PRETTY_FUNCTION__ << " " << int(current_state) << " " << int(previous_state) << std::endl;
+    std::cout << __PRETTY_FUNCTION__ << " " << int(new_state) << " " << int(previous_state) << std::endl;
 
-    if (current_state == State::Running)
+    if (new_state == State::Running)
     {
         _viewer.set_simulation_state(true);
     }
@@ -75,10 +376,766 @@ void Main_game_screen::state_changed_event(const Screen::State current_state, co
 
 
 
-void Main_game_screen::update_event(const float time_step)
+void Main_game_screen::update_event(const float /* time_step */)
 {
     if (_state == State::Running)
     {
         // normal update
+
+        if (_mouse_state == Mouse_state::Dragging_molecule)
+        {
+            boost::optional<Molecule const&> picked_molecule = _core.get_molecule(_picked_index);
+
+            assert(picked_molecule);
+
+            Molecule_external_force & f = _core.get_user_force();
+
+            Eigen::Vector3f old_force_target = f._origin + f._force;
+
+            f._origin = picked_molecule->_R * f._local_origin + picked_molecule->_x;
+            f._force = old_force_target - f._origin;
+            f._end_time = _core.get_current_time() + 0.1f;
+        }
     }
+}
+
+void Main_game_screen::delete_selected_element()
+{
+    if (_selection == Selection::Molecule)
+    {
+
+    }
+    else if (_selection == Selection::Level_element)
+    {
+        Draggable * parent = _active_draggables[_picked_index]->get_parent();
+        assert(_draggable_to_level_element.find(parent) != _draggable_to_level_element.end());
+
+        _core.delete_level_element(_draggable_to_level_element.find(parent)->second);
+
+        update_draggable_to_level_element();
+        update_active_draggables();
+
+        _selection = Selection::None;
+        _selected_level_element = nullptr;
+    }
+}
+
+void Main_game_screen::show_context_menu_for_element()
+{
+    Draggable * parent = _active_draggables[_picked_index]->get_parent();
+
+    assert(_draggable_to_level_element.find(parent) != _draggable_to_level_element.end());
+
+    std::cout << __PRETTY_FUNCTION__ << ": " << parent << std::endl;
+
+    Level_element * element = _draggable_to_level_element[parent];
+
+    QMenu menu;
+
+    QWidgetAction * action_persistent = new QWidgetAction(this);
+    QCheckBox * persistent_checkbox = new QCheckBox("Persistent");
+    persistent_checkbox->setChecked(element->is_persistent());
+    action_persistent->setDefaultWidget(persistent_checkbox);
+
+    QWidgetAction * action_user_translate = new QWidgetAction(this);
+    QCheckBox * user_translate_checkbox = new QCheckBox("Translate");
+    user_translate_checkbox->setChecked(int(element->is_user_editable()) & int(Level_element::Edit_type::Translate));
+    action_user_translate->setDefaultWidget(user_translate_checkbox);
+
+    QWidgetAction * action_user_scale = new QWidgetAction(this);
+    QCheckBox * user_scale_checkbox = new QCheckBox("Scale");
+    user_scale_checkbox->setChecked(int(element->is_user_editable()) & int(Level_element::Edit_type::Scale));
+    action_user_scale->setDefaultWidget(user_scale_checkbox);
+
+    QWidgetAction * action_user_rotate = new QWidgetAction(this);
+    QCheckBox * user_rotate_checkbox = new QCheckBox("Rotate");
+    user_rotate_checkbox->setChecked(int(element->is_user_editable()) & int(Level_element::Edit_type::Rotate));
+    action_user_rotate->setDefaultWidget(user_rotate_checkbox);
+
+    QWidgetAction * action_user_property = new QWidgetAction(this);
+    QCheckBox * user_property_checkbox = new QCheckBox("Property");
+    user_property_checkbox->setChecked(int(element->is_user_editable()) & int(Level_element::Edit_type::Property));
+    action_user_property->setDefaultWidget(user_property_checkbox);
+
+    menu.addAction(action_persistent);
+    menu.addAction(action_user_rotate);
+    menu.addAction(action_user_scale);
+    menu.addAction(action_user_translate);
+    menu.addAction(action_user_property);
+
+    if (Moving_box_barrier * b = dynamic_cast<Moving_box_barrier *>(element))
+    {
+        QWidgetAction * action_duration = new QWidgetAction(this);
+        FloatSlider * slider = new FloatSlider(0.1f, 10.0f, b->get_animation().get_duration());
+        //            action_duration->setDefaultWidget(slider);
+        action_duration->setDefaultWidget(new Widget_text_combination("Duration", slider));
+
+        menu.addAction("Set startpoint");
+        menu.addAction("Set endpoint");
+        menu.addAction(action_duration);
+
+        QAction * selected_action = menu.exec(QCursor::pos());
+
+        if (selected_action)
+        {
+            if (selected_action->text() == "Set startpoint")
+            {
+                b->get_animation().set_start_point(b->get_position());
+            }
+            else if (selected_action->text() == "Set endpoint")
+            {
+                b->get_animation().set_end_point(b->get_position());
+            }
+        }
+
+        b->get_animation().set_duration(slider->getValueF());
+
+        delete action_duration;
+    }
+    else if (Molecule_releaser * m = dynamic_cast<Molecule_releaser *>(element))
+    {
+        QWidgetAction * action_num_max_molecules = new QWidgetAction(this);
+
+        QSpinBox * spinbox_num_max_molecules = new QSpinBox();
+        {
+            spinbox_num_max_molecules->setMaximum(1000);
+            spinbox_num_max_molecules->setMinimum(1);
+            spinbox_num_max_molecules->setValue(m->get_num_max_molecules());
+
+            action_num_max_molecules->setDefaultWidget(new Widget_text_combination("Max. Molecules", spinbox_num_max_molecules));
+        }
+
+        QWidgetAction * action_interval = new QWidgetAction(this);
+
+        QDoubleSpinBox * spinbox_interval = new QDoubleSpinBox();
+        {
+            spinbox_interval->setRange(0.1f, 10.0f);
+            spinbox_interval->setValue(m->get_interval());
+
+            action_interval->setDefaultWidget(new Widget_text_combination("Rel. Interval (s)", spinbox_interval));
+        }
+
+        QWidgetAction * action_first_release = new QWidgetAction(this);
+
+        QDoubleSpinBox * spinbox_first_release = new QDoubleSpinBox();
+        {
+            spinbox_first_release->setRange(0.0f, 10000.0f);
+            spinbox_first_release->setValue(m->get_first_release());
+
+            action_first_release->setDefaultWidget(new Widget_text_combination("First release", spinbox_first_release));
+        }
+
+        QWidgetAction * action_molecule_type = new QWidgetAction(this);
+        QComboBox * combo_molecule_type = new QComboBox();
+        {
+            std::vector<std::string> molecule_names = Molecule::get_molecule_names();
+
+            for (std::string const& name : molecule_names)
+            {
+                combo_molecule_type->addItem(QString::fromStdString(name));
+
+            }
+
+            combo_molecule_type->setCurrentIndex(combo_molecule_type->findText(QString::fromStdString(m->get_molecule_type())));
+
+            action_molecule_type->setDefaultWidget(new Widget_text_combination("Molecule Type", combo_molecule_type));
+        }
+
+        menu.addAction(action_molecule_type);
+        menu.addAction(action_num_max_molecules);
+        menu.addAction(action_interval);
+        menu.addAction(action_first_release);
+
+        menu.exec(QCursor::pos());
+
+        m->set_molecule_type(combo_molecule_type->currentText().toStdString());
+        m->set_num_max_molecules(spinbox_num_max_molecules->value());
+        m->set_interval(spinbox_interval->value());
+        m->set_first_release(spinbox_first_release->value());
+
+        delete action_molecule_type;
+        delete action_num_max_molecules;
+        delete action_interval;
+        delete action_first_release;
+    }
+    else if (Portal * m = dynamic_cast<Portal*>(element))
+    {
+        QWidgetAction * action_num_min_captured_molecules = new QWidgetAction(this);
+
+        QSpinBox * spinbox_num_min_captured_molecules = new QSpinBox();
+        {
+            spinbox_num_min_captured_molecules->setMinimum(1);
+            spinbox_num_min_captured_molecules->setMaximum(1000);
+            spinbox_num_min_captured_molecules->setValue(m->get_condition().get_min_captured_molecules());
+
+            action_num_min_captured_molecules->setDefaultWidget(new Widget_text_combination("Captured Molecules", spinbox_num_min_captured_molecules));
+        }
+
+        QWidgetAction * action_type = new QWidgetAction(this);
+
+        QComboBox * combo_type = new QComboBox();
+        {
+            combo_type->addItem("And");
+            combo_type->addItem("Or");
+
+            if (m->get_condition().get_type() == End_condition::Type::And)
+            {
+                combo_type->setCurrentIndex(0);
+            }
+            else
+            {
+                combo_type->setCurrentIndex(1);
+            }
+
+            action_type->setDefaultWidget(new Widget_text_combination("Type", combo_type));
+        }
+
+        QWidgetAction * action_score_factor = new QWidgetAction(this);
+        QDoubleSpinBox * spinbox_score_factor = new QDoubleSpinBox();
+        {
+            spinbox_score_factor->setMinimum(1);
+            spinbox_score_factor->setMaximum(100);
+            spinbox_score_factor->setValue(m->get_score_factor());
+
+            action_score_factor->setDefaultWidget(new Widget_text_combination("Score Factor", spinbox_score_factor));
+        }
+
+        QWidgetAction * action_destroy_on_enter = new QWidgetAction(this);
+        QCheckBox * checkbox_destroy_on_enter = new QCheckBox("Destroy on enter");
+        {
+            checkbox_destroy_on_enter->setChecked(m->do_destroy_on_entering());
+            action_destroy_on_enter->setDefaultWidget(checkbox_destroy_on_enter);
+        }
+
+        menu.addAction(action_score_factor);
+        menu.addAction(action_destroy_on_enter);
+        menu.addAction(action_num_min_captured_molecules);
+        menu.addAction(action_type);
+        menu.addAction(QString("Collected Molecules: %1").arg(m->get_condition().get_num_captured_molecules()));
+
+        menu.exec(QCursor::pos());
+
+        m->get_condition().set_min_captured_molecules(spinbox_num_min_captured_molecules->value());
+
+        if (combo_type->currentText() == "Or")
+        {
+            m->get_condition().set_type(End_condition::Type::Or);
+        }
+        if (combo_type->currentText() == "And")
+        {
+            m->get_condition().set_type(End_condition::Type::And);
+        }
+
+        m->set_score_factor(spinbox_score_factor->value());
+        m->set_destroy_on_entering(checkbox_destroy_on_enter->isChecked());
+
+        delete action_score_factor;
+        delete action_num_min_captured_molecules;
+        delete action_type;
+        delete action_destroy_on_enter;
+    }
+    else
+    {
+        menu.exec(QCursor::pos());
+    }
+
+    element->set_persistent(persistent_checkbox->isChecked());
+
+    int edit_type = int(Level_element::Edit_type::None);
+
+    if (user_rotate_checkbox->isChecked()) edit_type |= int(Level_element::Edit_type::Rotate);
+    if (user_translate_checkbox->isChecked()) edit_type |= int(Level_element::Edit_type::Translate);
+    if (user_scale_checkbox->isChecked()) edit_type |= int(Level_element::Edit_type::Scale);
+    if (user_property_checkbox->isChecked()) edit_type |= int(Level_element::Edit_type::Property);
+
+    element->set_user_editable(Level_element::Edit_type(edit_type));
+
+    delete action_persistent;
+    delete action_user_rotate;
+    delete action_user_scale;
+    delete action_user_translate;
+    delete action_user_property;
+}
+
+void Main_game_screen::draw_molecules_for_picking()
+{
+    for (Molecule const& molecule : _core.get_molecules())
+    {
+        int const index = molecule.get_id();
+        _picking.set_index(index);
+
+        for (Atom const& atom : molecule._atoms)
+        {
+            if (atom._type == Atom::Type::Charge) continue;
+
+            glPushMatrix();
+
+            glTranslatef(atom.get_position()[0], atom.get_position()[1], atom.get_position()[2]);
+
+            //                float radius = scale * atom._radius;
+            float radius = atom._radius;
+            glScalef(radius, radius, radius);
+
+            _icosphere.draw();
+
+            glPopMatrix();
+        }
+    }
+}
+
+void Main_game_screen::draw_draggables_for_picking()
+{
+    float const scale = 1.5f;
+
+    for (int i = 0; i < int(_active_draggables.size()); ++i)
+    {
+        Draggable const* draggable = _active_draggables[i];
+
+        glPushMatrix();
+
+        Draggable const* parent = draggable->get_parent();
+
+        glTranslatef(parent->get_position()[0], parent->get_position()[1], parent->get_position()[2]);
+        glMultMatrixf(parent->get_transform().data());
+
+        _picking.set_index(i);
+
+        if (Draggable_point const* d_point = dynamic_cast<Draggable_point const*>(draggable))
+        {
+            draw_box_from_center(d_point->get_position(), Eigen::Vector3f(scale, scale, scale));
+        }
+        else if (Draggable_disc const* d_point = dynamic_cast<Draggable_disc const*>(draggable))
+        {
+            draw_sphere_ico(Eigen2OM(d_point->get_position()), 2.0f);
+        }
+        else if (Draggable_button const* d_button = dynamic_cast<Draggable_button const*>(draggable))
+        {
+            _viewer.start_normalized_screen_coordinates();
+            _viewer.draw_button(d_button, true);
+            _viewer.stop_normalized_screen_coordinates();
+        }
+
+        glPopMatrix();
+    }
+}
+
+void Main_game_screen::update_active_draggables()
+{
+    _active_draggables.clear();
+
+    for (auto const& d : _draggable_to_level_element)
+    {
+        Level_element::Edit_type edit_type = Level_element::Edit_type::All;
+
+        if (_ui_state != Ui_state::Level_editor)
+        {
+            edit_type = d.second->is_user_editable();
+        }
+
+        std::vector<Draggable*> const draggables = d.first->get_draggables(edit_type);
+        std::copy(draggables.begin(), draggables.end(), std::back_inserter(_active_draggables));
+    }
+
+    if (_ui_state != Ui_state::Level_editor)
+    {
+        for (boost::shared_ptr<Draggable_button> const& button : _buttons)
+        {
+            Draggable_button * b = button.get();
+
+            std::vector<Draggable*> const draggables = b->get_draggables(Level_element::Edit_type::None);
+            std::copy(draggables.begin(), draggables.end(), std::back_inserter(_active_draggables));
+        }
+    }
+}
+
+void Main_game_screen::update_draggable_to_level_element()
+{
+    for (auto & d : _draggable_to_level_element)
+    {
+        delete d.first;
+    }
+
+    _draggable_to_level_element.clear();
+
+    if (_level_state == Level_state::Running || _ui_state == Ui_state::Level_editor)
+    {
+        for (boost::shared_ptr<Level_element> const& element : _core.get_level_data()._level_elements)
+        {
+            Level_element * e = element.get();
+
+            if (Brownian_box const* b = dynamic_cast<Brownian_box const*>(e))
+            {
+                Draggable_box * draggable = new Draggable_box(b->get_position(), b->get_extent(), b->get_transform(), b->get_parameters());
+                _draggable_to_level_element[draggable] = e;
+            }
+            else if (Moving_box_barrier * b = dynamic_cast<Moving_box_barrier*>(e))
+            {
+                Draggable_box * draggable = new Draggable_box(b->get_position(), b->get_extent(), b->get_transform(), b->get_parameters(), b);
+                b->add_observer(draggable);
+                _draggable_to_level_element[draggable] = e;
+            }
+            else if (Box_barrier const* b = dynamic_cast<Box_barrier const*>(e))
+            {
+                Draggable_box * draggable = new Draggable_box(b->get_position(), b->get_extent(), b->get_transform(), b->get_parameters());
+                _draggable_to_level_element[draggable] = e;
+            }
+            else if (Blow_barrier const* b = dynamic_cast<Blow_barrier const*>(e))
+            {
+                Draggable_box * draggable = new Draggable_box(b->get_position(), b->get_extent(), b->get_transform());
+                _draggable_to_level_element[draggable] = e;
+            }
+            else if (Box_portal const* b = dynamic_cast<Box_portal const*>(e))
+            {
+                Draggable_box * draggable = new Draggable_box(b->get_position(), b->get_extent(), b->get_transform());
+                _draggable_to_level_element[draggable] = e;
+            }
+            else if (Molecule_releaser const* m = dynamic_cast<Molecule_releaser const*>(e)) // TODO: if Atom_cannon is added, must be before this entry
+            {
+                Draggable_box * draggable = new Draggable_box(m->get_position(), m->get_extent(), m->get_transform(), m->get_parameters());
+                _draggable_to_level_element[draggable] = e;
+            }
+        }
+    }
+}
+
+void Main_game_screen::draw_draggables() // FIXME: use visitors or change it so that draggables can only have a single type of handles (Draggable_point)
+{
+    glDisable(GL_DEPTH_TEST);
+
+    float const scale = 1.5f;
+
+    glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+
+    float const z_offset = -0.01f;
+
+    for (auto const& d : _draggable_to_level_element)
+    {
+        if (Draggable_box const* d_box = dynamic_cast<Draggable_box const*>(d.first))
+        {
+            std::vector<Draggable_point> const& corners = d_box->get_corners();
+
+            Level_element::Edit_type edit_type = d.second->is_user_editable();
+
+            //                draw_box(d_box->get_min(), d_box->get_max());
+
+            glPushMatrix();
+
+            glTranslatef(d_box->get_position()[0], d_box->get_position()[1], d_box->get_position()[2]);
+            glMultMatrixf(d_box->get_transform().data());
+
+            if (_ui_state == Ui_state::Level_editor || (int(edit_type) & int(Level_element::Edit_type::Scale)))
+            {
+                for (Draggable_point const& p : corners)
+                {
+                    glPushMatrix();
+
+                    glTranslatef(p.get_position()[0] + z_offset, p.get_position()[1] + z_offset, p.get_position()[2] + z_offset);
+                    glScalef(scale, scale, scale);
+                    glRotatef(90, 1.0, 0.0, 0.0);
+                    glColor4f(1.0f, 1.0f, 1.0f, 0.5f);
+                    _viewer.draw_textured_quad(_scale_tex);
+
+                    glPopMatrix();
+                }
+            }
+
+            if (_ui_state == Ui_state::Level_editor || (int(edit_type) & int(Level_element::Edit_type::Translate)))
+            {
+                for (Draggable_disc const& d_disc : d_box->get_position_points())
+                {
+                    glPushMatrix();
+
+                    glTranslatef(d_disc.get_position()[0] + z_offset, d_disc.get_position()[1] + z_offset, d_disc.get_position()[2] + z_offset);
+                    glScalef(scale, scale, scale);
+                    glRotatef(90, 1.0, 0.0, 0.0);
+                    glColor4f(1.0f, 1.0f, 1.0f, 0.5f);
+                    _viewer.draw_textured_quad(_move_tex);
+
+                    glPopMatrix();
+                }
+            }
+
+            if (_ui_state == Ui_state::Level_editor || (int(edit_type) & int(Level_element::Edit_type::Rotate)))
+            {
+                for (Draggable_disc const& d_disc : d_box->get_rotation_handles())
+                {
+                    glPushMatrix();
+
+                    glTranslatef(d_disc.get_position()[0] + z_offset, d_disc.get_position()[1] + z_offset, d_disc.get_position()[2] + z_offset);
+                    glScalef(scale, scale, scale);
+                    glRotatef(90, 1.0, 0.0, 0.0);
+                    glColor4f(1.0f, 1.0f, 1.0f, 0.5f);
+                    _viewer.draw_textured_quad(_rotate_tex);
+
+                    glPopMatrix();
+                }
+            }
+
+            if (_ui_state == Ui_state::Level_editor || (int(edit_type) & int(Level_element::Edit_type::Property)))
+            {
+                for (auto iter : d_box->get_property_handles())
+                {
+                    Eigen::Vector3f const& p = iter.second.get_position();
+
+                    glPushMatrix();
+
+                    glTranslatef(p[0] + z_offset, p[1] - 0.03f, p[2] + z_offset);
+                    glScalef(0.9f, 0.9f, 0.9f);
+                    glRotatef(90.0f, 1.0f, 0.0f, 0.0f);
+                    glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+                    _viewer.draw_textured_quad(_slider_tex);
+
+                    glPopMatrix();
+                }
+            }
+
+            glPopMatrix();
+        }
+    }
+
+
+    if (_ui_state != Ui_state::Level_editor)
+    {
+        _viewer.start_normalized_screen_coordinates();
+
+        for (boost::shared_ptr<Draggable_button> const& button : _buttons)
+        {
+            if (button->is_visible())
+            {
+                _viewer.draw_button(button.get(), false);
+            }
+        }
+
+        for (boost::shared_ptr<Draggable_label> const& label : _labels)
+        {
+            if (label->is_visible())
+            {
+                _viewer.draw_label(label.get());
+            }
+        }
+
+        _viewer.stop_normalized_screen_coordinates();
+    }
+
+    glEnable(GL_DEPTH_TEST);
+}
+
+void Main_game_screen::add_element_event(const QPoint &position)
+{
+    qglviewer::Vec qglv_origin;
+    qglviewer::Vec qglv_dir;
+
+    _viewer.camera()->convertClickToLine(position, qglv_origin, qglv_dir);
+
+    Vec origin = QGLV2OM(qglv_origin);
+    Vec dir    = QGLV2OM(qglv_dir);
+
+    float const t = ray_plane_intersection(origin, dir, Vec(0.0f, 0.0f, 0.0f), Vec(0.0f, 1.0f, 0.0f));
+
+    if (t > 0)
+    {
+        Eigen::Vector3f const intersect_pos = OM2Eigen(origin + t * dir);
+
+        std::string const element_type = _parameters["Object Type"]->get_value<std::string>();
+
+        add_element(intersect_pos, element_type);
+    }
+}
+
+void Main_game_screen::add_element(const Eigen::Vector3f &position, const std::string &element_type)
+{
+    float front_pos = _core.get_level_data()._game_field_borders[Level_data::Plane::Neg_Y]->get_position()[1];
+    float back_pos  = _core.get_level_data()._game_field_borders[Level_data::Plane::Pos_Y]->get_position()[1];
+
+    if (Molecule::molecule_exists(element_type))
+    {
+        _core.add_molecule(Molecule::create(element_type, position));
+    }
+    else if (element_type == std::string("Box_barrier"))
+    {
+        float const strength = 10000.0f;
+        float const radius   = 2.0f;
+
+        _core.add_barrier(new Box_barrier(Eigen::Vector3f(-10.0f, front_pos, -10.0f) + position, Eigen::Vector3f(10.0f, back_pos, 10.0f) + position, strength, radius));
+    }
+    else if (element_type == std::string("Moving_box_barrier"))
+    {
+        float const strength = 10000.0f;
+        float const radius   = 2.0f;
+
+        _core.add_barrier(new Moving_box_barrier(Eigen::Vector3f(-10.0f, front_pos, -10.0f) + position, Eigen::Vector3f(10.0f, back_pos, 10.0f) + position, strength, radius));
+    }
+    else if (element_type == std::string("Blow_barrier"))
+    {
+        float const strength = 10000.0f;
+        float const radius   = 2.0f;
+
+        Blow_barrier * e = new Blow_barrier(Eigen::Vector3f(-10.0f, front_pos, -10.0f) + position, Eigen::Vector3f(10.0f, back_pos, 10.0f) + position,
+                                            Blow_barrier::Axis::X, 30.0f,
+                                            strength, radius);
+        e->set_user_editable(Level_element::Edit_type::All);
+        _core.add_barrier(e);
+    }
+    else if (element_type == std::string("Plane_barrier"))
+    {
+        float const strength = 10000.0f;
+        float const radius   = 5.0f;
+
+        _core.add_barrier(new Plane_barrier(position, Eigen::Vector3f::UnitZ(), strength, radius, Eigen::Vector2f(10.0f, 20.0)));
+    }
+    else if (element_type == std::string("Brownian_box"))
+    {
+        float const strength = 10.0f;
+        float const radius   = 25.0f;
+
+        Brownian_box * e = new Brownian_box(Eigen::Vector3f(-10.0f, front_pos, -10.0f) + position, Eigen::Vector3f(10.0f, back_pos, 10.0f) + position, strength, radius);
+        e->set_user_editable(Level_element::Edit_type::All);
+        e->set_persistent(false);
+        _core.add_brownian_element(e);
+    }
+    else if (element_type == std::string("Box_portal"))
+    {
+        _core.add_portal(new Box_portal(Eigen::Vector3f(-10.0f, front_pos, -10.0f) + position, Eigen::Vector3f(10.0f, back_pos, 10.0f) + position));
+    }
+    else if (element_type == std::string("Sphere_portal"))
+    {
+        _core.add_portal(new Sphere_portal(Eigen::Vector3f(-10.0f, front_pos, -10.0f) + position, Eigen::Vector3f(10.0f, back_pos, 10.0f) + position));
+    }
+    else if (element_type == std::string("Molecule_releaser"))
+    {
+        Molecule_releaser * m = new Molecule_releaser(Eigen::Vector3f(-10.0f, front_pos, -10.0f) + position, Eigen::Vector3f(10.0f, back_pos, 10.0f) + position, 1.0f, 1.0f);
+        m->set_molecule_type("H2O");
+        _core.add_molecule_releaser(m);
+    }
+    else if (element_type == std::string("Atom_cannon"))
+    {
+        Atom_cannon * m = new Atom_cannon(Eigen::Vector3f(-10.0f, front_pos, -10.0f) + position, Eigen::Vector3f(10.0f, back_pos, 10.0f) + position, 1.0f, 1.0f, 10.0f, 0.0f);
+        _core.add_molecule_releaser(m);
+    }
+    else if (element_type == std::string("Charged_barrier"))
+    {
+        float const strength = 10000.0f;
+        float const radius   = 2.0f;
+
+        Charged_barrier * b = new Charged_barrier(Eigen::Vector3f(-10.0f, front_pos, -10.0f) + position, Eigen::Vector3f(10.0f, 20.0f, 10.0f) + position, strength, radius, 10.0f);
+        _core.add_barrier(b);
+    }
+    else if (element_type == std::string("Tractor_barrier"))
+    {
+        float const strength = 10000.0f;
+
+        Tractor_barrier * b = new Tractor_barrier(Eigen::Vector3f(-10.0f, front_pos, -10.0f) + position, Eigen::Vector3f(10.0f, 20.0f, 10.0f) + position, strength);
+        b->set_user_editable(Level_element::Edit_type::All);
+        b->set_persistent(false);
+        _core.add_barrier(b);
+    }
+    else
+    {
+        std::cout << __PRETTY_FUNCTION__ << " element does not exist: " << element_type << std::endl;
+    }
+
+    update_draggable_to_level_element();
+    update_active_draggables();
+}
+
+void Main_game_screen::update_level_element_buttons()
+{
+    int i = 0;
+
+    _buttons.clear();
+
+    for (auto const& iter : _core.get_level_data()._available_elements)
+    {
+        auto const& image_iter = _element_images.find(iter.first);
+
+        if (image_iter != _element_images.end()) continue;
+
+        _element_images[iter.first] = QImage(Data_config::get_instance()->get_absolute_qfilename("textures/button_" + QString::fromStdString(iter.first) + ".png"));
+    }
+
+    for (auto const& iter : _core.get_level_data()._available_elements)
+    {
+        if (iter.second > 0)
+        {
+            Eigen::Vector3f pos(0.05f + i * 0.06f, 0.95f, 0.0f);
+            Eigen::Vector2f size(0.04f, 0.04f * _viewer.camera()->aspectRatio());
+
+            boost::shared_ptr<Draggable_button> button(new Draggable_button(pos, size, "", std::bind(&Main_game_screen::level_element_button_pressed, this, std::placeholders::_1), iter.first));
+
+            //                QImage button_img(100, 100, QImage::Format_ARGB32);
+            //                button_img.fill(Qt::black);
+
+            //                button->set_texture(bindTexture(img));
+
+            QImage button_img = _element_images[iter.first];
+
+            QPainter p(&button_img);
+
+            QFont font = _viewer.get_main_font();
+            //        font.setWeight(QFont::Bold);
+            font.setPixelSize(100);
+            //                font.setPointSizeF(20.0f);
+            p.setFont(font);
+
+            p.setPen(QColor(0, 0, 0));
+
+            p.drawText(25, 200, QString("%1").arg(iter.second));
+
+            //                p.drawText(QRect(5, 5, 90, 90), Qt::AlignBottom | Qt::AlignRight, QString("%1").arg(iter.second));
+
+            _viewer.deleteTexture(button->get_texture());
+            button->set_texture(_viewer.bindTexture(button_img));
+
+            _buttons.push_back(button);
+
+            ++i;
+        }
+    }
+
+    update_draggable_to_level_element();
+    update_active_draggables();
+}
+
+void Main_game_screen::level_element_button_pressed(const std::string &type)
+{
+    _core.get_level_data()._available_elements[type] -= 1;
+
+    float top_pos = _core.get_level_data()._game_field_borders[Level_data::Plane::Pos_Z]->get_position()[2];
+
+    Eigen::Vector3f const position(0.0f, 0.0f, top_pos + 10.0f);
+
+    add_element(position, type);
+
+    update_level_element_buttons();
+}
+
+void Main_game_screen::change_renderer()
+{
+    _renderer = std::unique_ptr<World_renderer>(Parameter_registry<World_renderer>::get_class_from_single_select_instance_2(_parameters.get_child("Renderer")));
+    _renderer->init(_viewer.context(), _viewer.size());
+    _renderer->update(_core.get_level_data());
+}
+
+void Main_game_screen::resize(QSize const& size)
+{
+    _renderer->resize(size);
+}
+
+void Main_game_screen::handle_level_change()
+{
+    std::cout << __PRETTY_FUNCTION__ << std::endl;
+
+    //    _active_draggables.clear();
+
+    //    for (auto & d : _draggable_to_level_element)
+    //    {
+    //        delete d.first;
+    //    }
+
+    //    _draggable_to_level_element.clear();
+
+    update_level_element_buttons();
+
+    update_draggable_to_level_element();
+    update_active_draggables();
 }

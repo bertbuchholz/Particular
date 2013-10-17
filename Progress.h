@@ -10,6 +10,11 @@ struct Progress
     Progress() : last_level(0)
     { }
 
+    void reset()
+    {
+        last_level = 0;
+    }
+
     int last_level;
     std::map< std::string, std::vector<Score> > scores; // level name to scores
 

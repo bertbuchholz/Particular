@@ -64,7 +64,7 @@ Targeted_particle_system Molecule_releaser::init_particle_system(const Molecule 
         p.position = _box.sample();
         p.target = pos;
         p.speed = speed;
-        p.color = Atom::atom_colors[int(a._type)];
+        p.color = Color4(Atom::atom_colors[int(a._type)], 1.0f);
         p.age = 0.0f;
 
         particles[i] = p;

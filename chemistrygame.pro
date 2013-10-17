@@ -70,8 +70,14 @@ SOURCES += main.cpp \
     Draggable.cpp \
     Molecule_releaser.cpp \
     ANN_wrapper_functions.cpp \
-    fp_exception_glibc_extension.c \
-    Main_game_screen.cpp
+    Main_game_screen.cpp \
+    Main_menu_screen.cpp \
+    Screen.cpp \
+    Before_start_screen.cpp \
+    Main_options_screen.cpp \
+    After_finish_screen.cpp \
+    Particle_system.cpp \
+    Statistics_screen.cpp
 
 OTHER_FILES += TODO.txt \
     data/shaders/picking.vert \
@@ -103,7 +109,6 @@ HEADERS += \
     Visitor.h \
     Level_element_draw_visitor.h \
     Eigen_Matrix_serializer.h \
-    State.h \
     End_condition.h \
     Level_data.h \
     Particle_system.h \
@@ -116,4 +121,10 @@ HEADERS += \
     Molecule_releaser.h \
     ANN_wrapper_functions.h \
     Main_game_screen.h \
-    Pause_screen.h
+    Pause_screen.h \
+    Main_menu_screen.h \
+    Screen.h \
+    Before_start_screen.h \
+    Main_options_window.h \
+    After_finish_screen.h \
+    Statistics_screen.h

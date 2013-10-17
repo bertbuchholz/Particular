@@ -17,16 +17,17 @@
 #include <Registry_parameters.h>
 
 #include "unique_ptr_serialization.h"
-#include "GPU_force.h"
+//#include "GPU_force.h"
 #include "Atom.h"
 #include "Atomic_force.h"
-#include "Spatial_hash.h"
+//#include "Spatial_hash.h"
 #include "RegularBspTree.h"
 #include "Level_element.h"
 #include "Level_data.h"
 #include "End_condition.h"
 #include "Sensor_data.h"
 #include "ANN_wrapper_functions.h"
+#include "Progress.h"
 
 
 class Core : public QObject
@@ -45,7 +46,7 @@ public:
         int a_id;
     };
 
-    typedef Spatial_hash<Eigen::Vector3f, Molecule_atom_id> Molecule_atom_hash;
+//    typedef Spatial_hash<Eigen::Vector3f, Molecule_atom_id> Molecule_atom_hash;
     typedef Regular_bsp_tree<Eigen::Vector3f, 3, Atom> My_tree;
 
     Core();
@@ -233,6 +234,11 @@ public:
     void save_level(std::string const& file_name) const;
     void load_level(std::string const& file_name);
 
+    Progress & get_progress() { return _progress; }
+    void save_progress();
+    void load_progress();
+
+
     void parameter_changed();
 //    void set_parameters(Parameter_list const& parameters);
     void update_parameter_list(Parameter_list & parameters) const;
@@ -320,6 +326,8 @@ private:
     mutable int _debug_inner_node_usage_count;
 
     Parameter_list _parameters;
+
+    Progress _progress;
 };
 
 //REGISTER_BASE_CLASS_WITH_PARAMETERS(Core);

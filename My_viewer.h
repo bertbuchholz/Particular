@@ -24,10 +24,10 @@
 
 #include "Draggable.h"
 #include "Level_element_draw_visitor.h"
-#include "Progress.h"
-#include "State.h"
+#include "Screen.h"
 #include "Main_game_screen.h"
-
+#include "Main_menu_screen.h"
+#include "Main_options_window.h"
 
 class My_viewer : public Options_viewer // , public QGLFunctions
 {
@@ -36,14 +36,13 @@ class My_viewer : public Options_viewer // , public QGLFunctions
 public:
     typedef Options_viewer Base;
 
-    enum class Mouse_state { None, Init_drag_handle, Init_drag_molecule, Dragging_molecule, Dragging_handle };
-    enum class Selection { None, Level_element, Molecule };
-    enum class Ui_state { Level_editor, Playing };
-    enum class Level_state { Main_menu, Pause_menu, Intro, Before_start, Running, After_finish, Statistics };
+//    enum class Mouse_state { None, Init_drag_handle, Init_drag_molecule, Dragging_molecule, Dragging_handle };
+//    enum class Selection { None, Level_element, Molecule };
+//    enum class Ui_state { Level_editor, Playing };
+    enum class Level_state { /* Main_menu, Pause_menu, */ Intro, /* Before_start, */ Running, After_finish, Statistics };
     enum class Intro_state { Beginning, Single_molecule, Two_molecules_0, Two_molecules_1, Two_molecules_2, Two_molecules_3, Finishing, Finished };
 
-    My_viewer(QGLFormat const& format = QGLFormat()) : Options_viewer(format),
-        _mouse_state(Mouse_state::None), _selection(Selection::None), _selected_level_element(nullptr), _level_state(Level_state::Main_menu)
+    My_viewer(QGLFormat const& format = QGLFormat()) : Options_viewer(format)
     {
         std::function<void(void)> update = std::bind(static_cast<void (My_viewer::*)()>(&My_viewer::update), this);
 
@@ -66,7 +65,9 @@ public:
         _parameters.add_parameter(new Parameter("Game Field Depth",  40.0f, 5.0f, 1000.0f, std::bind(&My_viewer::change_game_field_borders, this)));
 
 //        Parameter_registry<Core>::create_normal_instance("Core", &_parameters, std::bind(&My_viewer::change_core_settings, this));
-        add_widget_to_options(_core.get_parameter_widget());
+//        add_widget_to_options(_core.get_parameter_widget());
+        Main_options_window::get_instance()->add_widget(_core.get_parameter_widget());
+
 
         Parameter_registry<Level_data>::create_normal_instance("Level_data", &_parameters, std::bind(&My_viewer::change_level_data_settings, this));
 
@@ -112,19 +113,14 @@ public:
 //        _parameters.add_parameter(Parameter::create_button("Do physics timestep", std::bind(&My_viewer::do_physics_timestep, this)));
 //        _parameters.add_parameter(Parameter::create_button("Show cam orientation", std::bind(&My_viewer::print_cam_orientation, this)));
 
-        Parameter_registry<World_renderer>::create_single_select_instance(&_parameters, "Renderer", std::bind(&My_viewer::change_renderer, this));
+//        setup_ui_elements();
 
-        setup_ui_elements();
-
-        change_renderer();
 //        change_core_settings();
-        change_ui_state();
+//        change_ui_state();
 
         connect(&_core, SIGNAL(game_state_changed()), this, SLOT(handle_game_state_change()));
 
         setup_fonts();
-
-        _screen_stack.push_front(new Main_game_screen(*this, _core, _renderer));
     }
 
     void print_cam_orientation()
@@ -154,7 +150,7 @@ public:
         }
         else
         {
-            filename = QFileDialog::getSaveFileName(this, tr("Save File"),
+            filename = QFileDialog::getSaveFileName(this, tr("Save Level"),
                                                     ".",
                                                     tr("State File (*.data)"));
         }
@@ -175,7 +171,7 @@ public:
         }
         else
         {
-            filename = QFileDialog::getOpenFileName(this, tr("Save File"),
+            filename = QFileDialog::getOpenFileName(this, tr("Load Level"),
                                                     ".",
                                                     tr("State File (*.data)"));
         }
@@ -205,11 +201,12 @@ public:
 //        _core.update_parameter_list(*_parameters.get_child("Core"));
         _core.reset_level();
 
-        update_level_element_buttons();
+//        update_level_element_buttons();
 
-        update_draggable_to_level_element();
-        update_active_draggables();
-        change_renderer();
+//        update_draggable_to_level_element();
+//        update_active_draggables();
+
+//        change_renderer();
 //        change_core_settings();
 
         _parameters.get_child(_core.get_level_data().name())->load(_core.get_level_data().get_current_parameters());
@@ -219,6 +216,8 @@ public:
 //        _renderer->update(_core.get_level_data());
 
         update_game_camera();
+
+        Q_EMIT level_changed();
 
         update();
     }
@@ -230,21 +229,21 @@ public:
         update();
     }
 
-    void start_level()
-    {
-//        assert(_level_state == Level_state::Before_start);
+//    void start_level()
+//    {
+////        assert(_level_state == Level_state::Before_start);
 
-        _core.start_level();
-        set_simulation_state(true);
+//        _core.start_level();
+//        set_simulation_state(true);
 
-        update();
-    }
+//        update();
+//    }
 
     void load_next_level()
     {
-        std::cout << __PRETTY_FUNCTION__ << " next level: " << _progress.last_level << std::endl;
+        std::cout << __PRETTY_FUNCTION__ << " next level: " << _core.get_progress().last_level << std::endl;
 
-        if (_level_names.size() <= _progress.last_level)
+        if (_level_names.size() <= _core.get_progress().last_level)
         {
             std::cout << "No more levels." << std::endl;
             return;
@@ -252,17 +251,17 @@ public:
 
         set_simulation_state(false);
 
-        std::string const filename = (Data_config::get_instance()->get_absolute_filename("levels/" + _level_names[_progress.last_level] + ".data"));
+        std::string const filename = (Data_config::get_instance()->get_absolute_filename("levels/" + _level_names[_core.get_progress().last_level] + ".data"));
 
         load_level(filename);
 
         reset_level();
 
-        _particle_systems[int(Level_state::Before_start)].clear();
-        _particle_systems[int(Level_state::Before_start)].push_back(Targeted_particle_system(3.0f));
-        _particle_systems[int(Level_state::Before_start)].back().generate(QString("Level %1").arg(_progress.last_level + 1).toStdString(), _particle_font, QRectF(0.0f, 0.1f, 1.0f, 0.3f));
+//        _particle_systems[int(Level_state::Before_start)].clear();
+//        _particle_systems[int(Level_state::Before_start)].push_back(Targeted_particle_system(3.0f));
+//        _particle_systems[int(Level_state::Before_start)].back().generate(QString("Level %1").arg(_core.get_progress().last_level + 1).toStdString(), _particle_font, QRectF(0.0f, 0.1f, 1.0f, 0.3f));
 
-        change_level_state(Level_state::Before_start);
+//        change_level_state(Level_state::Before_start);
 
         update();
     }
@@ -270,80 +269,12 @@ public:
     void reset_level()
     {
         _core.reset_level();
-        update_draggable_to_level_element();
-        update_active_draggables();
+//        update_draggable_to_level_element();
+//        update_active_draggables();
+
+        Q_EMIT level_changed();
+
         update();
-    }
-
-    void update_level_element_buttons()
-    {
-        int i = 0;
-
-        _buttons[int(Level_state::Running)].clear();
-
-        for (auto const& iter : _core.get_level_data()._available_elements)
-        {
-            auto const& image_iter = _element_images.find(iter.first);
-
-            if (image_iter != _element_images.end()) continue;
-
-            _element_images[iter.first] = QImage(Data_config::get_instance()->get_absolute_qfilename("textures/button_" + QString::fromStdString(iter.first) + ".png"));
-        }
-
-        for (auto const& iter : _core.get_level_data()._available_elements)
-        {
-            if (iter.second > 0)
-            {
-                Eigen::Vector3f pos(0.05f + i * 0.06f, 0.95f, 0.0f);
-                Eigen::Vector2f size(0.04f, 0.04f * aspectRatio());
-
-                boost::shared_ptr<Draggable_button> button(new Draggable_button(pos, size, "", std::bind(&My_viewer::element_button_pressed, this, std::placeholders::_1), iter.first));
-
-//                QImage button_img(100, 100, QImage::Format_ARGB32);
-//                button_img.fill(Qt::black);
-
-//                button->set_texture(bindTexture(img));
-
-                QImage button_img = _element_images[iter.first];
-
-                QPainter p(&button_img);
-
-                QFont font = _main_font;
-        //        font.setWeight(QFont::Bold);
-                font.setPixelSize(100);
-//                font.setPointSizeF(20.0f);
-                p.setFont(font);
-
-                p.setPen(QColor(0, 0, 0));
-
-                p.drawText(25, 200, QString("%1").arg(iter.second));
-
-//                p.drawText(QRect(5, 5, 90, 90), Qt::AlignBottom | Qt::AlignRight, QString("%1").arg(iter.second));
-
-                deleteTexture(button->get_texture());
-                button->set_texture(bindTexture(button_img));
-
-                _buttons[int(Level_state::Running)].push_back(button);
-
-                ++i;
-            }
-        }
-
-        update_draggable_to_level_element();
-        update_active_draggables();
-    }
-
-    void element_button_pressed(std::string const& type)
-    {
-        _core.get_level_data()._available_elements[type] -= 1;
-
-        float top_pos = _core.get_level_data()._game_field_borders[Level_data::Plane::Pos_Z]->get_position()[2];
-
-        Eigen::Vector3f const position(0.0f, 0.0f, top_pos + 10.0f);
-
-        add_element(position, type);
-
-        update_level_element_buttons();
     }
 
     void change_game_field_borders()
@@ -363,16 +294,7 @@ public:
 //                _parameters["game_field_top"]->get_value<float>());
 
         _core.set_game_field_borders(min, max);
-        update_draggable_to_level_element();
-        update_active_draggables();
-        update();
-    }
 
-    void change_renderer()
-    {
-        _renderer = std::unique_ptr<World_renderer>(Parameter_registry<World_renderer>::get_class_from_single_select_instance_2(_parameters.get_child("Renderer")));
-        _renderer->init(context(), size());
-        _renderer->update(_core.get_level_data());
         update();
     }
 
@@ -581,22 +503,28 @@ public:
     {
         if (_parameters["Interface"]->get_value<std::string>() == "Level Editor")
         {
-            _ui_state = Ui_state::Level_editor;
+//            _ui_state = Ui_state::Level_editor;
+            _screen_stack.clear();
+            add_screen(new Main_game_screen(*this, _core, Main_game_screen::Ui_state::Level_editor));
 
             camera()->frame()->setConstraint(nullptr);
 
-            _particle_systems.clear();
+            load_defaults();
+//            _particle_systems.clear();
         }
         else if (_parameters["Interface"]->get_value<std::string>() == "Playing")
         {
-            _ui_state = Ui_state::Playing;
+//            _ui_state = Ui_state::Playing;
+
+            _screen_stack.clear();
+            add_screen(new Main_game_screen(*this, _core, Main_game_screen::Ui_state::Playing));
 
 //            update_game_camera();
             init_game();
         }
 
-        update_draggable_to_level_element();
-        update_active_draggables();
+        Q_EMIT level_changed();
+
         update();
     }
 
@@ -662,10 +590,8 @@ public:
         _my_camera->setFrame(frame);
         setCamera(_my_camera);
 
-        _icosphere = IcoSphere<OpenMesh::Vec3f, Color>(2);
-
 //        _picking.init(context(), size()); // FIXME: needs to be resized when viewer changes
-        _picking.init(context());
+//        _picking.init(context());
 
         glEnable(GL_NORMALIZE);
         glEnable(GL_BLEND);
@@ -685,23 +611,25 @@ public:
 
         glEnable(GL_TEXTURE_2D);
 
-        _rotate_tex = bindTexture(QImage(Data_config::get_instance()->get_absolute_qfilename("textures/rotate.png")));
-        _move_tex = bindTexture(QImage(Data_config::get_instance()->get_absolute_qfilename("textures/move.png")));
-        _scale_tex = bindTexture(QImage(Data_config::get_instance()->get_absolute_qfilename("textures/scale.png")));
-        _slider_tex = bindTexture(QImage(Data_config::get_instance()->get_absolute_qfilename("textures/slider.png")));
-        _particle_tex = bindTexture(QImage(Data_config::get_instance()->get_absolute_qfilename("textures/particle.png")));
+//        _particle_tex = bindTexture(QImage(Data_config::get_instance()->get_absolute_qfilename("textures/particle.png")));
 
         generate_ui_textures();
 
         restore_parameters();
 //        init_game();
 
-        update_draggable_to_level_element();
-        update_active_draggables();
+//        update_draggable_to_level_element();
+//        update_active_draggables();
+
+        Q_EMIT level_changed();
 
         startAnimation();
 
         _parameters["Interface"]->set_value(std::string("Playing"));
+
+        _screen_stack.clear();
+        add_screen(new Main_game_screen(*this, _core));
+        add_screen(new Main_menu_screen(*this, _core));
     }
 
     void init_game()
@@ -710,14 +638,10 @@ public:
 
 //        _parameters["Interface"]->set_value(std::string("Playing"));
 
-        _particle_systems[int(_level_state)].clear();
-        _particle_systems[int(_level_state)].push_back(Targeted_particle_system(3.0f));
-        _particle_systems[int(_level_state)].back().generate("I NEED A NAME", _particle_font, QRectF(0.0f, 0.6f, 1.0f, 0.3f));
-
         QString const level_string = QString::fromStdString(_parameters["levels"]->get_value<std::string>());
         _level_names = level_string.split(",", QString::SkipEmptyParts);
 
-        load_progress();
+        _core.load_progress();
 
         float z = 0.0f;
 
@@ -730,32 +654,6 @@ public:
         _my_camera->setUpVector(qglviewer::Vec(0.0f, 0.0f, 1.0f));
         _my_camera->setViewDirection(qglviewer::Vec(0.0f, 1.0f, 0.0f));
         _my_camera->setPosition(qglviewer::Vec(0.0f, -80.0f, z));
-    }
-
-    void draw_molecules_for_picking()
-    {
-        for (Molecule const& molecule : _core.get_molecules())
-        {
-            int const index = molecule.get_id();
-            _picking.set_index(index);
-
-            for (Atom const& atom : molecule._atoms)
-            {
-                if (atom._type == Atom::Type::Charge) continue;
-
-                glPushMatrix();
-
-                glTranslatef(atom.get_position()[0], atom.get_position()[1], atom.get_position()[2]);
-
-//                float radius = scale * atom._radius;
-                float radius = atom._radius;
-                glScalef(radius, radius, radius);
-
-                _icosphere.draw();
-
-                glPopMatrix();
-            }
-        }
     }
 
     struct Reject_condition
@@ -775,30 +673,11 @@ public:
 
     void draw() override
     {
-//        setup_gl_points(true);
-
-//        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-
-//        _renderer->render(_core.get_level_data(), _core.get_current_time(), _my_camera);
-
-        // debug displays
-
-//        draw_tree();
-
-//        draw_tree_for_point(Eigen::Vector3f(0.0f, 0.0f, 0.0f));
-
-//        if (_level_state != Level_state::Running)
-//        {
-//            QGLFramebufferObject::blitFramebuffer(_inactive_world_tex, QRect(0, 0, camera()->screenWidth(), camera()->screenHeight()),
-//                                                  0, QRect(0, 0, camera()->screenWidth(), camera()->screenHeight()),
-//                                                  GL_COLOR_BUFFER_BIT);
-//        }
-
         std::vector<Screen*> reverse_screens;
 
-        for (Screen * s : _screen_stack)
+        for (std::unique_ptr<Screen> const& s : _screen_stack)
         {
-            reverse_screens.push_back(s);
+            reverse_screens.push_back(s.get());
 
             if (int(s->get_type()) & int(Screen::Type::Fullscreen))
             {
@@ -812,27 +691,6 @@ public:
         {
             s->draw();
         }
-
-        setup_gl_points(false);
-        glPointSize(8.0f);
-
-        glDisable(GL_LIGHTING);
-        draw_draggables();
-
-        for (Targeted_particle_system const& s : _particle_systems[int(_level_state)])
-        {
-            draw_particle_system(s);
-        }
-
-//        draw_indicators();
-
-//        draw_user_force();
-
-//        draw_closest_force();
-
-//        draw_temperature();
-
-
     }
 
     void draw_textured_quad(GLuint const tex_id)
@@ -840,136 +698,6 @@ public:
         glBindTexture(GL_TEXTURE_2D, tex_id);
         draw_quad_with_tex_coords();
         glBindTexture(GL_TEXTURE_2D, 0);
-    }
-
-    void draw_draggables() // FIXME: use visitors or change it so that draggables can only have a single type of handles (Draggable_point)
-    {
-        glDisable(GL_DEPTH_TEST);
-
-        float const scale = 1.5f;
-
-        glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
-
-        float const z_offset = -0.01f;
-
-        for (auto const& d : _draggable_to_level_element)
-        {
-            if (Draggable_box const* d_box = dynamic_cast<Draggable_box const*>(d.first))
-            {
-                std::vector<Draggable_point> const& corners = d_box->get_corners();
-
-                Level_element::Edit_type edit_type = d.second->is_user_editable();
-
-//                draw_box(d_box->get_min(), d_box->get_max());
-
-                glPushMatrix();
-
-                glTranslatef(d_box->get_position()[0], d_box->get_position()[1], d_box->get_position()[2]);
-                glMultMatrixf(d_box->get_transform().data());
-
-                if (_ui_state == Ui_state::Level_editor || (int(edit_type) & int(Level_element::Edit_type::Scale)))
-                {
-                    for (Draggable_point const& p : corners)
-                    {
-                        glPushMatrix();
-
-                        glTranslatef(p.get_position()[0] + z_offset, p.get_position()[1] + z_offset, p.get_position()[2] + z_offset);
-                        glScalef(scale, scale, scale);
-                        glRotatef(90, 1.0, 0.0, 0.0);
-                        glColor4f(1.0f, 1.0f, 1.0f, 0.5f);
-                        draw_textured_quad(_scale_tex);
-
-                        glPopMatrix();
-                    }
-                }
-
-                if (_ui_state == Ui_state::Level_editor || (int(edit_type) & int(Level_element::Edit_type::Translate)))
-                {
-                    for (Draggable_disc const& d_disc : d_box->get_position_points())
-                    {
-                        glPushMatrix();
-
-                        glTranslatef(d_disc.get_position()[0] + z_offset, d_disc.get_position()[1] + z_offset, d_disc.get_position()[2] + z_offset);
-                        glScalef(scale, scale, scale);
-                        glRotatef(90, 1.0, 0.0, 0.0);
-                        glColor4f(1.0f, 1.0f, 1.0f, 0.5f);
-                        draw_textured_quad(_move_tex);
-
-                        glPopMatrix();
-                    }
-                }
-
-                if (_ui_state == Ui_state::Level_editor || (int(edit_type) & int(Level_element::Edit_type::Rotate)))
-                {
-                    for (Draggable_disc const& d_disc : d_box->get_rotation_handles())
-                    {
-                        glPushMatrix();
-
-                        glTranslatef(d_disc.get_position()[0] + z_offset, d_disc.get_position()[1] + z_offset, d_disc.get_position()[2] + z_offset);
-                        glScalef(scale, scale, scale);
-                        glRotatef(90, 1.0, 0.0, 0.0);
-                        glColor4f(1.0f, 1.0f, 1.0f, 0.5f);
-                        draw_textured_quad(_rotate_tex);
-
-                        glPopMatrix();
-                    }
-                }
-
-                if (_ui_state == Ui_state::Level_editor || (int(edit_type) & int(Level_element::Edit_type::Property)))
-                {
-                    for (auto iter : d_box->get_property_handles())
-                    {
-                        Eigen::Vector3f const& p = iter.second.get_position();
-
-                        glPushMatrix();
-
-                        glTranslatef(p[0] + z_offset, p[1] - 0.03f, p[2] + z_offset);
-                        glScalef(0.9f, 0.9f, 0.9f);
-                        glRotatef(90.0f, 1.0f, 0.0f, 0.0f);
-                        glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
-                        draw_textured_quad(_slider_tex);
-
-                        glPopMatrix();
-                    }
-                }
-
-                glPopMatrix();
-            }
-        }
-
-
-        if (_ui_state != Ui_state::Level_editor)
-        {
-            start_normalized_screen_coordinates();
-
-            for (boost::shared_ptr<Draggable_button> const& button : _buttons[int(_level_state)])
-            {
-                if (button->is_visible())
-                {
-                    draw_button(button.get(), false);
-                }
-            }
-
-            for (boost::shared_ptr<Draggable_label> const& label : _labels[int(_level_state)])
-            {
-                if (label->is_visible())
-                {
-                    draw_label(label.get());
-                }
-            }
-
-            for (auto const& stat : _statistics[int(_level_state)])
-            {
-                if (stat.is_visible())
-                {
-                    draw_statistic(stat);
-                }
-            }
-
-            stop_normalized_screen_coordinates();
-        }
-
-        glEnable(GL_DEPTH_TEST);
     }
 
     void start_normalized_screen_coordinates()
@@ -1075,81 +803,6 @@ public:
         glPopMatrix();
     }
 
-    void draw_draggables_for_picking()
-    {
-        float const scale = 1.5f;
-
-        for (int i = 0; i < int(_active_draggables.size()); ++i)
-        {
-            Draggable const* draggable = _active_draggables[i];
-
-            glPushMatrix();
-
-            Draggable const* parent = draggable->get_parent();
-
-            glTranslatef(parent->get_position()[0], parent->get_position()[1], parent->get_position()[2]);
-            glMultMatrixf(parent->get_transform().data());
-
-            _picking.set_index(i);
-
-            if (Draggable_point const* d_point = dynamic_cast<Draggable_point const*>(draggable))
-            {
-                draw_box_from_center(d_point->get_position(), Eigen::Vector3f(scale, scale, scale));
-            }
-            else if (Draggable_disc const* d_point = dynamic_cast<Draggable_disc const*>(draggable))
-            {
-                draw_sphere_ico(Eigen2OM(d_point->get_position()), 2.0f);
-            }
-            else if (Draggable_button const* d_button = dynamic_cast<Draggable_button const*>(draggable))
-            {
-                start_normalized_screen_coordinates();
-                draw_button(d_button, true);
-                stop_normalized_screen_coordinates();
-            }
-
-            glPopMatrix();
-        }
-    }
-
-    void draw_particle_system(Targeted_particle_system const& system)
-    {
-        glDisable(GL_DEPTH_TEST);
-        glDisable(GL_LIGHTING);
-
-        glMatrixMode(GL_PROJECTION);
-        glPushMatrix();
-        glLoadIdentity();
-
-        glOrtho(0.0f, 1.0f, 0.0f, 1.0, 1.0f, -1.0f);
-
-        glMatrixMode(GL_MODELVIEW);
-        glPushMatrix();
-        glLoadIdentity();
-
-        glTranslatef(0.5f, 0.5f, 0.0f);
-
-        glScalef(0.5f, 0.5f, 1.0f);
-
-//        glBindTexture(GL_TEXTURE_2D, _particle_tex);
-
-        glPointSize(4.0f * (height()) / (768.0f));
-
-        glBegin(GL_POINTS);
-
-        for (Targeted_particle const& p : system.get_particles())
-        {
-            glColor3fv(p.color.data());
-            glVertex3fv(p.position.data());
-        }
-
-        glEnd();
-
-        glMatrixMode(GL_PROJECTION);
-        glPopMatrix();
-        glMatrixMode(GL_MODELVIEW);
-        glPopMatrix();
-    }
-
     void draw_portals()
     {
         Level_element_draw_visitor v;
@@ -1225,32 +878,32 @@ public:
         }
     }
 
-    void draw_user_force() const
-    {
-        Molecule_external_force const& force = _core.get_user_force();
+//    void draw_user_force() const
+//    {
+//        Molecule_external_force const& force = _core.get_user_force();
 
-        if (force._end_time > _core.get_current_time())
-        {
-            glBegin(GL_LINES);
+//        if (force._end_time > _core.get_current_time())
+//        {
+//            glBegin(GL_LINES);
 
-            glVertex3fv(force._origin.data());
-            glVertex3fv(Eigen::Vector3f(force._origin + force._force).data());
+//            glVertex3fv(force._origin.data());
+//            glVertex3fv(Eigen::Vector3f(force._origin + force._force).data());
 
-            glEnd();
+//            glEnd();
 
-            glPushMatrix();
+//            glPushMatrix();
 
-            glTranslatef(force._origin[0], force._origin[1], force._origin[2]);
+//            glTranslatef(force._origin[0], force._origin[1], force._origin[2]);
 
-            //                float radius = scale * atom._radius;
-            float const radius = 0.2f;
-            glScalef(radius, radius, radius);
+//            //                float radius = scale * atom._radius;
+//            float const radius = 0.2f;
+//            glScalef(radius, radius, radius);
 
-            _icosphere.draw();
+//            _icosphere.draw();
 
-            glPopMatrix();
-        }
-    }
+//            glPopMatrix();
+//        }
+//    }
 
     void draw_indicators() const
     {
@@ -1378,202 +1031,17 @@ public:
         _physics_timer->setInterval(_parameters["physics_timestep_ms"]->get_value<int>());
     }
 
-    void add_element_event(QPoint const& position)
-    {
-        qglviewer::Vec qglv_origin;
-        qglviewer::Vec qglv_dir;
-
-        camera()->convertClickToLine(position, qglv_origin, qglv_dir);
-
-        Vec origin = QGLV2OM(qglv_origin);
-        Vec dir    = QGLV2OM(qglv_dir);
-
-        float const t = ray_plane_intersection(origin, dir, Vec(0.0f, 0.0f, 0.0f), Vec(0.0f, 1.0f, 0.0f));
-
-        if (t > 0)
-        {
-            Eigen::Vector3f const intersect_pos = OM2Eigen(origin + t * dir);
-
-            std::string const element_type = _parameters["Object Type"]->get_value<std::string>();
-
-            add_element(intersect_pos, element_type);
-        }
-    }
-
-    void add_element(Eigen::Vector3f const& position, std::string const& element_type)
-    {
-        float front_pos = _core.get_level_data()._game_field_borders[Level_data::Plane::Neg_Y]->get_position()[1];
-        float back_pos  = _core.get_level_data()._game_field_borders[Level_data::Plane::Pos_Y]->get_position()[1];
-
-        if (Molecule::molecule_exists(element_type))
-        {
-            _core.add_molecule(Molecule::create(element_type, position));
-        }
-        else if (element_type == std::string("Box_barrier"))
-        {
-            float const strength = 10000.0f;
-            float const radius   = 2.0f;
-
-            _core.add_barrier(new Box_barrier(Eigen::Vector3f(-10.0f, front_pos, -10.0f) + position, Eigen::Vector3f(10.0f, back_pos, 10.0f) + position, strength, radius));
-        }
-        else if (element_type == std::string("Moving_box_barrier"))
-        {
-            float const strength = 10000.0f;
-            float const radius   = 2.0f;
-
-            _core.add_barrier(new Moving_box_barrier(Eigen::Vector3f(-10.0f, front_pos, -10.0f) + position, Eigen::Vector3f(10.0f, back_pos, 10.0f) + position, strength, radius));
-        }
-        else if (element_type == std::string("Blow_barrier"))
-        {
-            float const strength = 10000.0f;
-            float const radius   = 2.0f;
-
-            Blow_barrier * e = new Blow_barrier(Eigen::Vector3f(-10.0f, front_pos, -10.0f) + position, Eigen::Vector3f(10.0f, back_pos, 10.0f) + position,
-                                                               Blow_barrier::Axis::X, 30.0f,
-                                                               strength, radius);
-            e->set_user_editable(Level_element::Edit_type::All);
-            _core.add_barrier(e);
-        }
-        else if (element_type == std::string("Plane_barrier"))
-        {
-            float const strength = 10000.0f;
-            float const radius   = 5.0f;
-
-            _core.add_barrier(new Plane_barrier(position, Eigen::Vector3f::UnitZ(), strength, radius, Eigen::Vector2f(10.0f, 20.0)));
-        }
-        else if (element_type == std::string("Brownian_box"))
-        {
-            float const strength = 10.0f;
-            float const radius   = 25.0f;
-
-            Brownian_box * e = new Brownian_box(Eigen::Vector3f(-10.0f, front_pos, -10.0f) + position, Eigen::Vector3f(10.0f, back_pos, 10.0f) + position, strength, radius);
-            e->set_user_editable(Level_element::Edit_type::All);
-            e->set_persistent(false);
-            _core.add_brownian_element(e);
-        }
-        else if (element_type == std::string("Box_portal"))
-        {
-            _core.add_portal(new Box_portal(Eigen::Vector3f(-10.0f, front_pos, -10.0f) + position, Eigen::Vector3f(10.0f, back_pos, 10.0f) + position));
-        }
-        else if (element_type == std::string("Sphere_portal"))
-        {
-            _core.add_portal(new Sphere_portal(Eigen::Vector3f(-10.0f, front_pos, -10.0f) + position, Eigen::Vector3f(10.0f, back_pos, 10.0f) + position));
-        }
-        else if (element_type == std::string("Molecule_releaser"))
-        {
-            Molecule_releaser * m = new Molecule_releaser(Eigen::Vector3f(-10.0f, front_pos, -10.0f) + position, Eigen::Vector3f(10.0f, back_pos, 10.0f) + position, 1.0f, 1.0f);
-            m->set_molecule_type("H2O");
-            _core.add_molecule_releaser(m);
-        }
-        else if (element_type == std::string("Atom_cannon"))
-        {
-            Atom_cannon * m = new Atom_cannon(Eigen::Vector3f(-10.0f, front_pos, -10.0f) + position, Eigen::Vector3f(10.0f, back_pos, 10.0f) + position, 1.0f, 1.0f, 10.0f, 0.0f);
-            _core.add_molecule_releaser(m);
-        }
-        else if (element_type == std::string("Charged_barrier"))
-        {
-            float const strength = 10000.0f;
-            float const radius   = 2.0f;
-
-            Charged_barrier * b = new Charged_barrier(Eigen::Vector3f(-10.0f, front_pos, -10.0f) + position, Eigen::Vector3f(10.0f, 20.0f, 10.0f) + position, strength, radius, 10.0f);
-            _core.add_barrier(b);
-        }
-        else if (element_type == std::string("Tractor_barrier"))
-        {
-            float const strength = 10000.0f;
-
-            Tractor_barrier * b = new Tractor_barrier(Eigen::Vector3f(-10.0f, front_pos, -10.0f) + position, Eigen::Vector3f(10.0f, 20.0f, 10.0f) + position, strength);
-            b->set_user_editable(Level_element::Edit_type::All);
-            b->set_persistent(false);
-            _core.add_barrier(b);
-        }
-        else
-        {
-            std::cout << __PRETTY_FUNCTION__ << " element does not exist: " << element_type << std::endl;
-        }
-
-        update_draggable_to_level_element();
-        update_active_draggables();
-    }
-
     void mousePressEvent(QMouseEvent *event)
     {
         bool handled = false;
 
-        if (_level_state == Level_state::Intro)
+        for (std::unique_ptr<Screen> const& s : _screen_stack)
         {
-            handled = true;
-        }
-        else if (event->buttons() & Qt::LeftButton && event->modifiers() & Qt::ControlModifier && _ui_state == Ui_state::Level_editor)
-        {
-            add_element_event(event->pos());
-            handled = true;
-        }
-        else if (event->buttons() & Qt::LeftButton && event->modifiers() & Qt::AltModifier && _ui_state == Ui_state::Level_editor)
-        {
-            std::cout << __PRETTY_FUNCTION__ << " Drag/Click" << std::endl;
-            _dragging_start = event->pos();
+            handled = s->mousePressEvent(event);
 
-//            _picked_index = _picking.do_pick(event->pos().x(), height() - event->pos().y(), std::bind(&My_viewer::draw_molecules_for_picking, this));
-            _picked_index = _picking.do_pick(event->pos().x() / float(camera()->screenWidth()), (height() - event->pos().y())  / float(camera()->screenHeight()), std::bind(&My_viewer::draw_molecules_for_picking, this));
-//            _picked_index = _picking.do_pick(event->pos().x(), height() - event->pos().y(), std::bind(&Molecule_renderer::picking_draw, _molecule_renderer));
-
-            std::cout << __PRETTY_FUNCTION__ << " index: " << _picked_index << std::endl;
-
-            if (_picked_index != -1)
+            if (handled || int(s->get_type()) & int(Screen::Type::Modal))
             {
-                bool found;
-                qglviewer::Vec world_pos = camera()->pointUnderPixel(event->pos(), found);
-
-                if (found)
-                {
-                    boost::optional<Molecule const&> picked_molecule = _core.get_molecule(_picked_index);
-
-                    assert(picked_molecule);
-
-                    Molecule_external_force & f = _core.get_user_force();
-                    f._molecule_id = _picked_index;
-//                    qglviewer::Vec dir = world_pos - camera()->position();
-//                    dir.normalize();
-                    f._force.setZero();
-                    f._origin = QGLV2Eigen(world_pos);
-                    f._local_origin = picked_molecule->_R.transpose() * (f._origin - picked_molecule->_x);
-                    f._end_time = _core.get_current_time();
-
-                    _mouse_state = Mouse_state::Init_drag_molecule;
-
-                    std::cout << "Apply force: " << f._origin << std::endl;
-                }
-            }
-
-            handled = true;
-        }
-        else
-        {
-            _picked_index = _picking.do_pick(event->pos().x() / float(camera()->screenWidth()), (height() - event->pos().y())  / float(camera()->screenHeight()),
-                                             std::bind(&My_viewer::draw_draggables_for_picking, this));
-
-//            _picked_index = _picking.do_pick(event->pos().x(), height() - event->pos().y(),
-//                      std::bind(&My_viewer::draw_draggables_for_picking, this));
-
-            std::cout << __PRETTY_FUNCTION__ << " picked_index: " << _picked_index << std::endl;
-
-            if (_picked_index != -1)
-            {
-                _dragging_start = event->pos();
-
-                bool found;
-                qglviewer::Vec world_pos = camera()->pointUnderPixel(event->pos(), found);
-
-                _mouse_state = Mouse_state::Init_drag_handle;
-                std::cout << __PRETTY_FUNCTION__ << " Init_drag_handle" << std::endl;
-
-                if (found)
-                {
-                    _dragging_start_3d = QGLV2Eigen(world_pos);
-                }
-
-                handled = true;
+                break;
             }
         }
 
@@ -1587,82 +1055,13 @@ public:
     {
         bool handled = false;
 
-        if (_mouse_state == Mouse_state::Init_drag_molecule)
+        for (std::unique_ptr<Screen> const& s : _screen_stack)
         {
-            if (_picked_index != -1 && (_dragging_start - event->pos()).manhattanLength() > 0)
+            handled = s->mouseMoveEvent(event);
+
+            if (handled || int(s->get_type()) & int(Screen::Type::Modal))
             {
-                _mouse_state = Mouse_state::Dragging_molecule;
-            }
-        }
-        else if (_mouse_state == Mouse_state::Dragging_molecule)
-        {
-            boost::optional<Molecule const&> picked_molecule = _core.get_molecule(_picked_index);
-
-            assert(picked_molecule);
-
-            Molecule_external_force & f = _core.get_user_force();
-
-            f._plane_normal = -1.0f * QGLV2Eigen(camera()->viewDirection());
-
-            Eigen::Hyperplane<float, 3> view_plane(f._plane_normal, f._origin);
-
-            qglviewer::Vec qglv_origin; // camera pos
-            qglviewer::Vec qglv_dir;    // origin - camera_pos
-
-            camera()->convertClickToLine(event->pos(), qglv_origin, qglv_dir);
-
-            Eigen::Vector3f origin = QGLV2Eigen(qglv_origin);
-            Eigen::Vector3f dir    = QGLV2Eigen(qglv_dir).normalized();
-
-            Eigen::ParametrizedLine<float, 3> line(origin, dir);
-
-            Eigen::Vector3f new_force_target = line.intersectionPoint(view_plane);
-
-            f._origin = picked_molecule->_R * f._local_origin + picked_molecule->_x;
-            //                f._force = 1.0f * (new_force_target - f._origin).normalized();
-            f._force = new_force_target - f._origin;
-            f._end_time = _core.get_current_time() + 0.1f;
-
-            handled = true;
-        }
-        else if (_mouse_state == Mouse_state::Init_drag_handle && _active_draggables[_picked_index]->is_draggable() && event->buttons() & Qt::LeftButton)
-        {
-            if (_picked_index != -1 && (_dragging_start - event->pos()).manhattanLength() > 0)
-            {
-                _mouse_state = Mouse_state::Dragging_handle;
-            }
-        }
-        else if (_mouse_state == Mouse_state::Dragging_handle) // TODO: currently has Y plane constraint, move constraints into Draggable, consider giving it the viewline instead of a single position
-        {
-            Eigen::Hyperplane<float, 3> y_plane(Eigen::Vector3f(0.0f, 1.0f, 0.0f), _active_draggables[_picked_index]->get_position());
-
-            qglviewer::Vec qglv_origin; // camera pos
-            qglviewer::Vec qglv_dir;    // normalize(origin - camera_pos)
-
-            camera()->convertClickToLine(event->pos(), qglv_origin, qglv_dir);
-
-            Eigen::ParametrizedLine<float, 3> view_ray(QGLV2Eigen(qglv_origin), QGLV2Eigen(qglv_dir).normalized());
-
-            Eigen::Vector3f new_position = view_ray.intersectionPoint(y_plane);
-
-            Draggable * parent = _active_draggables[_picked_index]->get_parent();
-
-            auto iter = _draggable_to_level_element.find(parent);
-
-            assert(iter != _draggable_to_level_element.end());
-
-            Level_element * level_element = iter->second;
-
-//            if (!check_for_collision(level_element))
-            {
-                _active_draggables[_picked_index]->set_position_from_world(new_position);
-                _active_draggables[_picked_index]->update();
-
-                std::cout << __PRETTY_FUNCTION__ << ": " << parent << std::endl;
-
-                level_element->accept(parent);
-
-                update();
+                break;
             }
         }
 
@@ -1687,63 +1086,29 @@ public:
 
     void mouseReleaseEvent(QMouseEvent * event)
     {
-        if (_mouse_state == Mouse_state::Init_drag_molecule)
+        bool handled = false;
+
+        for (std::unique_ptr<Screen> const& s : _screen_stack)
         {
-            std::cout << __PRETTY_FUNCTION__ << " click on molecule" << std::endl;
+            handled = s->mouseReleaseEvent(event);
 
-            if (_picked_index != -1)
+            if (handled || int(s->get_type()) & int(Screen::Type::Modal))
             {
-                _selection = Selection::Molecule;
-
-                Molecule_external_force & f = _core.get_user_force();
-
-                f._end_time = _core.get_current_time() + 0.5f;
+                break;
             }
         }
-        else if (_mouse_state == Mouse_state::Init_drag_handle)
+
+        if (!handled)
         {
-            std::cout << __PRETTY_FUNCTION__ << " click on handle" << std::endl;
-
-            if (_picked_index != -1)
-            {
-                _selection = Selection::Level_element;
-                Draggable * parent = _active_draggables[_picked_index]->get_parent();
-                parent->clicked();
-
-                auto iter = _draggable_to_level_element.find(parent);
-                if (iter != _draggable_to_level_element.end())
-                {
-                    _selected_level_element = iter->second;
-                    _selected_level_element->set_selected(true);
-
-                    if (event->button() == Qt::RightButton && _ui_state == Ui_state::Level_editor)
-                    {
-                        show_context_menu_for_element();
-                    }
-                }
-            }
-        }
-        else
-        {
-            if (_selected_level_element)
-            {
-                _selected_level_element->set_selected(false);
-                _selected_level_element = nullptr;
-            }
-
-            _selection = Selection::None;
-
             Base::mouseReleaseEvent(event);
         }
-
-        _mouse_state = Mouse_state::None;
     }
 
     void keyPressEvent(QKeyEvent *event) override
     {
         bool handled = false;
 
-        for (Screen * s : _screen_stack)
+        for (std::unique_ptr<Screen> const& s : _screen_stack)
         {
             handled = s->keyPressEvent(event);
 
@@ -1753,333 +1118,26 @@ public:
             }
         }
 
-        if ((event->key() == Qt::Key_Backspace || event->key() == Qt::Key_Delete) && _ui_state == Ui_state::Level_editor)
-        {
-            delete_selected_element();
-        }
-        else if (event->key() == Qt::Key_F8)
-        {
-            _particle_systems[int(_level_state)].push_back(Targeted_particle_system(3.0f));
-            _particle_systems[int(_level_state)].back().generate("Blubber", _particle_font, QRectF(0.0f, 0.5f, 1.0f, 0.3f));
-        }
-        else if (_ui_state == Ui_state::Playing && event->key() == Qt::Key_Escape)
-        {
-            if (_level_state == Level_state::Intro) // skip intro
-            {
-                camera()->deletePath(0);
-
-                load_next_level();
-            }
-//            else if (_level_state == Level_state::Running) // go to pause menu
-//            {
-//                enter_pause_menu();
-//            }
-        }
-        else
+        if (!handled)
         {
             Base::keyPressEvent(event);
         }
+
+//        if (event->key() == Qt::Key_F8)
+//        {
+//            _particle_systems[int(_level_state)].push_back(Targeted_particle_system(3.0f));
+//            _particle_systems[int(_level_state)].back().generate("Blubber", _particle_font, QRectF(0.0f, 0.5f, 1.0f, 0.3f));
+//        }
+//        else if (event->key() == Qt::Key_Escape)
+//        {
+//            // don't react to ESC
+//        }
+//        else
+//        {
+//            Base::keyPressEvent(event);
+//        }
     }
 
-    void enter_pause_menu()
-    {
-        set_simulation_state(false);
-
-        change_level_state(Level_state::Pause_menu);
-    }
-
-    void continue_game_from_pause()
-    {
-        set_simulation_state(true);
-
-        change_level_state(Level_state::Running);
-    }
-
-    void restart_level()
-    {
-        reset_level();
-
-        continue_game_from_pause();
-    }
-
-    void return_to_main_menu()
-    {
-        set_simulation_state(false);
-
-        change_level_state(Level_state::Main_menu);
-    }
-
-    void delete_selected_element()
-    {
-        if (_selection == Selection::Molecule)
-        {
-
-        }
-        else if (_selection == Selection::Level_element)
-        {
-            Draggable * parent = _active_draggables[_picked_index]->get_parent();
-            assert(_draggable_to_level_element.find(parent) != _draggable_to_level_element.end());
-
-            _core.delete_level_element(_draggable_to_level_element.find(parent)->second);
-
-            update_draggable_to_level_element();
-            update_active_draggables();
-
-            _selection = Selection::None;
-            _selected_level_element = nullptr;
-
-            update();
-        }
-    }
-
-    class Widget_text_combination : public QWidget
-    {
-        public:
-        Widget_text_combination(QString const& text, QWidget * widget)
-        {
-            QHBoxLayout * layout = new QHBoxLayout;
-            layout->addWidget(new QLabel(text));
-            layout->addWidget(widget);
-            setLayout(layout);
-        }
-    };
-
-    void show_context_menu_for_element()
-    {
-        Draggable * parent = _active_draggables[_picked_index]->get_parent();
-
-        assert(_draggable_to_level_element.find(parent) != _draggable_to_level_element.end());
-
-        std::cout << __PRETTY_FUNCTION__ << ": " << parent << std::endl;
-
-        Level_element * element = _draggable_to_level_element[parent];
-
-        QMenu menu;
-
-        QWidgetAction * action_persistent = new QWidgetAction(this);
-        QCheckBox * persistent_checkbox = new QCheckBox("Persistent");
-        persistent_checkbox->setChecked(element->is_persistent());
-        action_persistent->setDefaultWidget(persistent_checkbox);
-
-        QWidgetAction * action_user_translate = new QWidgetAction(this);
-        QCheckBox * user_translate_checkbox = new QCheckBox("Translate");
-        user_translate_checkbox->setChecked(int(element->is_user_editable()) & int(Level_element::Edit_type::Translate));
-        action_user_translate->setDefaultWidget(user_translate_checkbox);
-
-        QWidgetAction * action_user_scale = new QWidgetAction(this);
-        QCheckBox * user_scale_checkbox = new QCheckBox("Scale");
-        user_scale_checkbox->setChecked(int(element->is_user_editable()) & int(Level_element::Edit_type::Scale));
-        action_user_scale->setDefaultWidget(user_scale_checkbox);
-
-        QWidgetAction * action_user_rotate = new QWidgetAction(this);
-        QCheckBox * user_rotate_checkbox = new QCheckBox("Rotate");
-        user_rotate_checkbox->setChecked(int(element->is_user_editable()) & int(Level_element::Edit_type::Rotate));
-        action_user_rotate->setDefaultWidget(user_rotate_checkbox);
-
-        QWidgetAction * action_user_property = new QWidgetAction(this);
-        QCheckBox * user_property_checkbox = new QCheckBox("Property");
-        user_property_checkbox->setChecked(int(element->is_user_editable()) & int(Level_element::Edit_type::Property));
-        action_user_property->setDefaultWidget(user_property_checkbox);
-
-        menu.addAction(action_persistent);
-        menu.addAction(action_user_rotate);
-        menu.addAction(action_user_scale);
-        menu.addAction(action_user_translate);
-        menu.addAction(action_user_property);
-
-        if (Moving_box_barrier * b = dynamic_cast<Moving_box_barrier *>(element))
-        {
-            QWidgetAction * action_duration = new QWidgetAction(this);
-            FloatSlider * slider = new FloatSlider(0.1f, 10.0f, b->get_animation().get_duration());
-//            action_duration->setDefaultWidget(slider);
-            action_duration->setDefaultWidget(new Widget_text_combination("Duration", slider));
-
-            menu.addAction("Set startpoint");
-            menu.addAction("Set endpoint");
-            menu.addAction(action_duration);
-
-            QAction * selected_action = menu.exec(QCursor::pos());
-
-            if (selected_action)
-            {
-                if (selected_action->text() == "Set startpoint")
-                {
-                    b->get_animation().set_start_point(b->get_position());
-                }
-                else if (selected_action->text() == "Set endpoint")
-                {
-                    b->get_animation().set_end_point(b->get_position());
-                }
-            }
-
-            b->get_animation().set_duration(slider->getValueF());
-
-            delete action_duration;
-        }
-        else if (Molecule_releaser * m = dynamic_cast<Molecule_releaser *>(element))
-        {
-            QWidgetAction * action_num_max_molecules = new QWidgetAction(this);
-
-            QSpinBox * spinbox_num_max_molecules = new QSpinBox();
-            {
-                spinbox_num_max_molecules->setMaximum(1000);
-                spinbox_num_max_molecules->setMinimum(1);
-                spinbox_num_max_molecules->setValue(m->get_num_max_molecules());
-
-                action_num_max_molecules->setDefaultWidget(new Widget_text_combination("Max. Molecules", spinbox_num_max_molecules));
-            }
-
-            QWidgetAction * action_interval = new QWidgetAction(this);
-
-            QDoubleSpinBox * spinbox_interval = new QDoubleSpinBox();
-            {
-                spinbox_interval->setRange(0.1f, 10.0f);
-                spinbox_interval->setValue(m->get_interval());
-
-                action_interval->setDefaultWidget(new Widget_text_combination("Rel. Interval (s)", spinbox_interval));
-            }
-
-            QWidgetAction * action_first_release = new QWidgetAction(this);
-
-            QDoubleSpinBox * spinbox_first_release = new QDoubleSpinBox();
-            {
-                spinbox_first_release->setRange(0.0f, 10000.0f);
-                spinbox_first_release->setValue(m->get_first_release());
-
-                action_first_release->setDefaultWidget(new Widget_text_combination("First release", spinbox_first_release));
-            }
-
-            QWidgetAction * action_molecule_type = new QWidgetAction(this);
-            QComboBox * combo_molecule_type = new QComboBox();
-            {
-                std::vector<std::string> molecule_names = Molecule::get_molecule_names();
-
-                for (std::string const& name : molecule_names)
-                {
-                    combo_molecule_type->addItem(QString::fromStdString(name));
-
-                }
-
-                combo_molecule_type->setCurrentIndex(combo_molecule_type->findText(QString::fromStdString(m->get_molecule_type())));
-
-                action_molecule_type->setDefaultWidget(new Widget_text_combination("Molecule Type", combo_molecule_type));
-            }
-
-            menu.addAction(action_molecule_type);
-            menu.addAction(action_num_max_molecules);
-            menu.addAction(action_interval);
-            menu.addAction(action_first_release);
-
-            menu.exec(QCursor::pos());
-
-            m->set_molecule_type(combo_molecule_type->currentText().toStdString());
-            m->set_num_max_molecules(spinbox_num_max_molecules->value());
-            m->set_interval(spinbox_interval->value());
-            m->set_first_release(spinbox_first_release->value());
-
-            delete action_molecule_type;
-            delete action_num_max_molecules;
-            delete action_interval;
-            delete action_first_release;
-        }
-        else if (Portal * m = dynamic_cast<Portal*>(element))
-        {
-            QWidgetAction * action_num_min_captured_molecules = new QWidgetAction(this);
-
-            QSpinBox * spinbox_num_min_captured_molecules = new QSpinBox();
-            {
-                spinbox_num_min_captured_molecules->setMinimum(1);
-                spinbox_num_min_captured_molecules->setMaximum(1000);
-                spinbox_num_min_captured_molecules->setValue(m->get_condition().get_min_captured_molecules());
-
-                action_num_min_captured_molecules->setDefaultWidget(new Widget_text_combination("Captured Molecules", spinbox_num_min_captured_molecules));
-            }
-
-            QWidgetAction * action_type = new QWidgetAction(this);
-
-            QComboBox * combo_type = new QComboBox();
-            {
-                combo_type->addItem("And");
-                combo_type->addItem("Or");
-
-                if (m->get_condition().get_type() == End_condition::Type::And)
-                {
-                    combo_type->setCurrentIndex(0);
-                }
-                else
-                {
-                    combo_type->setCurrentIndex(1);
-                }
-
-                action_type->setDefaultWidget(new Widget_text_combination("Type", combo_type));
-            }
-
-            QWidgetAction * action_score_factor = new QWidgetAction(this);
-            QDoubleSpinBox * spinbox_score_factor = new QDoubleSpinBox();
-            {
-                spinbox_score_factor->setMinimum(1);
-                spinbox_score_factor->setMaximum(100);
-                spinbox_score_factor->setValue(m->get_score_factor());
-
-                action_score_factor->setDefaultWidget(new Widget_text_combination("Score Factor", spinbox_score_factor));
-            }
-
-            QWidgetAction * action_destroy_on_enter = new QWidgetAction(this);
-            QCheckBox * checkbox_destroy_on_enter = new QCheckBox("Destroy on enter");
-            {
-                checkbox_destroy_on_enter->setChecked(m->do_destroy_on_entering());
-                action_destroy_on_enter->setDefaultWidget(checkbox_destroy_on_enter);
-            }
-
-            menu.addAction(action_score_factor);
-            menu.addAction(action_destroy_on_enter);
-            menu.addAction(action_num_min_captured_molecules);
-            menu.addAction(action_type);
-            menu.addAction(QString("Collected Molecules: %1").arg(m->get_condition().get_num_captured_molecules()));
-
-            menu.exec(QCursor::pos());
-
-            m->get_condition().set_min_captured_molecules(spinbox_num_min_captured_molecules->value());
-
-            if (combo_type->currentText() == "Or")
-            {
-                m->get_condition().set_type(End_condition::Type::Or);
-            }
-            if (combo_type->currentText() == "And")
-            {
-                m->get_condition().set_type(End_condition::Type::And);
-            }
-
-            m->set_score_factor(spinbox_score_factor->value());
-            m->set_destroy_on_entering(checkbox_destroy_on_enter->isChecked());
-
-            delete action_score_factor;
-            delete action_num_min_captured_molecules;
-            delete action_type;
-            delete action_destroy_on_enter;
-        }
-        else
-        {
-            menu.exec(QCursor::pos());
-        }
-
-        element->set_persistent(persistent_checkbox->isChecked());
-
-        int edit_type = int(Level_element::Edit_type::None);
-
-        if (user_rotate_checkbox->isChecked()) edit_type |= int(Level_element::Edit_type::Rotate);
-        if (user_translate_checkbox->isChecked()) edit_type |= int(Level_element::Edit_type::Translate);
-        if (user_scale_checkbox->isChecked()) edit_type |= int(Level_element::Edit_type::Scale);
-        if (user_property_checkbox->isChecked()) edit_type |= int(Level_element::Edit_type::Property);
-
-        element->set_user_editable(Level_element::Edit_type(edit_type));
-
-        delete action_persistent;
-        delete action_user_rotate;
-        delete action_user_scale;
-        delete action_user_translate;
-        delete action_user_property;
-    }
 
     void do_physics_timestep()
     {
@@ -2091,31 +1149,6 @@ public:
     void animate() override
     {
         float const time_step = animationPeriod() / 1000.0f;
-
-        if (_mouse_state == Mouse_state::Dragging_molecule)
-        {
-            boost::optional<Molecule const&> picked_molecule = _core.get_molecule(_picked_index);
-
-            assert(picked_molecule);
-
-            Molecule_external_force & f = _core.get_user_force();
-
-            Eigen::Vector3f old_force_target = f._origin + f._force;
-
-            f._origin = picked_molecule->_R * f._local_origin + picked_molecule->_x;
-            f._force = old_force_target - f._origin;
-            f._end_time = _core.get_current_time() + 0.1f;
-        }
-
-        for (Targeted_particle_system & p : _particle_systems[int(_level_state)])
-        {
-            p.animate(time_step);
-        }
-
-        for (auto & stat : _statistics[int(_level_state)])
-        {
-            stat.animate(time_step);
-        }
 
         for (auto & l : _labels[int(_level_state)])
         {
@@ -2129,7 +1162,7 @@ public:
 
         _screen_stack.erase(std::remove_if(_screen_stack.begin(), _screen_stack.end(), Screen::is_dead), _screen_stack.end());
 
-        for (Screen * s : _screen_stack)
+        for (std::unique_ptr<Screen> const& s : _screen_stack)
         {
             s->update(time_step);
 
@@ -2144,101 +1177,16 @@ public:
 
     void add_screen(Screen * s)
     {
-        _screen_stack.push_front(s);
-    }
-
-    void update_active_draggables()
-    {
-        _active_draggables.clear();
-
-        for (auto const& d : _draggable_to_level_element)
-        {
-            Level_element::Edit_type edit_type = Level_element::Edit_type::All;
-
-            if (_ui_state != Ui_state::Level_editor)
-            {
-                edit_type = d.second->is_user_editable();
-            }
-
-            std::vector<Draggable*> const draggables = d.first->get_draggables(edit_type);
-            std::copy(draggables.begin(), draggables.end(), std::back_inserter(_active_draggables));
-        }
-
-        if (_ui_state != Ui_state::Level_editor)
-        {
-            for (boost::shared_ptr<Draggable_button> const& button : _buttons[int(_level_state)])
-            {
-                Draggable_button * b = button.get();
-
-                std::vector<Draggable*> const draggables = b->get_draggables(Level_element::Edit_type::None);
-                std::copy(draggables.begin(), draggables.end(), std::back_inserter(_active_draggables));
-            }
-        }
-    }
-
-    void update_draggable_to_level_element()
-    {
-        for (auto & d : _draggable_to_level_element)
-        {
-            delete d.first;
-        }
-
-        _draggable_to_level_element.clear();
-
-        if (_level_state == Level_state::Running || _ui_state == Ui_state::Level_editor)
-        {
-            for (boost::shared_ptr<Level_element> const& element : _core.get_level_data()._level_elements)
-            {
-                Level_element * e = element.get();
-
-                if (Brownian_box const* b = dynamic_cast<Brownian_box const*>(e))
-                {
-                    Draggable_box * draggable = new Draggable_box(b->get_position(), b->get_extent(), b->get_transform(), b->get_parameters());
-                    _draggable_to_level_element[draggable] = e;
-                }
-                else if (Moving_box_barrier * b = dynamic_cast<Moving_box_barrier*>(e))
-                {
-                    Draggable_box * draggable = new Draggable_box(b->get_position(), b->get_extent(), b->get_transform(), b->get_parameters(), b);
-                    b->add_observer(draggable);
-                    _draggable_to_level_element[draggable] = e;
-                }
-                else if (Box_barrier const* b = dynamic_cast<Box_barrier const*>(e))
-                {
-                    Draggable_box * draggable = new Draggable_box(b->get_position(), b->get_extent(), b->get_transform(), b->get_parameters());
-                    _draggable_to_level_element[draggable] = e;
-                }
-                else if (Blow_barrier const* b = dynamic_cast<Blow_barrier const*>(e))
-                {
-                    Draggable_box * draggable = new Draggable_box(b->get_position(), b->get_extent(), b->get_transform());
-                    _draggable_to_level_element[draggable] = e;
-                }
-                else if (Box_portal const* b = dynamic_cast<Box_portal const*>(e))
-                {
-                    Draggable_box * draggable = new Draggable_box(b->get_position(), b->get_extent(), b->get_transform());
-                    _draggable_to_level_element[draggable] = e;
-                }
-                else if (Molecule_releaser const* m = dynamic_cast<Molecule_releaser const*>(e)) // TODO: if Atom_cannon is added, must be before this entry
-                {
-                    Draggable_box * draggable = new Draggable_box(m->get_position(), m->get_extent(), m->get_transform(), m->get_parameters());
-                    _draggable_to_level_element[draggable] = e;
-                }
-            }
-        }
+        _screen_stack.push_front(std::unique_ptr<Screen>(s));
     }
 
     void clear()
     {
         _core.clear();
-        _active_draggables.clear();
-
-        for (auto & d : _draggable_to_level_element)
-        {
-            delete d.first;
-        }
-
-        _draggable_to_level_element.clear();
 
         load_defaults();
+
+        Q_EMIT level_changed();
 
         update();
     }
@@ -2361,15 +1309,20 @@ public:
 //        _parameters["Renderer/type"]->set_value<std::string>("Shader Renderer");
 //        change_renderer();
 
-        update_draggable_to_level_element();
-        update_active_draggables();
+//        update_draggable_to_level_element();
+//        update_active_draggables();
+
+        Q_EMIT level_changed();
 
         update();
     }
 
     void resizeEvent(QResizeEvent *ev)
     {
-        _renderer->resize(ev->size());
+        for (std::unique_ptr<Screen> const& screen : _screen_stack)
+        {
+            screen->resize(ev->size());
+        }
 
         generate_ui_textures();
 
@@ -2383,13 +1336,13 @@ public:
 
     void generate_ui_textures()
     {
-        for (auto & iter : _buttons)
-        {
-            for (boost::shared_ptr<Draggable_button> const& button : iter.second)
-            {
-                generate_button_texture(button.get());
-            }
-        }
+//        for (auto & iter : _buttons)
+//        {
+//            for (boost::shared_ptr<Draggable_button> const& button : iter.second)
+//            {
+//                generate_button_texture(button.get());
+//            }
+//        }
 
         for (auto & iter : _labels)
         {
@@ -2399,15 +1352,15 @@ public:
             }
         }
 
-        for (auto & iter : _statistics)
-        {
-            for (auto & stat : iter.second)
-            {
-                generate_statistics_texture(stat);
-            }
-        }
+//        for (auto & iter : _statistics)
+//        {
+//            for (auto & stat : iter.second)
+//            {
+//                generate_statistics_texture(stat);
+//            }
+//        }
 
-        update_level_element_buttons();
+//        update_level_element_buttons();
     }
 
     QSize adapt_bounding_size(QSize b_size, QSize const& target_size) const
@@ -2585,7 +1538,7 @@ public:
     {
         // set level to 0 (including introduction part) and start game
 
-        _progress.last_level = 0;
+        _core.get_progress().last_level = 0;
 
         change_level_state(Level_state::Intro);
 
@@ -2604,161 +1557,57 @@ public:
     {
         _level_state = new_level_state;
 
-        update_draggable_to_level_element();
-        update_active_draggables();
+//        update_draggable_to_level_element();
+//        update_active_draggables();
+
+        Q_EMIT level_changed();
     }
 
     void quit_game()
     {
-        save_progress();
-
 //        QApplication::quit();
         close();
     }
 
-    void change_state_to_main_menu()
-    {
-        change_level_state(Level_state::Main_menu);
-    }
-
-    void save_progress()
-    {
-        std::ofstream out_file("progress.data");
-        boost::archive::xml_oarchive oa(out_file);
-
-        oa << BOOST_SERIALIZATION_NVP(_progress);
-
-        out_file.close();
-    }
-
-    void load_progress()
-    {
-        std::ifstream in_file("progress.data");
-
-        if (in_file)
-        {
-            boost::archive::xml_iarchive ia(in_file);
-
-            try
-            {
-                ia >> BOOST_SERIALIZATION_NVP(_progress);
-            }
-            catch (std::exception e)
-            {
-                std::cout << "Failed to load progress file, progress reset: " << e.what() << std::endl;
-                _progress = Progress();
-            }
-
-            in_file.close();
-        }
-        else
-        {
-            std::cout << "No progress file found" << std::endl;
-        }
-    }
-
+//    void change_state_to_main_menu()
+//    {
+////        change_level_state(Level_state::Main_menu);
+//    }
 
     void setup_ui_elements()
     {
-        // main menu
-        {
-            Draggable_button * button = new Draggable_button(Eigen::Vector3f(0.5f, 0.85f, 0.0f), Eigen::Vector2f(0.5f, 0.15f), "Start New Game",  std::bind(&My_viewer::start_new_game, this));
-            _buttons[int(Level_state::Main_menu)].push_back(boost::shared_ptr<Draggable_button>(button));
-        }
-
-        {
-            Draggable_button * button = new Draggable_button(Eigen::Vector3f(0.5f, 0.65f, 0.0f), Eigen::Vector2f(0.5f, 0.15f), "Continue Game",  std::bind(&My_viewer::continue_game, this));
-            _buttons[int(Level_state::Main_menu)].push_back(boost::shared_ptr<Draggable_button>(button));
-        }
-
-        {
-            Draggable_button * button = new Draggable_button(Eigen::Vector3f(0.5f, 0.45f, 0.0f), Eigen::Vector2f(0.5f, 0.15f), "Quit", std::bind(&My_viewer::quit_game, this));
-            _buttons[int(Level_state::Main_menu)].push_back(boost::shared_ptr<Draggable_button>(button));
-        }
-
-
-        // Pause menu
-        {
-            Draggable_button * button = new Draggable_button(Eigen::Vector3f(0.5f, 0.85f, 0.0f), Eigen::Vector2f(0.5f, 0.15f), "Restart Level",  std::bind(&My_viewer::restart_level, this));
-            _buttons[int(Level_state::Pause_menu)].push_back(boost::shared_ptr<Draggable_button>(button));
-        }
-
-        {
-            Draggable_button * button = new Draggable_button(Eigen::Vector3f(0.5f, 0.65f, 0.0f), Eigen::Vector2f(0.5f, 0.15f), "Back to Main Menu",  std::bind(&My_viewer::return_to_main_menu, this));
-            _buttons[int(Level_state::Pause_menu)].push_back(boost::shared_ptr<Draggable_button>(button));
-        }
-
-        {
-            Draggable_button * button = new Draggable_button(Eigen::Vector3f(0.5f, 0.45f, 0.0f), Eigen::Vector2f(0.5f, 0.15f), "Continue", std::bind(&My_viewer::continue_game_from_pause, this));
-            _buttons[int(Level_state::Pause_menu)].push_back(boost::shared_ptr<Draggable_button>(button));
-        }
-
-
-        // start level screen
-        {
-            Draggable_button * button = new Draggable_button(Eigen::Vector3f(0.5f, 0.35f, 0.0f), Eigen::Vector2f(0.5f, 0.2f), "Start Level",  std::bind(&My_viewer::start_level, this));
-            _buttons[int(Level_state::Before_start)].push_back(boost::shared_ptr<Draggable_button>(button));
-        }
-
-        {
-            Draggable_button * button = new Draggable_button(Eigen::Vector3f(0.5f, 0.15f, 0.0f), Eigen::Vector2f(0.5f, 0.2f), "Back to Main Menu",  std::bind(&My_viewer::change_state_to_main_menu, this));
-            _buttons[int(Level_state::Before_start)].push_back(boost::shared_ptr<Draggable_button>(button));
-        }
-
-        // After finish screen
-        {
-            Draggable_button * button = new Draggable_button(Eigen::Vector3f(0.25f, 0.1f, 0.0f), Eigen::Vector2f(0.25f, 0.1f), "Next Level",  std::bind(&My_viewer::load_next_level, this));
-            _next_level_button = boost::shared_ptr<Draggable_button>(button);
-            _buttons[int(Level_state::After_finish)].push_back(_next_level_button);
-        }
-
-        {
-            Draggable_button * button = new Draggable_button(Eigen::Vector3f(0.50f, 0.1f, 0.0f), Eigen::Vector2f(0.25f, 0.1f), "Show Statistics", std::bind(&My_viewer::change_state_to_statistics, this));
-            _buttons[int(Level_state::After_finish)].push_back(boost::shared_ptr<Draggable_button>(button));
-        }
-
-        {
-            Draggable_button * button = new Draggable_button(Eigen::Vector3f(0.75f, 0.1f, 0.0f), Eigen::Vector2f(0.25f, 0.1f), "Back to Main Menu", std::bind(&My_viewer::change_state_to_main_menu, this));
-            _buttons[int(Level_state::After_finish)].push_back(boost::shared_ptr<Draggable_button>(button));
-        }
-
-        {
-            Draggable_label * label = new Draggable_label(Eigen::Vector3f(0.5f, 0.8f, 0.0f), Eigen::Vector2f(0.8f, 0.3f), "Level finished!");
-            _labels[int(Level_state::After_finish)].push_back(boost::shared_ptr<Draggable_label>(label));
-        }
-
         // Statistics
-        _statistics[int(Level_state::Statistics)].resize(_core.get_sensor_data().get_num_data_types());
+//        _statistics[int(Level_state::Statistics)].resize(_core.get_sensor_data().get_num_data_types());
 
-        {
-            Draggable_statistics stat(Eigen::Vector3f(0.25f, 0.6f + 0.35f * 0.5f, 0.0f), Eigen::Vector2f(0.45f, 0.35f), "Released Molecules");
-            _statistics[int(Level_state::Statistics)][int(Sensor_data::Type::RelMol)] = stat;
-        }
+//        {
+//            Draggable_statistics stat(Eigen::Vector3f(0.25f, 0.6f + 0.35f * 0.5f, 0.0f), Eigen::Vector2f(0.45f, 0.35f), "Released Molecules");
+//            _statistics[int(Level_state::Statistics)][int(Sensor_data::Type::RelMol)] = stat;
+//        }
 
-        {
-            Draggable_statistics stat(Eigen::Vector3f(0.75f, 0.6f + 0.35f * 0.5f, 0.0f), Eigen::Vector2f(0.45f, 0.35f), "Collected Molecules");
-            _statistics[int(Level_state::Statistics)][int(Sensor_data::Type::ColMol)] = stat;
-        }
+//        {
+//            Draggable_statistics stat(Eigen::Vector3f(0.75f, 0.6f + 0.35f * 0.5f, 0.0f), Eigen::Vector2f(0.45f, 0.35f), "Collected Molecules");
+//            _statistics[int(Level_state::Statistics)][int(Sensor_data::Type::ColMol)] = stat;
+//        }
 
-        {
-            Draggable_statistics stat(Eigen::Vector3f(0.25f, 0.2f + 0.35f * 0.5f, 0.0f), Eigen::Vector2f(0.45f, 0.35f), "Avg. Temperature");
-            _statistics[int(Level_state::Statistics)][int(Sensor_data::Type::AvgTemp)] = stat;
-        }
+//        {
+//            Draggable_statistics stat(Eigen::Vector3f(0.25f, 0.2f + 0.35f * 0.5f, 0.0f), Eigen::Vector2f(0.45f, 0.35f), "Avg. Temperature");
+//            _statistics[int(Level_state::Statistics)][int(Sensor_data::Type::AvgTemp)] = stat;
+//        }
 
-        {
-            Draggable_statistics stat(Eigen::Vector3f(0.75f, 0.2f + 0.35f * 0.5f, 0.0f), Eigen::Vector2f(0.45f, 0.35f), "Energy Consumption");
-            _statistics[int(Level_state::Statistics)][int(Sensor_data::Type::EnergyCon)] = stat;
-        }
+//        {
+//            Draggable_statistics stat(Eigen::Vector3f(0.75f, 0.2f + 0.35f * 0.5f, 0.0f), Eigen::Vector2f(0.45f, 0.35f), "Energy Consumption");
+//            _statistics[int(Level_state::Statistics)][int(Sensor_data::Type::EnergyCon)] = stat;
+//        }
 
-        {
-            Draggable_button * button = new Draggable_button(Eigen::Vector3f(0.50f, 0.1f, 0.0f), Eigen::Vector2f(0.25f, 0.1f), "Back",  std::bind(&My_viewer::return_from_stats, this));
-            _buttons[int(Level_state::Statistics)].push_back(boost::shared_ptr<Draggable_button>(button));
-        }
+//        {
+//            Draggable_button * button = new Draggable_button(Eigen::Vector3f(0.50f, 0.1f, 0.0f), Eigen::Vector2f(0.25f, 0.1f), "Back",  std::bind(&My_viewer::return_from_stats, this));
+//            _buttons[int(Level_state::Statistics)].push_back(boost::shared_ptr<Draggable_button>(button));
+//        }
 
-        {
-            Draggable_button * button = new Draggable_button(Eigen::Vector3f(0.25f, 0.1f, 0.0f), Eigen::Vector2f(0.25f, 0.1f), "Repeat",  std::bind(&My_viewer::change_state_to_statistics, this));
-            _buttons[int(Level_state::Statistics)].push_back(boost::shared_ptr<Draggable_button>(button));
-        }
+//        {
+////            Draggable_button * button = new Draggable_button(Eigen::Vector3f(0.25f, 0.1f, 0.0f), Eigen::Vector2f(0.25f, 0.1f), "Repeat",  std::bind(&My_viewer::change_state_to_statistics, this));
+////            _buttons[int(Level_state::Statistics)].push_back(boost::shared_ptr<Draggable_button>(button));
+//        }
     }
 
 public Q_SLOTS:
@@ -2788,99 +1637,61 @@ public Q_SLOTS:
         }
     }
 
-    void handle_game_state_change()
-    {
-        if ((_core.get_previous_game_state() == Core::Game_state::Unstarted ||
-             _core.get_previous_game_state() == Core::Game_state::Finished) &&
-                _core.get_game_state() == Core::Game_state::Running)
-        {
-            std::cout << __PRETTY_FUNCTION__ << " starting the game" << std::endl;
+//    void handle_game_state_change()
+//    {
+//        if ((_core.get_previous_game_state() == Core::Game_state::Unstarted ||
+//             _core.get_previous_game_state() == Core::Game_state::Finished) &&
+//                _core.get_game_state() == Core::Game_state::Running)
+//        {
+//            std::cout << __PRETTY_FUNCTION__ << " starting the game" << std::endl;
 
-            change_level_state(Level_state::Running);
-        }
-        else if (_core.get_previous_game_state() == Core::Game_state::Running && _core.get_game_state() == Core::Game_state::Finished)
-        {
-            // show score etc. on a screen that allows "replay", "next level" etc.
-            std::cout << __PRETTY_FUNCTION__ << " finishing the game" << std::endl;
+//            change_level_state(Level_state::Running);
+//        }
+//        else if (_core.get_previous_game_state() == Core::Game_state::Running && _core.get_game_state() == Core::Game_state::Finished)
+//        {
+//            // show score etc. on a screen that allows "replay", "next level" etc.
+//            std::cout << __PRETTY_FUNCTION__ << " finishing the game" << std::endl;
 
-            change_level_state(Level_state::After_finish);
+//            change_level_state(Level_state::After_finish);
 
-            QTimer::singleShot(3000, this, SLOT(show_afterstate_ui_elements()));
+////            QTimer::singleShot(3000, this, SLOT(show_afterstate_ui_elements()));
 
-            int const score_count = _core.get_sensor_data().calculate_score(_core.get_level_data()._score_time_factor);
 
-            _particle_systems[int(Level_state::After_finish)].clear();
-            _particle_systems[int(Level_state::After_finish)].push_back(Targeted_particle_system(3.0f));
-            _particle_systems[int(Level_state::After_finish)].back().generate(QString("%1").arg(score_count, 8, 10, QChar('0')).toStdString(), _particle_font, QRectF(0.0f, 0.5f, 1.0f, 0.3f));
+//        }
+//    }
 
-            setup_statistics(_core.get_sensor_data());
+//    void show_afterstate_ui_elements()
+//    {
+//        for (boost::shared_ptr<Draggable_button> const& button : _buttons[int(Level_state::After_finish)])
+//        {
+//            button->set_visible(true);
+//        }
 
-            Score score;
-            score.final_score = score_count;
-            score.sensor_data = _core.get_sensor_data();
+//        for (boost::shared_ptr<Draggable_label> const& label : _labels[int(Level_state::After_finish)])
+//        {
+//            label->set_visible(true);
+//        }
 
-            _progress.last_level += 1;
-            _progress.scores[_current_level_name].push_back(score);
+//        update_draggable_to_level_element();
+//        update_active_draggables();
+//    }
 
-            _next_level_button->set_visible(_progress.last_level < _level_names.size());
+//    void change_state_to_statistics()
+//    {
+//        change_level_state(Level_state::Statistics);
 
-            save_progress();
-        }
-    }
-
-    void show_afterstate_ui_elements()
-    {
-        for (boost::shared_ptr<Draggable_button> const& button : _buttons[int(Level_state::After_finish)])
-        {
-            button->set_visible(true);
-        }
-
-        for (boost::shared_ptr<Draggable_label> const& label : _labels[int(Level_state::After_finish)])
-        {
-            label->set_visible(true);
-        }
-
-        update_draggable_to_level_element();
-        update_active_draggables();
-    }
-
-    void change_state_to_statistics()
-    {
-        change_level_state(Level_state::Statistics);
-
-        for (auto & iter : _statistics)
-        {
-            for (auto & stat : iter.second)
-            {
-                stat.reset_animation();
-            }
-        }
-    }
+//        for (auto & iter : _statistics)
+//        {
+//            for (auto & stat : iter.second)
+//            {
+//                stat.reset_animation();
+//            }
+//        }
+//    }
 
     void return_from_stats()
     {
         change_level_state(Level_state::After_finish);
-    }
-
-    void setup_statistics(Sensor_data const& sensor_data)
-    {
-//        Sensor_data fake_sensor_data;
-
-//        std::vector<float> dummy_data;
-
-//        dummy_data.push_back(0);
-
-//        for (int i = 1; i < 50; ++i)
-//        {
-//            dummy_data.push_back(dummy_data[i - 1] + int(rand() / float(RAND_MAX) * 2));
-//            fake_sensor_data.add_value(Sensor_data::Type::ColMol, dummy_data[i]);
-//        }
-
-        for (int i = 0; i < sensor_data.get_num_data_types(); ++i)
-        {
-            _statistics[int(Level_state::Statistics)][i].set_values(sensor_data.get_data(Sensor_data::Type(i)));
-//            _statistics[int(Level_state::Statistics)][i].set_values(fake_sensor_data.get_data(Sensor_data::Type(i)));
-        }
     }
 
     Level_state get_level_state() const
@@ -2888,8 +1699,31 @@ public Q_SLOTS:
         return _level_state;
     }
 
+    QFont const& get_particle_font() const
+    {
+        return _particle_font;
+    }
+
+    QFont const& get_main_font() const
+    {
+        return _main_font;
+    }
+
+    QStringList const& get_level_names() const
+    {
+        return _level_names;
+    }
+
+    std::string const& get_current_level_name() const
+    {
+        return _current_level_name;
+    }
+
     void intro_cam1_end_reached();
     void intro_cam2_end_reached();
+
+Q_SIGNALS:
+    void level_changed();
 
 private:
     QTimer * _physics_timer;
@@ -2897,49 +1731,39 @@ private:
 
     Core _core;
 
-    IcoSphere<OpenMesh::Vec3f, Color> _icosphere;
+//    IcoSphere<OpenMesh::Vec3f, Color> _icosphere;
 
-    Picking _picking;
-    Mouse_state _mouse_state;
-    Selection _selection;
-    Level_element * _selected_level_element;
-    Ui_state _ui_state;
+//    Picking _picking;
+//    Mouse_state _mouse_state;
+//    Selection _selection;
+//    Level_element * _selected_level_element;
+//    Ui_state _ui_state;
     Level_state _level_state;
 
-    QPoint _dragging_start;
-    Eigen::Vector3f _dragging_start_3d;
-    int _picked_index;
+//    QPoint _dragging_start;
+//    Eigen::Vector3f _dragging_start_3d;
+//    int _picked_index;
 
 //    std::unique_ptr<QGLFramebufferObject> _inactive_world_fbo;
 //    GLuint _inactive_world_tex;
 
-    GLuint _rotate_tex;
-    GLuint _scale_tex;
-    GLuint _move_tex;
-    GLuint _slider_tex;
-
-    GLuint _particle_tex;
-
-    std::unordered_map<std::string, QImage> _element_images;
+//    GLuint _particle_tex;
 
     StandardCamera * _my_camera;
 
-    std::vector<Draggable*> _active_draggables;
+//    std::vector<Draggable*> _active_draggables;
 
-    std::unordered_map<Draggable*, Level_element*> _draggable_to_level_element;
+//    std::unordered_map<Draggable*, Level_element*> _draggable_to_level_element;
 
-    std::unordered_map<int, std::vector< boost::shared_ptr<Draggable_button> > > _buttons;
+//    std::unordered_map<int, std::vector< boost::shared_ptr<Draggable_button> > > _buttons;
     std::unordered_map<int, std::vector< boost::shared_ptr<Draggable_label> > > _labels;
-    std::unordered_map<int, std::vector<Draggable_statistics> > _statistics;
-    std::unordered_map<int, std::vector<Targeted_particle_system> > _particle_systems;
+//    std::unordered_map<int, std::vector<Targeted_particle_system> > _particle_systems;
 
-    boost::shared_ptr<Draggable_button> _next_level_button;
+//    boost::shared_ptr<Draggable_button> _next_level_button;
 
     std::string _current_level_name;
 
     QStringList _level_names;
-
-    Progress _progress;
 
     QFont _main_font;
     QFont _particle_font;
@@ -2947,9 +1771,7 @@ private:
     float _intro_time;
     Intro_state _intro_state;
 
-    std::deque<Screen*> _screen_stack;
-
-    std::unique_ptr<World_renderer> _renderer;
+    std::deque< std::unique_ptr<Screen> > _screen_stack;
 };
 
 

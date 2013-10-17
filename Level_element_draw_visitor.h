@@ -145,8 +145,7 @@ public:
         {
             for (Targeted_particle const& p : p_system.get_particles())
             {
-                Color4 color(p.color, 1.0f);
-                glColor4fv(color.data());
+                glColor4fv(p.color.data());
                 glVertex3fv(p.position.data());
             }
         }
@@ -350,7 +349,7 @@ public:
         glBegin(GL_POINTS);
         for (Particle const& p : b->get_particles())
         {
-            Color4 color(p.color, 1.0f - p.age);
+            Color4 color(p.color.rgb(), 1.0f - p.age);
             glColor4fv(color.data());
             glVertex3fv(p.position.data());
         }
@@ -438,8 +437,7 @@ public:
         glBegin(GL_POINTS);
         for (Particle const& p : b->get_particles())
         {
-            Color4 color(p.color, 1.0f);
-            glColor4fv(color.data());
+            glColor4fv(p.color.data());
             glVertex3fv(p.position.data());
         }
         glEnd();
@@ -506,8 +504,7 @@ public:
         glBegin(GL_POINTS);
         for (Particle const& p : b->get_particles())
         {
-            Color4 color(p.color, 1.0f);
-            glColor4fv(color.data());
+            glColor4fv(p.color.data());
             glVertex3fv(p.position.data());
         }
         glEnd();
@@ -547,7 +544,7 @@ public:
         glBegin(GL_POINTS);
         for (Particle const& p : system->get_particles())
         {
-            Color4 color(p.color, alpha);
+            Color4 color(p.color.rgb(), alpha);
             glColor4fv(color.data());
             glVertex3fv(p.position.data());
         }

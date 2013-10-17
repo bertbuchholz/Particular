@@ -332,7 +332,7 @@ void Box_portal::init_particle_system()
         Particle p;
         p.position = pos;
         p.speed = speed;
-        p.color = Color(0.3f, 0.8f, 0.4f);
+        p.color = Color4(0.3f, 0.8f, 0.4f, 1.0f);
 
         _particles[i] = p;
     }
@@ -581,7 +581,7 @@ void Tractor_barrier::animate(const float timestep)
 
         Particle p;
         p.age = 0.0f;
-        p.color = Color(1.0f, 0.3f, 0.05f);
+        p.color = Color4(1.0f, 0.3f, 0.05f, 1.0f);
 
         float const direction = _tractor_strength >= 0.0f ? 1.0f : -1.0f;
         p.position = Eigen::Vector3f::Random();
@@ -892,7 +892,7 @@ void Particle_system_element::init(const Molecule &m)
         Particle p;
         p.position = pos;
         p.speed = speed;
-        p.color = Atom::atom_colors[int(a._type)];
+        p.color = Color4(Atom::atom_colors[int(a._type)], 1.0f);
 
         _particles[i] = p;
     }
@@ -982,7 +982,7 @@ void Sphere_portal::init_particle_system()
         Particle p;
         p.position = pos;
         p.speed = speed;
-        p.color = Color(0.3f, 0.8f, 0.4f);
+        p.color = Color4(0.3f, 0.8f, 0.4f, 1.0f);
 
         _particles[i] = p;
     }

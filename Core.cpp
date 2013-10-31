@@ -1,14 +1,65 @@
 #include "Core.h"
 
+#include <QMessageBox>
 #include <QFrame>
 #include <QVBoxLayout>
+
 #include <Q_parameter_bridge.h>
 
 #include "Main_options_window.h"
 #include "Molecule_releaser.h"
+#include "Data_config.h"
 
 //#include "fp_exception_glibc_extension.h"
-#include <fenv.h>
+//#include <fenv.h>
+
+struct Atom_averager
+{
+    Atom operator() (std::vector<Atom const*> const& atoms) const
+    {
+        Atom result;
+
+        result._type = Atom::Type::H;
+
+        result.set_position(Eigen::Vector3f::Zero());
+
+        result._mass = 0.0f;
+        result._charge = 0.0f;
+        result._radius = 0.0f;
+
+        float charge_abssum = 0.0f;
+
+        for (Atom const* a : atoms)
+        {
+            float abs_charge = std::abs(a->_charge);
+            abs_charge = abs_charge > 0.001f ? abs_charge : 1.0f;
+
+            result.set_position(result.get_position() + a->get_position() * abs_charge); // weigh the position by the charge
+            charge_abssum += abs_charge;
+
+            result._mass += a->_mass;
+            result._charge += a->_charge;
+            result._radius += a->_radius * a->_radius * a->_radius;
+        }
+
+        if (charge_abssum < 0.001f)
+        {
+            std::cout << "charge_abssum " << charge_abssum << " #atoms " << atoms.size() << std::endl;
+            assert(false);
+        }
+
+        result.set_position(result.get_position() / charge_abssum);
+
+        result._radius = std::pow(result._radius, 0.3333f);
+
+        // not averaging, accumulating!
+//            result._mass /= atoms.size();
+//            result._charge /= atoms.size();
+//            result._radius /= atoms.size();
+
+        return result;
+    }
+};
 
 Core::Core() :
     _game_state(Game_state::Unstarted),
@@ -18,30 +69,30 @@ Core::Core() :
     _last_sensor_check(0.0f)
   //        _molecule_hash(Molecule_atom_hash(100, 4.0f))
 {
-//    Eigen::Vector2f grid_start(-10.0f, -10.0f);
-//    Eigen::Vector2f grid_end  ( 10.0f,  10.0f);
+    std::function<void(void)> update_variables = std::bind(&Core::update_variables, this);
 
-//    float resolution = 0.5f;
+    _parameters.add_parameter(new Parameter("levels", std::string(""), update_variables));
 
-//    for (float x = grid_start[0]; x < grid_end[0]; x += resolution)
-//    {
-//        for (float y = grid_start[1]; y < grid_end[1]; y += resolution)
-//        {
-//            _indicators.push_back(Force_indicator(Eigen::Vector3f(x, y, 0.0f)));
-//        }
-//    }
+    _parameters.add_parameter(new Parameter("Toggle simulation", false, std::bind(&Core::toggle_simulation, this)));
+    _parameters.add_parameter(new Parameter("mass_factor", 1.0f, 0.01f, 10.0f, update_variables));
+    _parameters.add_parameter(new Parameter("do_constrain_forces", true, update_variables));
+    _parameters.add_parameter(new Parameter("max_force", 10.0f, 0.1f, 500.0f, update_variables));
+    _parameters.add_parameter(new Parameter("max_force_distance", 10.0f, 1.0f, 1000.0f, update_variables));
 
-    std::function<void(void)> update = std::bind(&Core::update_variables, this);
+    _parameters.add_parameter(new Parameter("physics_timestep_ms", 10, 1, 100, std::bind(&Core::update_physics_timestep, this)));
+    _parameters["physics_timestep_ms"]->set_hidden(true);
+    _parameters.add_parameter(new Parameter("physics_speed", 1.0f, -10.0f, 100.0f, update_variables));
+    _parameters["physics_speed"]->set_hidden(true);
 
-    _parameters.add_parameter(new Parameter("mass_factor", 1.0f, 0.01f, 10.0f, update));
-    _parameters.add_parameter(new Parameter("do_constrain_forces", true, update));
-    _parameters.add_parameter(new Parameter("max_force", 10.0f, 0.1f, 500.0f, update));
-    _parameters.add_parameter(new Parameter("max_force_distance", 10.0f, 1.0f, 1000.0f, update));
-    _parameters.add_parameter(new Parameter("gravity", 1.0f, 0.0f, 100.0f, update));
-
-    Parameter_registry<Atomic_force>::create_multi_select_instance(&_parameters, "Atomic Force Type", update);
+    Parameter_registry<Atomic_force>::create_multi_select_instance(&_parameters, "Atomic Force Type", update_variables);
 
     Main_options_window::get_instance()->add_parameter_list("Core", _parameters);
+
+    _physics_timer.setInterval(_parameters["physics_timestep_ms"]->get_value<int>());
+
+    connect(&_physics_timer, SIGNAL(timeout()), this, SLOT(update_physics()));
+
+    load_simulation_settings();
 }
 
 Core::~Core()
@@ -90,7 +141,6 @@ Eigen::Vector3f Core::apply_forces_using_ann_tree(Atom const& receiver_atom) con
 
     return force_i;
 }
-
 
 
 Eigen::Vector3f Core::apply_forces_using_tree(const Atom &receiver_atom) const
@@ -289,7 +339,7 @@ void Core::compute_force_and_torque(Molecule &receiver)
     receiver._force  += std::max(0.0f, brownian_translation_factor) * random_dir;
     receiver._torque += std::max(0.0f, brownian_rotation_factor)    * Eigen::Vector3f::Random().normalized();
 
-    for (auto const& f : _external_forces)
+    for (auto const& f : _level_data._external_forces)
     {
         receiver._force += f.second._force * receiver._mass * _mass_factor; // FIXME: using mass here only true if "force" is actually an acceleration (F = m * a)
         //            receiver._torque += (f._origin - receiver._x).cross(f._force);
@@ -326,7 +376,7 @@ void Core::compute_force_and_torque(Molecule &receiver)
             receiver._torque = ((_max_force * translation_to_rotation_ratio) / torque_size) * receiver._torque;
         }
 
-        if (force_size > 10.0f)
+        if (force_size > _max_force)
         {
             receiver._force  = (_max_force / force_size)  * receiver._force;
         }
@@ -403,32 +453,32 @@ void Core::update(const float time_step)
         }
     }
 
+//    if (time_debug)
+//    {
+//        timer_start = std::chrono::system_clock::now();
+//    }
+
+//    //        update_spatial_hash();
+
+//    if (time_debug)
+//    {
+//        timer_end = std::chrono::system_clock::now();
+
+//        elapsed_milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>
+//                (timer_end-timer_start).count();
+
+//        if (elapsed_milliseconds > 1)
+//        {
+//            std::cout << "update_spatial_hash(): " << elapsed_milliseconds << std::endl;
+//        }
+//    }
+
     if (time_debug)
     {
         timer_start = std::chrono::system_clock::now();
     }
 
-    //        update_spatial_hash();
-
-    if (time_debug)
-    {
-        timer_end = std::chrono::system_clock::now();
-
-        elapsed_milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>
-                (timer_end-timer_start).count();
-
-        if (elapsed_milliseconds > 1)
-        {
-            std::cout << "update_spatial_hash(): " << elapsed_milliseconds << std::endl;
-        }
-    }
-
-    if (time_debug)
-    {
-        timer_start = std::chrono::system_clock::now();
-    }
-
-    update_tree();
+//    update_tree();
 
     _ann_wrapper = ANN_wrapper();
     _ann_wrapper.generate_tree_from_molecules(_level_data._molecules);
@@ -442,7 +492,7 @@ void Core::update(const float time_step)
 
         if (elapsed_milliseconds > 1)
         {
-            std::cout << "update_tree(): " << elapsed_milliseconds << std::endl;
+            std::cout << "ann_wrapper update: " << elapsed_milliseconds << std::endl;
         }
     }
 
@@ -665,7 +715,7 @@ Eigen::Vector3f Core::calc_forces_between_atoms(const Atom &a_0, const Atom &a_1
 {
     Eigen::Vector3f resulting_force(0.0f, 0.0f, 0.0f);
 
-    for (Atomic_force const* force : _atomic_forces)
+    for (std::unique_ptr<Atomic_force> const& force : _atomic_forces)
     {
         resulting_force += force->calc_force_between_atoms(a_0, a_1);
     }
@@ -692,6 +742,8 @@ void Core::start_level()
     std::cout << __PRETTY_FUNCTION__ << std::endl;
 
     reset_level();
+
+    set_simulation_state(true);
 
     set_new_game_state(Game_state::Running);
 }
@@ -771,9 +823,9 @@ void Core::clear()
     _level_data._game_field_borders.clear();
     _level_data._molecule_releasers.clear();
     _level_data._particle_system_elements.clear();
+    _level_data._external_forces.clear();
     _molecule_external_forces.clear();
     _molecule_id_to_molecule_map.clear();
-    _external_forces.clear();
     //        _molecule_hash.clear();
 }
 
@@ -795,34 +847,39 @@ void Core::reset_level()
 
     _current_time = 0.0f;
     _last_sensor_check = 0.0f;
+
+    change_level_state(Main_game_screen::Level_state::Running);
 }
 
 
-void Core::save_state(const std::string &file_name) const
+void Core::save_simulation_settings()
 {
-    std::ofstream out_file(file_name.c_str(), std::ios_base::binary);
-    boost::archive::text_oarchive oa(out_file);
+    std::string file_name = Data_config::get_instance()->get_absolute_filename("simulation_settings.data", false);
 
-    //        std::cout << "Parameter_list::save: " << out_file << std::endl;
-
-    oa << *this;
-
-    out_file.close();
+    try
+    {
+        _parameters.save(file_name);
+    }
+    catch (std::exception const& e)
+    {
+        std::cout << "Couldn't save sim settings: " << e.what() << std::endl;
+    }
 }
 
 
-void Core::load_state(const std::string &file_name)
+void Core::load_simulation_settings()
 {
-    std::cout << __PRETTY_FUNCTION__ << " file: " << file_name << std::endl;
-
-    std::ifstream in_file(file_name.c_str(), std::ios_base::binary);
-    boost::archive::text_iarchive ia(in_file);
-
-    ia >> *this;
-
-    in_file.close();
+    try
+    {
+        std::string file_name = Data_config::get_instance()->get_absolute_filename("simulation_settings.data");
+        _parameters.load(file_name);
+        update_variables();
+    }
+    catch (std::runtime_error const& e)
+    {
+        std::cout << "Couldn't load simulation settings file: simulation_settings.data, " << e.what() << std::endl;
+    }
 }
-
 
 void Core::save_level(const std::string &file_name) const
 {
@@ -836,47 +893,13 @@ void Core::save_level(const std::string &file_name) const
     //        oa << BOOST_SERIALIZATION_NVP(_level_data);
 
     //        oa << BOOST_SERIALIZATION_NVP(*this);
-    oa << boost::serialization::make_nvp("Core", *this);
+//    oa << boost::serialization::make_nvp("Core", *this);
+
+    oa << BOOST_SERIALIZATION_NVP(_level_data);
 
     out_file.close();
 }
 
-
-void Core::load_level(const std::string &file_name)
-{
-    std::cout << __PRETTY_FUNCTION__ << " file: " << file_name << std::endl;
-
-    //        std::ifstream in_file(file_name.c_str(), std::ios_base::binary);
-    //        boost::archive::text_iarchive ia(in_file);
-    std::ifstream in_file(file_name.c_str());
-    boost::archive::xml_iarchive ia(in_file);
-
-    try
-    {
-        //            ia >> BOOST_SERIALIZATION_NVP(_level_data);
-        //            ia >> BOOST_SERIALIZATION_NVP(*this);
-        ia >> boost::serialization::make_nvp("Core", *this);
-    }
-    catch (boost::archive::archive_exception & e)
-    {
-        std::cout << "Boost Archive Exception. Failed to load level file: " << file_name << ", reason: " << e.what() << std::endl;
-        _level_data = Level_data();
-        throw;
-    }
-    catch (std::exception & e)
-    {
-        std::cout << "Failed to load level file: " << file_name << ", level reset: " << e.what() << std::endl;
-        _level_data = Level_data();
-        throw;
-    }
-
-    update_parameters();
-    _level_data.update_parameters();
-
-    in_file.close();
-
-    assert(_level_data.validate_elements());
-}
 
 void Core::save_progress()
 {
@@ -914,89 +937,101 @@ void Core::load_progress()
     }
 }
 
+void Core::toggle_simulation()
+{
+    if (!_parameters["Toggle simulation"]->get_value<bool>())
+    {
+        _physics_timer.stop();
+    }
+    else
+    {
+        _physics_timer.start();
+        _physics_elapsed_time = std::chrono::system_clock::now();
+    }
+}
+
+void Core::set_simulation_state(const bool s)
+{
+    _parameters["Toggle simulation"]->set_value(s);
+}
+
+void Core::update_physics_timestep()
+{
+    _physics_timer.setInterval(_parameters["physics_timestep_ms"]->get_value<int>());
+}
+
 
 void Core::update_variables()
 {
+    QString const level_string = QString::fromStdString(_parameters["levels"]->get_value<std::string>());
+    _level_names = level_string.split(",", QString::SkipEmptyParts);
+
     _do_constrain_forces = _parameters["do_constrain_forces"]->get_value<bool>();
     _max_force = _parameters["max_force"]->get_value<float>();
     _mass_factor = _parameters["mass_factor"]->get_value<float>();
     _max_force_distance = _parameters["max_force_distance"]->get_value<float>();
-    _external_forces["gravity"]._force[2] = -_parameters["gravity"]->get_value<float>();
 
-    for (auto * f : _atomic_forces)
-    {
-        delete f;
-    }
-
-    _atomic_forces = std::vector<Atomic_force*>(Parameter_registry<Atomic_force>::get_classes_from_multi_select_instance(_parameters.get_child("Atomic Force Type")));
+    _atomic_forces = std::vector< std::unique_ptr<Atomic_force> >(Parameter_registry<Atomic_force>::get_unique_ptr_classes_from_multi_select_instance(_parameters.get_child("Atomic Force Type")));
 }
 
 
 void Core::update_parameters()
 {
+    _parameters["levels"]->set_value_no_update(_level_names.join(",").toStdString());
+
     _parameters["do_constrain_forces"]->set_value_no_update(_do_constrain_forces);
     _parameters["max_force"]->set_value_no_update(_max_force);
     _parameters["mass_factor"]->set_value_no_update(_mass_factor);
     _parameters["max_force_distance"]->set_value_no_update(_max_force_distance);
-    _parameters["gravity"]->set_value_no_update<float>(-_external_forces["gravity"]._force[2]);
 
-    for (Atomic_force const* f : _atomic_forces)
+    for (std::unique_ptr<Atomic_force> const& f : _atomic_forces)
     {
         Parameter_list * child = _parameters.get_child("Atomic Force Type")->get_child(f->get_instance_name());
         child->get_parameter("multi_enable")->set_value(true);
 
-        f->get_parameters(*child);
+        f->update_parameters(*child);
     }
 }
 
-
-void Core::update_parameter_list(Parameter_list &parameters) const
+void Core::quit()
 {
-    auto iter = _external_forces.find("gravity");
-
-    if (iter != _external_forces.end())
-    {
-        parameters["gravity"]->set_value_no_update(-iter->second._force[2]);
-    }
+    save_simulation_settings();
 }
 
-//QWidget * Core::get_parameter_widget() const
-//{
-//    std::cout << __PRETTY_FUNCTION__ << std::endl;
+std::string const& Core::get_current_level_name() const
+{
+    return _current_level_name;
+}
 
-//    QFrame * frame = new QFrame;
+const QStringList &Core::get_level_names() const
+{
+    return _level_names;
+}
 
-//    QFont f = frame->font();
-//    f.setPointSize(f.pointSize() * 0.9f);
-//    frame->setFont(f);
+void Core::update_physics()
+{
+    std::chrono::time_point<std::chrono::system_clock> const timer_start = std::chrono::system_clock::now();
 
-//    QLayout * menu_layout = new QVBoxLayout;
+    //        int const elapsed_milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>
+    //                (std::chrono::system_clock::now() - _physics_elapsed_time).count();
 
-//    draw_instance_list(_parameters, menu_layout);
+    //        _physics_elapsed_time = std::chrono::system_clock::now();
 
-//    menu_layout->setSpacing(0);
-//    menu_layout->setMargin(0);
+    // FIXME: currently constant update time step, not regarding at all the actually elapsed time
+    // some updates are really far away from the set time step, not sure why
+    update(_parameters["physics_timestep_ms"]->get_value<int>() / 1000.0f * _parameters["physics_speed"]->get_value<float>());
+    //        _core.update(elapsed_milliseconds / 1000.0f * _parameters["physics_speed"]->get_value<float>());
 
-////    frame->setWindowTitle(windowTitle() + " Options");
-//    frame->setLayout(menu_layout);
+    std::chrono::time_point<std::chrono::system_clock> const timer_end = std::chrono::system_clock::now();
 
-//    return frame;
-//}
+    int const elapsed_milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>
+            (timer_end-timer_start).count();
 
-
-//Parameter_list Core::get_parameters()
-//{
-//    Parameter_list parameters;
-//    parameters.add_parameter(new Parameter("mass_factor", 1.0f, 0.01f, 10.0f));
-//    parameters.add_parameter(new Parameter("do_constrain_forces", true));
-//    parameters.add_parameter(new Parameter("max_force", 10.0f, 0.1f, 500.0f));
-//    parameters.add_parameter(new Parameter("max_force_distance", 10.0f, 1.0f, 1000.0f));
-//    parameters.add_parameter(new Parameter("gravity", 1.0f, 0.0f, 100.0f));
-
-//    Parameter_registry<Atomic_force>::create_multi_select_instance(&parameters, "Atomic Force Type");
-
-//    return parameters;
-//}
+    if (elapsed_milliseconds > 1)
+    {
+        std::cout << __PRETTY_FUNCTION__ << " time elapsed: " << elapsed_milliseconds << std::endl;
+    }
+}
 
 
 const std::vector<Molecule_releaser *> &Core::get_molecule_releasers() const
@@ -1035,10 +1070,10 @@ float Core::get_current_time() const
 }
 
 
-void Core::add_external_force(const std::string &name, const External_force &force)
-{
-    _external_forces[name] = force;
-}
+//void Core::add_external_force(const std::string &name, const External_force &force)
+//{
+//    _external_forces[name] = force;
+//}
 
 
 void Core::add_molecule_external_force(const Molecule_external_force &force)
@@ -1047,8 +1082,93 @@ void Core::add_molecule_external_force(const Molecule_external_force &force)
 }
 
 
-const std::vector<Force_indicator> &Core::get_force_indicators() const
+//const std::vector<Force_indicator> &Core::get_force_indicators() const
+//{
+//    return _indicators;
+//}
+
+
+void Core::load_level_defaults()
 {
-    return _indicators;
+//    _level_data = Level_data();
+    _level_data.load_defaults();
+
+    Main_options_window::get_instance()->add_parameter_list("Level Data", _level_data._parameters);
+
+    change_level_state(Main_game_screen::Level_state::Running);
 }
 
+void Core::load_level(std::string const& file_name)
+{
+    std::cout << __PRETTY_FUNCTION__ << " " << file_name << std::endl;
+
+    clear();
+    set_simulation_state(false);
+
+    std::ifstream in_file(file_name.c_str());
+    boost::archive::xml_iarchive ia(in_file);
+
+    try
+    {
+        ia >> BOOST_SERIALIZATION_NVP(_level_data);
+    }
+    catch (boost::archive::archive_exception & e)
+    {
+        std::cout << "Boost Archive Exception. Failed to load level file: " << file_name << ", reason: " << e.what() << std::endl;
+        load_level_defaults();
+    }
+    catch (std::exception & e)
+    {
+        std::cout << "Failed to load level file: " << file_name << ", level reset: " << e.what() << std::endl;
+        load_level_defaults();
+    }
+    catch (...)
+    {
+        load_level_defaults();
+        QMessageBox::warning(nullptr, "Error", QString("Error reading the specified level file ") + QString::fromStdString(file_name) + "\nLoading defaults.");
+    }
+
+    in_file.close();
+
+//    update_parameters();
+    _level_data.update_parameters();
+
+    Main_options_window::get_instance()->add_parameter_list("Level Data", _level_data._parameters);
+
+
+    assert(_level_data.validate_elements());
+
+    reset_level();
+
+    _current_level_name = file_name;
+
+    change_level_state(Main_game_screen::Level_state::Running);
+}
+
+void Core::change_level_state(const Main_game_screen::Level_state new_level_state)
+{
+    Q_EMIT level_changed(new_level_state);
+}
+
+void Core::load_next_level()
+{
+    std::cout << __PRETTY_FUNCTION__ << " next level: " << get_progress().last_level << std::endl;
+
+    if (_level_names.size() <= get_progress().last_level)
+    {
+        std::cout << "No more levels." << std::endl;
+        return;
+    }
+
+    std::string const filename = Data_config::get_instance()->get_absolute_filename("levels/" + _level_names[get_progress().last_level] + ".data");
+
+    load_level(filename);
+}
+
+void Core::init_game()
+{
+    QString const level_string = QString::fromStdString(_parameters["levels"]->get_value<std::string>());
+    _level_names = level_string.split(",", QString::SkipEmptyParts);
+
+    load_progress();
+}

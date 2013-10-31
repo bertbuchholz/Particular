@@ -10,10 +10,10 @@ public:
 
     virtual std::string get_instance_name() const { return std::string(); }
 
-    virtual void set_parameters(Parameter_list const& /* parameters */)
+    virtual void update_variables(Parameter_list const& /* parameters */)
     { }
 
-    virtual void get_parameters(Parameter_list &) const { }
+    virtual void update_parameters(Parameter_list &) const { }
 
     static Parameter_list get_parameters()
     {
@@ -84,21 +84,14 @@ public:
         return new Coulomb_force;
     }
 
-    void set_parameters(Parameter_list const& parameters) override
+    void update_variables(Parameter_list const& parameters) override
     {
         _strength = parameters["strength"]->get_value<float>();
     }
 
-    void get_parameters(Parameter_list & parameters) const override
+    void update_parameters(Parameter_list & parameters) const override
     {
-        parameters["strength"]->set_value(_strength);
-    }
-
-    Parameter_list get_current_parameters()
-    {
-        Parameter_list parameters;
-        parameters.add_parameter(new Parameter("strength", _strength, 1.0f, 1000.0f));
-        return parameters;
+        parameters["strength"]->set_value_no_update(_strength);
     }
 
     static Parameter_list get_parameters()
@@ -136,13 +129,13 @@ public:
         return new Wendland_force;
     }
 
-    void set_parameters(Parameter_list const& parameters) override
+    void update_variables(Parameter_list const& parameters) override
     {
         _strength = parameters["strength"]->get_value<float>();
         _radius = parameters["radius"]->get_value<float>();
     }
 
-    void get_parameters(Parameter_list & parameters) const override
+    void update_parameters(Parameter_list & parameters) const override
     {
         parameters["strength"]->set_value(_strength);
         parameters["radius"]->set_value(_radius);
@@ -186,13 +179,13 @@ public:
         return new Lennard_jones_force;
     }
 
-    void set_parameters(Parameter_list const& parameters) override
+    void update_variables(Parameter_list const& parameters) override
     {
         _strength = parameters["strength"]->get_value<float>();
         _radius_factor = parameters["radius_factor"]->get_value<float>();
     }
 
-    void get_parameters(Parameter_list & parameters) const override
+    void update_parameters(Parameter_list & parameters) const override
     {
         parameters["strength"]->set_value(_strength);
         parameters["radius_factor"]->set_value(_radius_factor);

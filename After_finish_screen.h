@@ -14,6 +14,12 @@ public:
 
     void init();
 
+    void draw() override;
+
+    bool mousePressEvent(QMouseEvent * event) override;
+
+    void draw_draggables_for_picking();
+
     void load_next_level();
     void change_to_statistics();
     void change_to_main_menu();

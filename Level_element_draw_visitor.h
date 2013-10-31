@@ -7,7 +7,7 @@
 #include "Level_element.h"
 #include "Molecule_releaser.h"
 #include "Data_config.h"
-
+#include "Color_utilities.h"
 
 class Level_element_draw_visitor : public Level_element_visitor
 {
@@ -25,12 +25,12 @@ public:
             glTranslatef(b->get_position()[0], b->get_position()[1], b->get_position()[2]);
             glMultMatrixf(b->get_transform().data());
 
-            glColor3f(1.0f, 0.0f, 0.0f);
-            drawLine(Eigen::Vector3f(Eigen::Vector3f::Zero()), Eigen::Vector3f(Eigen::Vector3f::UnitX()));
-            glColor3f(0.0f, 1.0f, 0.0f);
-            drawLine(Eigen::Vector3f(Eigen::Vector3f::Zero()), Eigen::Vector3f(Eigen::Vector3f::UnitY()));
-            glColor3f(0.0f, 0.0f, 1.0f);
-            drawLine(Eigen::Vector3f(Eigen::Vector3f::Zero()), Eigen::Vector3f(Eigen::Vector3f::UnitZ()));
+//            glColor3f(1.0f, 0.0f, 0.0f);
+//            drawLine(Eigen::Vector3f(Eigen::Vector3f::Zero()), Eigen::Vector3f(Eigen::Vector3f::UnitX()));
+//            glColor3f(0.0f, 1.0f, 0.0f);
+//            drawLine(Eigen::Vector3f(Eigen::Vector3f::Zero()), Eigen::Vector3f(Eigen::Vector3f::UnitY()));
+//            glColor3f(0.0f, 0.0f, 1.0f);
+//            drawLine(Eigen::Vector3f(Eigen::Vector3f::Zero()), Eigen::Vector3f(Eigen::Vector3f::UnitZ()));
 
             glColor3f(0.7f, 0.7f, 0.7f);
             drawRect(Eigen::Vector3f(Eigen::Vector3f::Zero()), Eigen::Vector3f(Eigen::Vector3f::UnitZ()),

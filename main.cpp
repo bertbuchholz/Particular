@@ -38,8 +38,12 @@ int main(int argc, char** argv)
 
     spatial_hash_test();
 
-    My_viewer * viewer = new My_viewer();
+    Core core;
+
+    My_viewer * viewer = new My_viewer(core);
     viewer->show();
+
+    viewer->start();
 
     return application.exec();
 }

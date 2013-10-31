@@ -3,22 +3,41 @@
 
 void Screen::pause()
 {
+    if (_state == State::Resuming)
+    {
+        _transition_progress = 1.0f - _transition_progress;
+    }
+
     _state = State::Pausing;
 }
 
 
 void Screen::resume()
 {
-    if (_state == State::Paused || _state == State::Resuming)
+    if (_state == State::Pausing || _state == State::Killing)
+    {
+        _transition_progress = 1.0f - _transition_progress;
+    }
+
+    if (_state == State::Paused || _state == State::Pausing || _state == State::Killing)
     {
         _state = State::Resuming;
     }
 }
 
 
+void Screen::kill()
+{
+    _state = State::Killing;
+}
+
+
 void Screen::update(const float time_step)
 {
-    _transition_progress += 1.0f * time_step;
+    if (_state != State::Running && _state != State::Paused && _state != State::Faded_out)
+    {
+        _transition_progress += 1.0f * time_step;
+    }
 
     if (_state == State::Resuming)
     {

@@ -31,24 +31,36 @@ public:
 //        return QString::fromStdString(_data_path);
 //    }
 
-    QString get_absolute_qfilename(QString const& relative_path) const
+    QString get_absolute_qfilename(QString const& relative_path, bool const check_existence = true) const
     {
-        return QString::fromStdString(get_absolute_filename(relative_path));
+        return QString::fromStdString(get_absolute_filename(relative_path, check_existence));
     }
 
-    std::string get_absolute_filename(QString const& relative_path) const
+    std::string get_absolute_filename(QString const& relative_path, bool const check_existence = true) const
     {
         for (QString const& path : _data_paths)
         {
             QString absolute_filename = path + "/" + relative_path;
 
-            if (QFile::exists(absolute_filename))
+            if (check_existence)
             {
-                return absolute_filename.toStdString();
+                if (QFile::exists(absolute_filename))
+                {
+                    return absolute_filename.toStdString();
+                }
+            }
+            else
+            {
+                QDir dir(path);
+
+                if (dir.exists())
+                {
+                    return absolute_filename.toStdString();
+                }
             }
         }
 
-        throw;
+        throw std::runtime_error("No such file.");
     }
 
 //    std::string get_absolute_filename(std::string const& relative_path) const

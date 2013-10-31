@@ -77,7 +77,9 @@ SOURCES += main.cpp \
     After_finish_screen.cpp \
     Particle_system.cpp \
     Statistics_screen.cpp \
-    Main_options_window.cpp
+    Main_options_window.cpp \
+    Level_data.cpp \
+    Editor_screen.cpp
 
 OTHER_FILES += TODO.txt \
     data/shaders/picking.vert \
@@ -93,8 +95,9 @@ OTHER_FILES += TODO.txt \
     temperature.frag \
     data/shaders/temperature.frag \
     data/shaders/post.frag \
-    data/shaders/blur_1D.frag \
-    data/shaders/test.frag
+    data/shaders/test.frag \
+    data/shaders/depth_blur_1D.frag \
+    data/shaders/blur_1D.frag
 
 HEADERS += \
     My_viewer.h \
@@ -127,4 +130,5 @@ HEADERS += \
     Before_start_screen.h \
     Main_options_window.h \
     After_finish_screen.h \
-    Statistics_screen.h
+    Statistics_screen.h \
+    Editor_screen.h

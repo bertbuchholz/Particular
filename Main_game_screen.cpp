@@ -3,6 +3,8 @@
 #include "My_viewer.h"
 #include "Pause_screen.h"
 #include "Before_start_screen.h"
+#include "After_finish_screen.h"
+#include "FloatSlider.h"
 
 class Widget_text_combination : public QWidget
 {
@@ -28,7 +30,7 @@ Main_game_screen::Main_game_screen(My_viewer &viewer, Core &core, Ui_state ui_st
     std::cout << __PRETTY_FUNCTION__ << std::endl;
 
     _type = Screen::Type::Fullscreen;
-    _state = State::Running;
+//    _state = State::Running;
 
     _picking.init(_viewer.context());
 
@@ -38,6 +40,20 @@ Main_game_screen::Main_game_screen(My_viewer &viewer, Core &core, Ui_state ui_st
     _move_tex = _viewer.bindTexture(QImage(Data_config::get_instance()->get_absolute_qfilename("textures/move.png")));
     _scale_tex = _viewer.bindTexture(QImage(Data_config::get_instance()->get_absolute_qfilename("textures/scale.png")));
     _slider_tex = _viewer.bindTexture(QImage(Data_config::get_instance()->get_absolute_qfilename("textures/slider.png")));
+
+    _main_fbo = std::unique_ptr<QGLFramebufferObject>(new QGLFramebufferObject(QSize(_viewer.camera()->screenWidth(), _viewer.camera()->screenHeight()), QGLFramebufferObject::Depth));
+
+    _screen_quad_program = std::unique_ptr<QGLShaderProgram>(init_program(_viewer.context(),
+                                                                          Data_config::get_instance()->get_absolute_qfilename("shaders/fullscreen_square.vert"),
+                                                                          Data_config::get_instance()->get_absolute_qfilename("shaders/simple_texture.frag")));
+
+    _blur_program = std::unique_ptr<QGLShaderProgram>(init_program(_viewer.context(),
+                                                                   Data_config::get_instance()->get_absolute_qfilename("shaders/fullscreen_square.vert"),
+                                                                   Data_config::get_instance()->get_absolute_qfilename("shaders/blur_1D.frag")));
+
+    // FIXME: need to delete first
+    _tmp_screen_texture[0] = create_texture(_viewer.camera()->screenWidth(), _viewer.camera()->screenHeight());
+    _tmp_screen_texture[1] = create_texture(_viewer.camera()->screenWidth(), _viewer.camera()->screenHeight());
 
     std::vector<std::string> object_types { "O2", "H2O", "SDS", "Na", "Cl", "Dipole",
 //                                                  "Plane_barrier",
@@ -60,8 +76,7 @@ Main_game_screen::Main_game_screen(My_viewer &viewer, Core &core, Ui_state ui_st
 
     change_renderer();
 
-    connect(&_viewer, SIGNAL(level_changed(Main_game_screen::Level_state)), this, SLOT(handle_level_change(Main_game_screen::Level_state)));
-
+    connect(&_core, SIGNAL(level_changed(Main_game_screen::Level_state)), this, SLOT(handle_level_change(Main_game_screen::Level_state)));
     connect(&_core, SIGNAL(game_state_changed()), this, SLOT(handle_game_state_change()));
 }
 
@@ -311,29 +326,30 @@ bool Main_game_screen::keyPressEvent(QKeyEvent * event)
     {
         if (_ui_state == Ui_state::Playing)
         {
-            if (_state == State::Running && _level_state != Level_state::Intro)
+            if (get_state() == State::Running && _level_state != Level_state::Intro)
             {
                 // go into pause and start pause menu
-                _state = State::Pausing;
+                pause();
 
                 _viewer.add_screen(new Pause_screen(_viewer, _core, this));
 
-                _viewer.set_simulation_state(false);
+                _core.set_simulation_state(false);
 
                 handled = true;
             }
-            else if ((_state == State::Paused || _state == State::Pausing) && _level_state != Level_state::Intro)
+            else if ((get_state() == State::Paused || get_state() == State::Pausing) && _level_state != Level_state::Intro)
             {
-                // go into pause and start pause menu
-                _state = State::Resuming;
+                resume();
 
                 handled = true;
             }
             else if (_level_state == Level_state::Intro)
             {
+                pause();
+
                 _viewer.camera()->deletePath(0);
 
-                _viewer.load_next_level();
+                _core.load_next_level();
 
                 _viewer.add_screen(new Before_start_screen(_viewer, _core));
 
@@ -355,13 +371,79 @@ void Main_game_screen::draw()
 
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
-    _renderer->render(_core.get_level_data(), _core.get_current_time(), _viewer.camera());
+    _main_fbo->bind();
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, _tmp_screen_texture[0], 0);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    _main_fbo->release();
+
+    _renderer->render(_main_fbo.get(), _core.get_level_data(), _core.get_current_time(), _viewer.camera());
 
     setup_gl_points(false);
     glPointSize(8.0f);
 
     glDisable(GL_LIGHTING);
+
+    _main_fbo->bind();
     draw_draggables();
+    _main_fbo->release();
+
+    glDisable(GL_DEPTH_TEST);
+
+
+    if (get_state() == State::Running)
+    {
+        _screen_quad_program->bind();
+        _screen_quad_program->setUniformValue("texture", 0);
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, _tmp_screen_texture[0]);
+//        glBindTexture(GL_TEXTURE_2D, _main_fbo->texture());
+
+    //        glBindTexture(GL_TEXTURE_2D, _tmp_screen_texture[1]);
+        draw_quad_with_tex_coords();
+        _screen_quad_program->release();
+    }
+    else if (get_state() == State::Pausing || get_state() == State::Resuming || get_state() == State::Paused)
+    {
+        float blur_strength = 20.0f;
+
+        if (get_state() == State::Pausing)
+        {
+            blur_strength *= _transition_progress;
+        }
+        else if (get_state() == State::Resuming)
+        {
+            blur_strength *= (1.0f - _transition_progress);
+        }
+
+        _main_fbo->bind();
+
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, _tmp_screen_texture[1], 0);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+        _blur_program->bind();
+        _blur_program->setUniformValue("texture", 0);
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, _tmp_screen_texture[0]);
+
+        _blur_program->setUniformValue("tex_size", QSize(_viewer.camera()->screenWidth(), _viewer.camera()->screenHeight()));
+        _blur_program->setUniformValue("blur_strength", blur_strength);
+        _blur_program->setUniformValue("direction", QVector2D(1.0, 0.0));
+
+        draw_quad_with_tex_coords();
+
+        _main_fbo->release();
+
+//        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, _tmp_screen_texture[0], 0);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+        _blur_program->setUniformValue("texture", 0);
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, _tmp_screen_texture[1]);
+        _blur_program->setUniformValue("direction", QVector2D(0.0, 1.0));
+        draw_quad_with_tex_coords();
+
+        _blur_program->release();
+    }
 }
 
 void Main_game_screen::state_changed_event(const Screen::State new_state, const Screen::State previous_state)
@@ -370,7 +452,7 @@ void Main_game_screen::state_changed_event(const Screen::State new_state, const 
 
     if (new_state == State::Running)
     {
-        _viewer.set_simulation_state(true);
+        _core.set_simulation_state(true);
     }
 }
 
@@ -378,7 +460,7 @@ void Main_game_screen::state_changed_event(const Screen::State new_state, const 
 
 void Main_game_screen::update_event(const float time_step)
 {
-    if (_state == State::Running)
+    if (get_state() == State::Running)
     {
         // normal update
 
@@ -1129,6 +1211,9 @@ void Main_game_screen::change_renderer()
 void Main_game_screen::resize(QSize const& size)
 {
     _renderer->resize(size);
+
+    _main_fbo = std::unique_ptr<QGLFramebufferObject>(new QGLFramebufferObject(size, QGLFramebufferObject::Depth));
+
 }
 
 void Main_game_screen::handle_level_change(Main_game_screen::Level_state const level_state)
@@ -1161,6 +1246,17 @@ void Main_game_screen::handle_game_state_change()
 {
     // TODO: figure out change and put after_finish screen up
     std::cout << __PRETTY_FUNCTION__ << " implement!" << std::endl;
+
+    if (_core.get_game_state() == Core::Game_state::Running)
+    {
+        resume();
+    }
+    else if (_core.get_game_state() == Core::Game_state::Finished)
+    {
+        pause();
+
+        _viewer.add_screen(new After_finish_screen(_viewer, _core));
+    }
 }
 
 
@@ -1229,7 +1325,7 @@ void Main_game_screen::setup_intro()
     _intro_time = 0.0f;
     _intro_state = Intro_state::Beginning;
 
-    _viewer.set_simulation_state(true);
+    _core.set_simulation_state(true);
 }
 
 void Main_game_screen::update_intro(const float timestep)
@@ -1375,7 +1471,7 @@ void Main_game_screen::update_intro(const float timestep)
             _core.get_level_data()._rotation_damping = 100.0f;
             _core.get_level_data()._translation_damping = 100.0f;
 
-            _viewer.set_simulation_state(false);
+            _core.set_simulation_state(false);
         }
     }
     else if (_intro_state == Intro_state::Two_molecules_2)
@@ -1389,7 +1485,7 @@ void Main_game_screen::update_intro(const float timestep)
             _core.get_level_data()._rotation_damping = 0.5f;
             _core.get_level_data()._translation_damping = 0.1f;
 
-            _viewer.set_simulation_state(true);
+            _core.set_simulation_state(true);
 
             _intro_time = 0.0f;
             _intro_state = Intro_state::Two_molecules_3;
@@ -1478,5 +1574,7 @@ void Main_game_screen::intro_cam1_end_reached()
 
 void Main_game_screen::intro_cam2_end_reached()
 {
-    _viewer.load_next_level();
+    pause();
+
+    _core.load_next_level();
 }

@@ -30,7 +30,7 @@ public:
     virtual void resize(QSize const& /* size */) {}
 
 //    virtual void render(std::vector<Molecule> const& molecules, StandardCamera const* = nullptr) const = 0;
-    virtual void render(Level_data const& level_data, float const time, qglviewer::Camera const* = nullptr) = 0;
+    virtual void render(QGLFramebufferObject * main_fbo, Level_data const& level_data, float const time, qglviewer::Camera const* = nullptr) = 0;
 
     virtual void update(Level_data const& /* level_data */) {}
 
@@ -43,281 +43,6 @@ public:
         return parameters;
     }
 };
-
-class Stick_renderer : World_renderer
-{
-public:
-    void draw_molecule(Molecule const& m, float const alpha = 1.0f) const
-    {
-        glColor4f(1.0f, 1.0f, 1.0f, alpha);
-
-        for (int i = 0; i < int(m._connectivity.size()); ++i)
-        {
-            std::vector<int> connections = m._connectivity[i];
-            Atom const& connector = m._atoms[i];
-
-            for (int const connected_index : connections)
-            {
-                Atom const& connected = m._atoms[connected_index];
-
-                draw_line(connector.get_position(), connected.get_position());
-            }
-        }
-    }
-
-    void render(Level_data const& level_data, float const /* time */, qglviewer::Camera const* = nullptr) override
-    {
-        std::list<Molecule> const& molecules = level_data._molecules;
-
-        glDisable(GL_LIGHTING);
-
-        glColor3f(1.0f, 1.0f, 1.0f);
-        glLineWidth(2.0f);
-
-        for (Molecule const& molecule : molecules)
-        {
-            draw_molecule(molecule);
-        }
-    }
-
-    static Parameter_list get_parameters()
-    {
-        Parameter_list parameters;
-        return parameters;
-    }
-
-    static std::string name()
-    {
-        return "Stick Renderer";
-    }
-
-    static World_renderer * create()
-    {
-        return new Stick_renderer;
-    }
-};
-
-
-REGISTER_CLASS_WITH_PARAMETERS(World_renderer, Stick_renderer);
-
-class Ball_renderer : World_renderer
-{
-public:
-    Ball_renderer()
-    {
-        _icosphere = IcoSphere<OpenMesh::Vec3f, Color>(2);
-    }
-
-    void draw_atom(Atom const& atom, float const scale, float const alpha = 1.0f) const
-    {
-        glPushMatrix();
-
-        float radius = scale * atom._radius;
-
-        if (atom._type == Atom::Type::H)
-        {
-            glColor4f(1.0f, 1.0f, 1.0f, alpha);
-        }
-        else if (atom._type == Atom::Type::O)
-        {
-            glColor4f(0.9f, 0.2f, 0.2f, alpha);
-        }
-        else if (atom._type == Atom::Type::C)
-        {
-            glColor4f(0.3f, 0.3f, 0.4f, alpha);
-        }
-        else if (atom._type == Atom::Type::S)
-        {
-            glColor4f(0.8f, 0.7f, 0.2f, alpha);
-        }
-        else if (atom._type == Atom::Type::N)
-        {
-            glColor4f(0.8f, 0.3f, 0.8f, alpha);
-        }
-        else if (atom._type == Atom::Type::Na)
-        {
-            glColor4f(0.8f, 0.3f, 0.8f, alpha);
-        }
-        else if (atom._type == Atom::Type::Cl)
-        {
-            glColor4f(0.5f, 0.8f, 0.3f, alpha);
-        }
-        else if (atom._type == Atom::Type::Charge)
-        {
-            glColor4f(0.3f, 0.2f, 0.7f, alpha);
-            radius = 0.3f;
-        }
-
-        glTranslatef(atom.get_position()[0], atom.get_position()[1], atom.get_position()[2]);
-
-        glScalef(radius, radius, radius);
-
-        _icosphere.draw();
-
-        glPopMatrix();
-    }
-
-    void draw_molecule(Molecule const& molecule, float const scale, float const alpha = 1.0f) const
-    {
-        for (Atom const& atom : molecule._atoms)
-        {
-            draw_atom(atom, scale, alpha);
-        }
-    }
-
-    void render(Level_data const& level_data, float const /* time */, qglviewer::Camera const* = nullptr) override
-    {
-        std::list<Molecule> const& molecules = level_data._molecules;
-
-        glEnable(GL_LIGHTING);
-
-        for (Molecule const& molecule : molecules)
-        {
-            draw_molecule(molecule, _scale);
-        }
-    }
-
-    void set_parameters(Parameter_list const& parameters) override
-    {
-        _scale = parameters["scale"]->get_value<float>();
-    }
-
-    static Parameter_list get_parameters()
-    {
-        Parameter_list parameters;
-        parameters.add_parameter(new Parameter("scale", 1.0f, 0.1f, 10.0f));
-        return parameters;
-    }
-
-    static std::string name()
-    {
-        return "Ball Renderer";
-    }
-
-    static World_renderer * create()
-    {
-        return new Ball_renderer;
-    }
-
-private:
-    IcoSphere<OpenMesh::Vec3f, Color> _icosphere;
-
-    float _scale;
-};
-
-REGISTER_CLASS_WITH_PARAMETERS(World_renderer, Ball_renderer);
-
-
-class Distance_renderer : World_renderer
-{
-public:
-    void render(Level_data const& level_data, float const /* time */, qglviewer::Camera const* camera) override
-    {
-        std::list<Molecule> const& molecules = level_data._molecules;
-
-        glLineWidth(2.0f);
-
-        std::vector< std::pair<float, Molecule const*> > distance_indices;
-
-        for (Molecule const& molecule : molecules)
-        {
-            float const distance = (QGLV2Eigen(camera->position()) - molecule._x).norm();
-            distance_indices.push_back(std::pair<float, Molecule const*>(distance, &molecule));
-        }
-
-        std::sort(distance_indices.begin(), distance_indices.end());
-        std::reverse(distance_indices.begin(), distance_indices.end());
-
-        //for (Molecule const& molecule : molecules)
-        for (std::pair<float, Molecule const*> const& distance_index : distance_indices)
-        {
-            Molecule const& molecule = *distance_index.second;
-            float const distance = distance_index.first;
-
-//            float const distance = (QGLV2Eigen(camera->position()) - molecule._x).norm();
-
-//            float const normalized_distance = (distance - camera->zNear()) / (camera->zFar() - camera->zNear());
-
-            float normalized_distance = (distance - camera->zNear()) / (camera->zFar() - camera->zNear());
-            normalized_distance = std::abs(normalized_distance * 2.0f - 1.0f);
-
-            float const alpha_stick = wendland_2_1(normalized_distance);
-
-//            normalized_distance = (distance - camera->zNear()) / (camera->zFar() - camera->zNear());
-//            normalized_distance = (normalized_distance - 0.4f) * 5.0f;
-//            normalized_distance = std::abs(normalized_distance * 2.0f - 1.0f);
-
-            float alpha_ball = wendland_2_1(into_range(normalized_distance * 7.0f, 0.0f, 1.0f));
-
-            if (alpha_stick > 0.0f && alpha_stick <= 1.0f)
-            {
-                glDisable(GL_LIGHTING);
-                stick_renderer.draw_molecule(molecule, alpha_stick);
-            }
-
-            if (alpha_ball > 0.0f && alpha_ball <= 1.0f)
-            {
-                glEnable(GL_LIGHTING);
-                ball_renderer.draw_molecule(molecule, _scale, alpha_ball);
-            }
-
-//            if (normalized_distance > 0.0f && normalized_distance < 0.25f)
-//            {
-//                float const alpha = normalized_distance / 0.25f;
-//                stick_renderer.draw_molecule(molecule, alpha);
-//            }
-//            else if (normalized_distance >= 0.25f && normalized_distance < 0.5f)
-//            {
-//                float const alpha_ball  =        (normalized_distance - 0.25f) / 0.25f;
-//                float const alpha_stick = 1.0f - (normalized_distance - 0.25f) / 0.25f;
-//                stick_renderer.draw_molecule(molecule, alpha_stick);
-//                ball_renderer.draw_molecule(molecule, _scale, alpha_ball);
-//            }
-//            else if (normalized_distance >= 0.5f && normalized_distance < 0.75f)
-//            {
-//                float const alpha_ball  = 1.0f - (normalized_distance - 0.5f) / 0.25f;
-//                float const alpha_stick =        (normalized_distance - 0.5f) / 0.25f;
-//                stick_renderer.draw_molecule(molecule, alpha_stick);
-//                ball_renderer.draw_molecule(molecule, _scale, alpha_ball);
-//            }
-//            else if (normalized_distance >= 0.75f && normalized_distance < 1.0f)
-//            {
-//                float const alpha_stick = 1.0f - (normalized_distance - 0.75f) / 0.25f;
-//                stick_renderer.draw_molecule(molecule, alpha_stick);
-//            }
-        }
-    }
-
-    void set_parameters(Parameter_list const& parameters) override
-    {
-        _scale = parameters["scale"]->get_value<float>();
-    }
-
-    static Parameter_list get_parameters()
-    {
-        Parameter_list parameters;
-        parameters.add_parameter(new Parameter("scale", 1.0f, 0.1f, 10.0f));
-        return parameters;
-    }
-
-    static std::string name()
-    {
-        return "Distance Renderer";
-    }
-
-    static World_renderer * create()
-    {
-        return new Distance_renderer;
-    }
-
-private:
-    float _scale;
-
-    Ball_renderer ball_renderer;
-    Stick_renderer stick_renderer;
-};
-
-REGISTER_CLASS_WITH_PARAMETERS(World_renderer, Distance_renderer);
 
 
 class Editor_renderer : public World_renderer, public QGLFunctions
@@ -346,7 +71,7 @@ public:
                                                                        Data_config::get_instance()->get_absolute_qfilename("shaders/post.frag")));
         _blur_program = std::unique_ptr<QGLShaderProgram>(init_program(context,
                                                                        Data_config::get_instance()->get_absolute_qfilename("shaders/fullscreen_square.vert"),
-                                                                       Data_config::get_instance()->get_absolute_qfilename("shaders/blur_1D.frag")));
+                                                                       Data_config::get_instance()->get_absolute_qfilename("shaders/depth_blur_1D.frag")));
 
         _sphere_mesh = load_mesh<MyMesh>(Data_config::get_instance()->get_absolute_filename("meshes/icosphere_3.obj"));
         _grid_mesh = load_mesh<MyMesh>(Data_config::get_instance()->get_absolute_filename("meshes/grid_10x10.obj"));
@@ -597,9 +322,11 @@ public:
         glPopMatrix();
     }
 
-    void render(Level_data const& level_data, float const time, qglviewer::Camera const* camera) override
+    void render(QGLFramebufferObject * main_fbo, Level_data const& level_data, float const time, qglviewer::Camera const* camera) override
     {
         glEnable(GL_DEPTH_TEST);
+
+        glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
 
         QSize screen_size(camera->screenWidth(), camera->screenHeight());
 
@@ -643,9 +370,6 @@ public:
 
         _scene_fbo->release();
 
-        glViewport(0.0f, 0.0f, camera->screenWidth(), camera->screenHeight());
-
-
         // distort/"freeze" the scene texture by using the temperature on the front game field plane
 
         _temperature_fbo->bind();
@@ -658,6 +382,7 @@ public:
 
         _temperature_fbo->release();
 
+        main_fbo->bind();
 
         glPushAttrib(GL_COLOR_BUFFER_BIT | GL_VIEWPORT_BIT | GL_ENABLE_BIT);
 
@@ -673,8 +398,8 @@ public:
 
         glPopAttrib();
 
-        // put the depth buffer from the scene drawing onto the direct FB
-        QGLFramebufferObject::blitFramebuffer(0, QRect(0, 0, screen_size.width(), screen_size.height()),
+        // put the depth buffer from the scene drawing into the returned buffer to draw the ui elements correctly
+        QGLFramebufferObject::blitFramebuffer(main_fbo, QRect(0, 0, screen_size.width(), screen_size.height()),
                                               _scene_fbo.get(), QRect(0, 0, screen_size.width(), screen_size.height()),
                                               GL_DEPTH_BUFFER_BIT);
 
@@ -684,6 +409,8 @@ public:
         draw_elements_ui(level_data);
 
         glEnable(GL_DEPTH_TEST);
+
+        main_fbo->release();
     }
 
 
@@ -768,7 +495,7 @@ public:
                                                                        Data_config::get_instance()->get_absolute_qfilename("shaders/post.frag")));
         _blur_program = std::unique_ptr<QGLShaderProgram>(init_program(context,
                                                                        Data_config::get_instance()->get_absolute_qfilename("shaders/fullscreen_square.vert"),
-                                                                       Data_config::get_instance()->get_absolute_qfilename("shaders/blur_1D.frag")));
+                                                                       Data_config::get_instance()->get_absolute_qfilename("shaders/depth_blur_1D.frag")));
 
         _sphere_mesh = load_mesh<MyMesh>(Data_config::get_instance()->get_absolute_filename("meshes/icosphere_3.obj"));
         _grid_mesh = load_mesh<MyMesh>(Data_config::get_instance()->get_absolute_filename("meshes/grid_10x10.obj"));
@@ -1037,7 +764,7 @@ public:
         glPopMatrix();
     }
 
-    void render(Level_data const& level_data, float const time, qglviewer::Camera const* camera) override
+    void render(QGLFramebufferObject * main_fbo, Level_data const& level_data, float const time, qglviewer::Camera const* camera) override
     {
         glEnable(GL_DEPTH_TEST);
 
@@ -1108,7 +835,7 @@ public:
         _post_fbo->bind();
 
 
-        glViewport(0.0f, 0.0f, camera->screenWidth(), camera->screenHeight());
+//        glViewport(0.0f, 0.0f, camera->screenWidth(), camera->screenHeight());
 
         glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, _tmp_screen_texture[0], 0);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -1156,24 +883,24 @@ public:
 
         _temperature_fbo->release();
 
+        main_fbo->bind();
 
         glPushAttrib(GL_COLOR_BUFFER_BIT | GL_VIEWPORT_BIT | GL_ENABLE_BIT);
 
         glDisable(GL_DEPTH_TEST);
-        glViewport(0.0f, 0.0f, camera->screenWidth(), camera->screenHeight());
+//        glViewport(0.0f, 0.0f, camera->screenWidth(), camera->screenHeight());
 
         _screen_quad_program->bind();
         _screen_quad_program->setUniformValue("texture", 0);
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, _temperature_fbo->texture());
-//        glBindTexture(GL_TEXTURE_2D, _tmp_screen_texture[1]);
         draw_quad_with_tex_coords();
         _screen_quad_program->release();
 
         glPopAttrib();
 
-        // put the depth buffer from the scene drawing onto the direct FB
-        QGLFramebufferObject::blitFramebuffer(0, QRect(0, 0, screen_size.width(), screen_size.height()),
+        // put the depth buffer from the scene drawing into the returned buffer to draw the ui elements correctly
+        QGLFramebufferObject::blitFramebuffer(main_fbo, QRect(0, 0, screen_size.width(), screen_size.height()),
                                               _scene_fbo.get(), QRect(0, 0, screen_size.width(), screen_size.height()),
                                               GL_DEPTH_BUFFER_BIT);
 
@@ -1183,6 +910,8 @@ public:
         draw_elements_ui(level_data);
 
         glEnable(GL_DEPTH_TEST);
+
+        main_fbo->release();
     }
 
 

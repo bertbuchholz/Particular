@@ -5,8 +5,9 @@
 
 #include "Renderer.h"
 #include "Picking.h"
-#include "Core.h"
 #include "Draggable.h"
+
+class Core;
 
 class Main_game_screen : public Screen
 {
@@ -19,7 +20,6 @@ public:
     enum class Level_state { Intro, Running };
     enum class Intro_state { Beginning, Single_molecule, Two_molecules_0, Two_molecules_1, Two_molecules_2, Two_molecules_3, Finishing, Finished };
 
-//    Main_game_screen(My_viewer & viewer, Core & core, std::unique_ptr<World_renderer> & renderer);
     Main_game_screen(My_viewer & viewer, Core & core, Ui_state ui_state = Ui_state::Playing);
 
     ~Main_game_screen();
@@ -33,8 +33,6 @@ public:
 
     void state_changed_event(State const current_state, State const previous_state) override;
 
-//    void pause() override;
-//    void resume() override;
     void update_event(float const time_step) override;
 
     void delete_selected_element();
@@ -61,7 +59,7 @@ public Q_SLOTS:
     void handle_level_change(Main_game_screen::Level_state);
     void handle_game_state_change();
 
-private:
+protected:
     // Intro ---------------------
     void intro_cam2_end_reached();
     void intro_cam1_end_reached();
@@ -104,6 +102,12 @@ private:
     GLuint _scale_tex;
     GLuint _move_tex;
     GLuint _slider_tex;
+
+    std::unique_ptr<QGLFramebufferObject> _main_fbo;
+    std::unique_ptr<QGLShaderProgram> _screen_quad_program;
+    std::unique_ptr<QGLShaderProgram> _blur_program;
+
+    GLuint _tmp_screen_texture[2];
 };
 
 #endif // MAIN_GAME_STATE_H

@@ -28,6 +28,7 @@
 #include "Sensor_data.h"
 #include "ANN_wrapper_functions.h"
 #include "Progress.h"
+#include "Main_game_screen.h"
 
 
 class Core : public QObject
@@ -138,68 +139,13 @@ public:
 //        }
 //    }
 
-    struct Atom_averager
-    {
-        Atom operator() (std::vector<Atom const*> const& atoms) const
-        {
-            Atom result;
-
-            result._type = Atom::Type::H;
-
-            result.set_position(Eigen::Vector3f::Zero());
-
-            result._mass = 0.0f;
-            result._charge = 0.0f;
-            result._radius = 0.0f;
-
-            float charge_abssum = 0.0f;
-
-            for (Atom const* a : atoms)
-            {
-                float abs_charge = std::abs(a->_charge);
-                abs_charge = abs_charge > 0.001f ? abs_charge : 1.0f;
-
-                result.set_position(result.get_position() + a->get_position() * abs_charge); // weigh the position by the charge
-                charge_abssum += abs_charge;
-
-                result._mass += a->_mass;
-                result._charge += a->_charge;
-                result._radius += a->_radius * a->_radius * a->_radius;
-            }
-
-            if (charge_abssum < 0.001f)
-            {
-                std::cout << "charge_abssum " << charge_abssum << " #atoms " << atoms.size() << std::endl;
-                assert(false);
-            }
-
-            result.set_position(result.get_position() / charge_abssum);
-
-            result._radius = std::pow(result._radius, 0.3333f);
-
-            // not averaging, accumulating!
-//            result._mass /= atoms.size();
-//            result._charge /= atoms.size();
-//            result._radius /= atoms.size();
-
-            return result;
-        }
-    };
-
     void update_tree();
 
-//    void add_barrier(Barrier * barrier);
-//    void add_brownian_element(Brownian_element * element);
-//    void add_portal(Portal * portal);
-//    void add_molecule_releaser(Molecule_releaser * molecule_releaser);
-
-//    void delete_level_element(Level_element * level_element);
-//    void reset_level_elements();
 
     void add_molecule_external_force(Molecule_external_force const& force);
-    void add_external_force(std::string const& name, External_force const& force);
+//    void add_external_force(std::string const& name, External_force const& force);
 
-    std::vector<Force_indicator> const& get_force_indicators() const;
+//    std::vector<Force_indicator> const& get_force_indicators() const;
 
     float get_current_time() const;
 
@@ -229,27 +175,37 @@ public:
     void clear();
     void reset_level();
 
-    void save_state(std::string const& file_name) const;
-    void load_state(std::string const& file_name);
+    void save_simulation_settings();
+    void load_simulation_settings();
 
     void save_level(std::string const& file_name) const;
     void load_level(std::string const& file_name);
+    void load_next_level();
+    void change_level_state(Main_game_screen::Level_state const new_level_state);
+    std::string const& get_current_level_name() const;
+    QStringList const& get_level_names() const;
+
+    void init_game();
 
     Progress & get_progress() { return _progress; }
     void save_progress();
     void load_progress();
 
+    void toggle_simulation();
+    void set_simulation_state(bool const s);
+    void update_physics_timestep();
 
-    void parameter_changed();
 //    void set_parameters(Parameter_list const& parameters);
-    void update_parameter_list(Parameter_list & parameters) const;
-//    static Parameter_list get_parameters();
 //    QWidget * get_parameter_widget() const;
     Parameter_list & get_parameters() { return _parameters; }
     Parameter_list const& get_parameters() const { return _parameters; }
 
     void update_variables();
     void update_parameters();
+
+    void load_level_defaults();
+
+    void quit();
 
     static Core * create()
     {
@@ -275,12 +231,16 @@ public:
 //            ar & BOOST_SERIALIZATION_NVP(_rotation_fluctuation);
 //            ar & BOOST_SERIALIZATION_NVP(_translation_fluctuation);
 
-            ar & BOOST_SERIALIZATION_NVP(_external_forces);
+//            ar & BOOST_SERIALIZATION_NVP(_external_forces);
         }
     }
 
-signals:
+public Q_SLOTS:
+    void update_physics();
+
+Q_SIGNALS:
     void game_state_changed();
+    void level_changed(Main_game_screen::Level_state);
 
 private:
     Level_data _level_data;
@@ -288,9 +248,7 @@ private:
     Game_state _game_state;
     Game_state _previous_game_state;
 
-    std::vector<Force_indicator> _indicators;
-
-    std::map<std::string, External_force> _external_forces;
+//    std::vector<Force_indicator> _indicators;
 
     std::vector<Molecule_external_force> _molecule_external_forces;
 
@@ -300,14 +258,7 @@ private:
 
     Molecule_external_force _user_force;
 
-//    std::unique_ptr<Atomic_force> _atomic_force;
-    std::vector<Atomic_force*> _atomic_forces;
-
-//    float _translation_damping;
-//    float _rotation_damping;
-
-//    float _rotation_fluctuation;
-//    float _translation_fluctuation;
+    std::vector< std::unique_ptr<Atomic_force> > _atomic_forces;
 
     float _mass_factor;
 
@@ -332,10 +283,17 @@ private:
     Parameter_list _parameters;
 
     Progress _progress;
+
+//    QTimer * _physics_timer;
+    QTimer _physics_timer;
+    std::chrono::time_point<std::chrono::system_clock> _physics_elapsed_time;
+
+    QStringList _level_names;
+    std::string _current_level_name;
 };
 
 //REGISTER_BASE_CLASS_WITH_PARAMETERS(Core);
 
-BOOST_CLASS_VERSION(Core, 1)
+BOOST_CLASS_VERSION(Core, 2)
 
 #endif // CORE_H

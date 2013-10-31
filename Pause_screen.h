@@ -43,27 +43,27 @@ public:
         return true;
     }
 
-    bool mouseMoveEvent(QMouseEvent *) override { return false; }
-
-    bool mouseReleaseEvent(QMouseEvent * ) override { return false; }
-
     bool keyPressEvent(QKeyEvent * event) override
     {
         bool handled = false;
 
-        std::cout << __PRETTY_FUNCTION__ << " " << event->key() << " state: " << int(_state) << std::endl;
+        std::cout << __PRETTY_FUNCTION__ << " " << event->key() << " state: " << int(get_state()) << std::endl;
 
         if (event->key() == Qt::Key_Escape)
         {
-            if (_state == State::Running || _state == State::Resuming)
+            if (get_state() == State::Running || get_state() == State::Resuming)
             {
-                _state = State::Killing;
+                kill();
+
+                _calling_screen->resume();
 
                 handled = true;
             }
-            else if (_state == State::Killing)
+            else if (get_state() == State::Killing)
             {
-                _state = State::Resuming;
+                resume();
+
+                _calling_screen->pause();
 
                 handled = true;
             }
@@ -76,7 +76,21 @@ public:
     {
 //        std::cout << "Pause screen" << std::endl;
 
-        glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+        float alpha = 1.0f;
+
+        if (get_state() == State::Killing || get_state() == State::Resuming)
+        {
+            if (get_state() == State::Killing)
+            {
+                alpha = 1.0f - _transition_progress;
+            }
+            else if (get_state() == State::Resuming)
+            {
+                alpha = _transition_progress;
+            }
+        }
+
+        glColor4f(1.0f, 1.0f, 1.0f, alpha);
 
         _viewer.start_normalized_screen_coordinates();
 
@@ -107,16 +121,6 @@ public:
         _viewer.stop_normalized_screen_coordinates();
     }
 
-    void state_changed_event(const Screen::State new_state, const Screen::State previous_state)
-    {
-        std::cout << __PRETTY_FUNCTION__ << " " << int(new_state) << " " << int(previous_state) << std::endl;
-
-        if (new_state == State::Killed)
-        {
-            _calling_screen->resume();
-        }
-    }
-
     void init()
     {
         // Pause menu
@@ -143,21 +147,25 @@ public:
 
     void continue_game()
     {
-        _state = State::Killing;
+        kill();
+
+        _calling_screen->resume();
     }
 
     void return_to_main_menu()
     {
-        _state = State::Killing;
+        kill();
 
         _viewer.add_screen(new Main_menu_screen(_viewer, _core));
     }
 
     void restart_level()
     {
-        _state = State::Killing;
+        kill();
 
-        _viewer.reset_level();
+        _core.reset_level();
+
+        _calling_screen->resume();
     }
 
 private:

@@ -20,13 +20,15 @@ void main(void)
 
     vec4 color;
 //    vec4 color = vec4(1.0, 0.0, 0.0, 1.0);
+
 //    color = vec4(gl_FragCoord.x / screen_size.x, gl_FragCoord.y / screen_size.y, 0.0, 1.0);
 //    gl_FragColor = color;
 //    return;
 //    vec4 color = vec4(tex_coord.s, tex_coord.t, 0.0, 1.0);
     vec2 screen_coords = vec2(gl_FragCoord.x / screen_size.x, gl_FragCoord.y / screen_size.y);
 
-    color = texture2D(scene_texture, screen_coords);
+//    color = texture2D(scene_texture, screen_coords);
+//    color.a = 1.0;
 //    gl_FragColor = color;
 //    return;
 
@@ -48,6 +50,7 @@ void main(void)
         vec2 refracted_coord = vec2(dx, dy) * f * refraction_strength;
 
         vec4 scene_color = texture2D(scene_texture, screen_coords + refracted_coord);
+        scene_color.a = 1.0;
 
         vec4 tint = vec4(1.0, 1.0, 1.0, 1.0) * (1.0 - f) + vec4(0.6, 0.8, 1.0, 1.0) * f * 1.2;
 
@@ -68,6 +71,7 @@ void main(void)
         vec2 refracted_coord = vec2(screen_coords.x + refraction, screen_coords.y + refraction2);
 
         color = texture2D(scene_texture, refracted_coord); // + color * (1.0 - f);
+        color.a = 1.0;
 
         vec4 tint = vec4(1.0, 0.1, 0.1, f * 0.5) * (1.0 - f) + vec4(1.0, 0.7, 0.1, f * 0.5) * f;
 
@@ -77,6 +81,7 @@ void main(void)
     else
     {
         color = texture2D(scene_texture, screen_coords);
+        color.a = 1.0;
     }
 
     gl_FragColor = color;

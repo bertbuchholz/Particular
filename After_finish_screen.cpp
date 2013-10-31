@@ -2,6 +2,7 @@
 
 #include "My_viewer.h"
 #include "Statistics_screen.h"
+#include "Before_start_screen.h"
 
 After_finish_screen::After_finish_screen(My_viewer &viewer, Core &core) : Screen(viewer), _core(core)
 {
@@ -53,9 +54,9 @@ void After_finish_screen::init()
     score.sensor_data = _core.get_sensor_data();
 
     _core.get_progress().last_level += 1;
-    _core.get_progress().scores[_viewer.get_current_level_name()].push_back(score);
+    _core.get_progress().scores[_core.get_current_level_name()].push_back(score);
 
-    _next_level_button->set_visible(_core.get_progress().last_level < _viewer.get_level_names().size());
+    _next_level_button->set_visible(_core.get_progress().last_level < _core.get_level_names().size());
 
     _core.save_progress();
 
@@ -63,18 +64,66 @@ void After_finish_screen::init()
     _score_particle_system.generate(QString("%1").arg(score_count, 8, 10, QChar('0')).toStdString(), _viewer.get_particle_font(), QRectF(0.0f, 0.5f, 1.0f, 0.3f));
 }
 
+bool After_finish_screen::mousePressEvent(QMouseEvent *event)
+{
+    if (event->buttons() & Qt::LeftButton)
+    {
+        int picked_index = _picking.do_pick(
+                    event->pos().x() / float(_viewer.camera()->screenWidth()),
+                    (_viewer.camera()->screenHeight() - event->pos().y()) / float(_viewer.camera()->screenHeight()),
+                    std::bind(&After_finish_screen::draw_draggables_for_picking, this));
+
+        if (picked_index > -1)
+        {
+            _buttons[picked_index]->clicked();
+        }
+    }
+
+    return true;
+}
+
+void After_finish_screen::draw_draggables_for_picking()
+{
+    _viewer.start_normalized_screen_coordinates();
+
+    for (size_t i = 0; i < _buttons.size(); ++i)
+    {
+        //            if (button->is_visible())
+        {
+            _picking.set_index(i);
+            _viewer.draw_button(_buttons[i].get(), true);
+        }
+    }
+
+    _viewer.stop_normalized_screen_coordinates();
+}
+
 void After_finish_screen::load_next_level()
 {
-    _viewer.load_next_level();
+    _core.load_next_level();
 
-    _state = State::Killed;
+    for (Targeted_particle & p : _score_particle_system.get_particles())
+    {
+        p.target = Eigen::Vector3f::Random().normalized();
+        p.target *= 1.5f;
+    }
+
+    _viewer.add_screen(new Before_start_screen(_viewer, _core));
+
+    kill();
 }
 
 void After_finish_screen::change_to_main_menu()
 {
-    _state = State::Killed;
+    for (Targeted_particle & p : _score_particle_system.get_particles())
+    {
+        p.target = Eigen::Vector3f::Random().normalized();
+        p.target *= 1.5f;
+    }
 
     _viewer.add_screen(new Main_menu_screen(_viewer, _core));
+
+    kill();
 }
 
 void After_finish_screen::update_event(const float time_step)
@@ -84,7 +133,46 @@ void After_finish_screen::update_event(const float time_step)
 
 void After_finish_screen::change_to_statistics()
 {
-    _state = State::Killed;
+    for (Targeted_particle & p : _score_particle_system.get_particles())
+    {
+        p.target = Eigen::Vector3f::Random().normalized();
+        p.target *= 1.5f;
+    }
 
     _viewer.add_screen(new Statistics_screen(_viewer, _core));
+
+    kill();
+}
+
+void After_finish_screen::draw()
+{
+    float alpha = 1.0f;
+
+    if (get_state() == State::Killing || get_state() == State::Resuming)
+    {
+        if (get_state() == State::Killing)
+        {
+            alpha = 1.0f - _transition_progress;
+        }
+        else if (get_state() == State::Resuming)
+        {
+            alpha = _transition_progress;
+        }
+    }
+
+    glColor4f(1.0f, 1.0f, 1.0f, alpha);
+
+    _viewer.start_normalized_screen_coordinates();
+
+    for (boost::shared_ptr<Draggable_button> const& button : _buttons)
+    {
+        //            if (button->is_visible())
+        {
+            _viewer.draw_button(button.get(), false);
+        }
+    }
+
+    _viewer.stop_normalized_screen_coordinates();
+
+    draw_particle_system(_score_particle_system, _viewer.height());
 }

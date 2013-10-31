@@ -14,11 +14,17 @@ public:
 
     void init();
 
-    void update_event(const float time_step);
+    bool mousePressEvent(QMouseEvent *event) override;
+
+    void draw() override;
+    void draw_draggables_for_picking();
+
+    void update_event(const float time_step) override;
 
     void setup_statistics(Sensor_data const& sensor_data);
 
     void exit();
+    void repeat();
 
 private:
     Core & _core;

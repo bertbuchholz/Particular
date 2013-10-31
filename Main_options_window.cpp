@@ -7,6 +7,12 @@ QWidget *Main_options_window::add_parameter_list(const std::string &name, const 
 {
     std::cout << __PRETTY_FUNCTION__ << std::endl;
 
+    if (_param_group_to_widget_map.find(name) != _param_group_to_widget_map.end())
+    {
+        std::cout << __PRETTY_FUNCTION__ << " widget already existed: " << name << std::endl;
+        remove_parameter_list(name);
+    }
+
     QGroupBox * group_box = new QGroupBox(QString::fromStdString(name));
     QLayout * box_layout = new QVBoxLayout;
     group_box->setLayout(box_layout);
@@ -22,12 +28,6 @@ QWidget *Main_options_window::add_parameter_list(const std::string &name, const 
     draw_instance_list(parameters, box_layout);
 
     add_widget(group_box);
-
-    if (_param_group_to_widget_map.find(name) != _param_group_to_widget_map.end())
-    {
-        std::cout << __PRETTY_FUNCTION__ << " widget already existed: " << name << std::endl;
-        remove_parameter_list(name);
-    }
 
     _param_group_to_widget_map[name] = group_box;
 
@@ -65,6 +65,12 @@ void Main_options_window::remove_parameter_list(const std::string &name)
     QWidget * w = _param_group_to_widget_map[name];
     w->hide();
     _menu_frame->widget()->layout()->removeWidget(w);
+
+    for (QObject * q : w->children())
+    {
+        std::cout << __PRETTY_FUNCTION__ << " " << q << std::endl;
+    }
+
     delete w;
     _param_group_to_widget_map.erase(name);
 }

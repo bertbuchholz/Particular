@@ -31,6 +31,7 @@ public:
     void start_new_game();
     void continue_game();
     void quit_game();
+    void start_editor();
 
     void update_event(const float time_step) override;
 

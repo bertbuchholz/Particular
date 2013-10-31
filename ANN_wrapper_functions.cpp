@@ -2,6 +2,8 @@
 
 void ANN_wrapper::generate_tree_from_molecules(std::list<Molecule> const& molecules)
 {
+    if (molecules.size() == 0) return;
+
     int const dim = 3; // dimension
     int num_atoms = 0;
 

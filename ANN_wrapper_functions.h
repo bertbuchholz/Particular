@@ -10,7 +10,7 @@
 class ANN_wrapper
 {
 public:
-    ANN_wrapper() : _tree(NULL)
+    ANN_wrapper() : _tree(nullptr), _dataPts(nullptr)
     { }
 
     ~ANN_wrapper()

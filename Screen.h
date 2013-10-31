@@ -14,7 +14,10 @@ public:
     enum class Type { Modal = 0b01, Fullscreen = 0b10 };
     enum class State { Paused = 0, Resuming, Pausing, Running, Fading_out, Fading_in, Faded_out, Killing, Killed };
 
-    Screen(My_viewer & viewer) : _viewer(viewer), _state(State::Resuming), _transition_progress(0.0f)
+    Screen(My_viewer & viewer) :
+        _viewer(viewer),
+        _transition_progress(0.0f),
+        _state(State::Resuming)
     { }
 
     virtual ~Screen() {}
@@ -39,8 +42,9 @@ public:
 //    virtual void draw(qglviewer::Camera const* camera, Parameter_list const& parameters);
     virtual void draw() { }
 
-    virtual void pause();
-    virtual void resume();
+    void pause();
+    void resume();
+    void kill();
 
     virtual void deactivate() { }
     virtual void activate() { }
@@ -60,9 +64,11 @@ protected:
     My_viewer & _viewer;
 
     Type _type;
-    State _state;
 
     float _transition_progress;
+
+private:
+    State _state;
 };
 
 

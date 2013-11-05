@@ -446,11 +446,14 @@ class Charged_barrier : public Box_barrier
 public:
     Charged_barrier() {}
 
-    Charged_barrier(Eigen::Vector3f const& min, Eigen::Vector3f const& max, float const strength, float const radius, float const charge) :
-        Box_barrier(min, max, strength, radius), _charge(charge)
-    { }
+    Charged_barrier(Eigen::Vector3f const& min, Eigen::Vector3f const& max, float const strength, float const radius, float const charge);
 
     Eigen::Vector3f calc_force_on_molecule(Molecule const& m) const override;
+
+    void set_property_values(const Parameter_list &properties) override;
+    void accept(const Level_element_visitor *visitor) override;
+
+    float get_charge() const;
 
     template<class Archive>
     void serialize(Archive & ar, const unsigned int /* version */)

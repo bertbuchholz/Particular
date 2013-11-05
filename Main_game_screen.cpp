@@ -4,6 +4,7 @@
 #include "Pause_screen.h"
 #include "Before_start_screen.h"
 #include "After_finish_screen.h"
+#include "After_finish_editor_screen.h"
 #include "FloatSlider.h"
 
 class Widget_text_combination : public QWidget
@@ -25,7 +26,8 @@ Main_game_screen::Main_game_screen(My_viewer &viewer, Core &core, Ui_state ui_st
     _mouse_state(Mouse_state::None),
     _selection(Selection::None),
     _selected_level_element(nullptr),
-    _ui_state(ui_state)
+    _ui_state(ui_state),
+    _level_state(Level_state::Running)
 {
     std::cout << __PRETTY_FUNCTION__ << std::endl;
 
@@ -94,49 +96,17 @@ bool Main_game_screen::mousePressEvent(QMouseEvent * event)
     {
         handled = true;
     }
-    else if (event->buttons() & Qt::LeftButton && event->modifiers() & Qt::ControlModifier && _ui_state == Ui_state::Level_editor)
+    else if (_mouse_state == Mouse_state::Level_element_button_selected)
     {
-        add_element_event(event->pos());
-        handled = true;
-    }
-    else if (event->buttons() & Qt::LeftButton && event->modifiers() & Qt::AltModifier && _ui_state == Ui_state::Level_editor)
-    {
-        std::cout << __PRETTY_FUNCTION__ << " Drag/Click" << std::endl;
-        _dragging_start = event->pos();
-
-//            _picked_index = _picking.do_pick(event->pos().x(), height() - event->pos().y(), std::bind(&My_viewer::draw_molecules_for_picking, this));
-        _picked_index = _picking.do_pick(event->pos().x() / float(_viewer.camera()->screenWidth()), (_viewer.camera()->screenHeight() - event->pos().y())  / float(_viewer.camera()->screenHeight()), std::bind(&Main_game_screen::draw_molecules_for_picking, this));
-//            _picked_index = _picking.do_pick(event->pos().x(), height() - event->pos().y(), std::bind(&Molecule_renderer::picking_draw, _molecule_renderer));
-
-        std::cout << __PRETTY_FUNCTION__ << " index: " << _picked_index << std::endl;
-
-        if (_picked_index != -1)
+        if (event->buttons() & Qt::LeftButton)
         {
-            bool found;
-            qglviewer::Vec world_pos = _viewer.camera()->pointUnderPixel(event->pos(), found);
-
-            if (found)
-            {
-                boost::optional<Molecule const&> picked_molecule = _core.get_molecule(_picked_index);
-
-                assert(picked_molecule);
-
-                Molecule_external_force & f = _core.get_user_force();
-                f._molecule_id = _picked_index;
-//                    qglviewer::Vec dir = world_pos - camera()->position();
-//                    dir.normalize();
-                f._force.setZero();
-                f._origin = QGLV2Eigen(world_pos);
-                f._local_origin = picked_molecule->_R.transpose() * (f._origin - picked_molecule->_x);
-                f._end_time = _core.get_current_time();
-
-                _mouse_state = Mouse_state::Init_drag_molecule;
-
-                std::cout << "Apply force: " << f._origin << std::endl;
-            }
+            add_selected_level_element(event->pos());
         }
-
-        handled = true;
+        else
+        {
+            _mouse_state = Mouse_state::None;
+            QApplication::restoreOverrideCursor();
+        }
     }
     else
     {
@@ -274,10 +244,14 @@ bool Main_game_screen::mouseReleaseEvent(QMouseEvent * event)
 
             handled = true;
         }
+
+        _mouse_state = Mouse_state::None;
     }
     else if (_mouse_state == Mouse_state::Init_drag_handle)
     {
         std::cout << __PRETTY_FUNCTION__ << " click on handle" << std::endl;
+
+        _mouse_state = Mouse_state::None;
 
         if (_picked_index != -1)
         {
@@ -290,11 +264,6 @@ bool Main_game_screen::mouseReleaseEvent(QMouseEvent * event)
             {
                 _selected_level_element = iter->second;
                 _selected_level_element->set_selected(true);
-
-                if (event->button() == Qt::RightButton && _ui_state == Ui_state::Level_editor)
-                {
-                    show_context_menu_for_element();
-                }
             }
 
             handled = true;
@@ -309,9 +278,9 @@ bool Main_game_screen::mouseReleaseEvent(QMouseEvent * event)
         }
 
         _selection = Selection::None;
-    }
 
-    _mouse_state = Mouse_state::None;
+        _mouse_state = Mouse_state::None;
+    }
 
     return handled;
 }
@@ -324,8 +293,6 @@ bool Main_game_screen::keyPressEvent(QKeyEvent * event)
 
     if (event->key() == Qt::Key_Escape)
     {
-        if (_ui_state == Ui_state::Playing)
-        {
             if (get_state() == State::Running && _level_state != Level_state::Intro)
             {
                 // go into pause and start pause menu
@@ -353,13 +320,10 @@ bool Main_game_screen::keyPressEvent(QKeyEvent * event)
 
                 _viewer.add_screen(new Before_start_screen(_viewer, _core));
 
+                _level_state = Level_state::Running;
+
                 handled = true;
             }
-        }
-    }
-    if ((event->key() == Qt::Key_Backspace || event->key() == Qt::Key_Delete) && _ui_state == Ui_state::Level_editor)
-    {
-        delete_selected_element();
     }
 
     return handled;
@@ -393,6 +357,9 @@ void Main_game_screen::draw()
     if (get_state() == State::Running)
     {
         _screen_quad_program->bind();
+
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
         _screen_quad_program->setUniformValue("texture", 0);
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, _tmp_screen_texture[0]);
@@ -404,7 +371,7 @@ void Main_game_screen::draw()
     }
     else if (get_state() == State::Pausing || get_state() == State::Resuming || get_state() == State::Paused)
     {
-        float blur_strength = 20.0f;
+        float blur_strength = 20.0f * _viewer.camera()->screenWidth() / 1000.0f;
 
         if (get_state() == State::Pausing)
         {
@@ -455,7 +422,6 @@ void Main_game_screen::state_changed_event(const Screen::State new_state, const 
         _core.set_simulation_state(true);
     }
 }
-
 
 
 void Main_game_screen::update_event(const float time_step)
@@ -792,7 +758,17 @@ void Main_game_screen::draw_draggables_for_picking()
 
         _picking.set_index(i);
 
-        if (Draggable_point const* d_point = dynamic_cast<Draggable_point const*>(draggable))
+        if (Draggable_screen_point const* d_point = dynamic_cast<Draggable_screen_point const*>(draggable))
+        {
+            _viewer.start_normalized_screen_coordinates();
+            glTranslatef(parent->get_position()[0], parent->get_position()[1], parent->get_position()[2]);
+            glTranslatef(d_point->get_position()[0], d_point->get_position()[1], d_point->get_position()[2]);
+            glScalef(0.1f, 0.1f, 1.0f);
+//            glScalef(parent->get_extent()[1] * 0.5f, parent->get_extent()[1] * 0.5f, 1.0f);
+            draw_quad_with_tex_coords();
+            _viewer.stop_normalized_screen_coordinates();
+        }
+        else if (Draggable_point const* d_point = dynamic_cast<Draggable_point const*>(draggable))
         {
             draw_box_from_center(d_point->get_position(), Eigen::Vector3f(scale, scale, scale));
         }
@@ -806,6 +782,12 @@ void Main_game_screen::draw_draggables_for_picking()
             _viewer.draw_button(d_button, true);
             _viewer.stop_normalized_screen_coordinates();
         }
+//        else if (Draggable_slider const* d_slider = dynamic_cast<Draggable_slider const*>(draggable))
+//        {
+//            _viewer.start_normalized_screen_coordinates();
+//            _viewer.draw_slider(d_slider, true);
+//            _viewer.stop_normalized_screen_coordinates();
+//        }
 
         glPopMatrix();
     }
@@ -828,14 +810,28 @@ void Main_game_screen::update_active_draggables()
         std::copy(draggables.begin(), draggables.end(), std::back_inserter(_active_draggables));
     }
 
-    if (_ui_state != Ui_state::Level_editor)
+//    if (_ui_state != Ui_state::Level_editor)
     {
         for (boost::shared_ptr<Draggable_button> const& button : _buttons)
         {
-            Draggable_button * b = button.get();
+            if (button->is_visible())
+            {
+                Draggable_button * b = button.get();
 
-            std::vector<Draggable*> const draggables = b->get_draggables(Level_element::Edit_type::None);
-            std::copy(draggables.begin(), draggables.end(), std::back_inserter(_active_draggables));
+                std::vector<Draggable*> const draggables = b->get_draggables(Level_element::Edit_type::None);
+                std::copy(draggables.begin(), draggables.end(), std::back_inserter(_active_draggables));
+            }
+        }
+
+        for (boost::shared_ptr<Draggable_slider> const& slider : _sliders)
+        {
+            if (slider->is_visible())
+            {
+                Draggable_slider * b = slider.get();
+
+                std::vector<Draggable*> const draggables = b->get_draggables(Level_element::Edit_type::None);
+                std::copy(draggables.begin(), draggables.end(), std::back_inserter(_active_draggables));
+            }
         }
     }
 }
@@ -864,6 +860,11 @@ void Main_game_screen::update_draggable_to_level_element()
             {
                 Draggable_box * draggable = new Draggable_box(b->get_position(), b->get_extent(), b->get_transform(), b->get_parameters(), b);
                 b->add_observer(draggable);
+                _draggable_to_level_element[draggable] = e;
+            }
+            else if (Charged_barrier const* b = dynamic_cast<Charged_barrier const*>(e))
+            {
+                Draggable_box * draggable = new Draggable_box(b->get_position(), b->get_extent(), b->get_transform(), b->get_parameters());
                 _draggable_to_level_element[draggable] = e;
             }
             else if (Box_barrier const* b = dynamic_cast<Box_barrier const*>(e))
@@ -986,7 +987,7 @@ void Main_game_screen::draw_draggables() // FIXME: use visitors or change it so 
     }
 
 
-    if (_ui_state != Ui_state::Level_editor)
+//    if (_ui_state != Ui_state::Level_editor)
     {
         _viewer.start_normalized_screen_coordinates();
 
@@ -1003,6 +1004,14 @@ void Main_game_screen::draw_draggables() // FIXME: use visitors or change it so 
             if (label->is_visible())
             {
                 _viewer.draw_label(label.get());
+            }
+        }
+
+        for (boost::shared_ptr<Draggable_slider> const& slider : _sliders)
+        {
+            if (slider->is_visible())
+            {
+                _viewer.draw_slider(slider.get(), false);
             }
         }
 
@@ -1190,15 +1199,43 @@ void Main_game_screen::update_level_element_buttons()
 
 void Main_game_screen::level_element_button_pressed(const std::string &type)
 {
-    _core.get_level_data()._available_elements[type] -= 1;
+    _mouse_state = Mouse_state::Level_element_button_selected;
 
-    float top_pos = _core.get_level_data()._game_field_borders[Level_data::Plane::Pos_Z]->get_position()[2];
+    _selected_level_element_button_type = type;
 
-    Eigen::Vector3f const position(0.0f, 0.0f, top_pos + 10.0f);
+    QApplication::setOverrideCursor(QCursor(Qt::CrossCursor));
+}
 
-    add_element(position, type);
+void Main_game_screen::add_selected_level_element(QPoint const& mouse_pos)
+{
+    _mouse_state = Mouse_state::None;
 
-    update_level_element_buttons();
+    QApplication::restoreOverrideCursor();
+
+    if (_core.get_level_data()._available_elements[_selected_level_element_button_type] > 0)
+    {
+        Eigen::Hyperplane<float, 3> xz_plane(Eigen::Vector3f::UnitY(),
+                                             Eigen::Vector3f(0.0f, _core.get_level_data()._game_field_borders[Level_data::Plane::Neg_Y]->get_position()[1], 0.0f));
+
+        qglviewer::Vec qglv_origin; // camera pos
+        qglviewer::Vec qglv_dir;    // origin - camera_pos
+
+        _viewer.camera()->convertClickToLine(mouse_pos, qglv_origin, qglv_dir);
+
+        Eigen::Vector3f origin = QGLV2Eigen(qglv_origin);
+        Eigen::Vector3f dir    = QGLV2Eigen(qglv_dir).normalized();
+
+        Eigen::ParametrizedLine<float, 3> line(origin, dir);
+
+        Eigen::Vector3f placement_position = line.intersectionPoint(xz_plane);
+        placement_position[1] = 0.0f;
+
+        _core.get_level_data()._available_elements[_selected_level_element_button_type] -= 1;
+
+        add_element(placement_position, _selected_level_element_button_type);
+
+        update_level_element_buttons();
+    }
 }
 
 void Main_game_screen::change_renderer()
@@ -1220,20 +1257,12 @@ void Main_game_screen::handle_level_change(Main_game_screen::Level_state const l
 {
     std::cout << __PRETTY_FUNCTION__ << std::endl;
 
-    //    _active_draggables.clear();
-
-    //    for (auto & d : _draggable_to_level_element)
-    //    {
-    //        delete d.first;
-    //    }
-
-    //    _draggable_to_level_element.clear();
-
     _level_state = level_state;
 
     if (_level_state == Level_state::Intro)
     {
         setup_intro();
+        assert(_core.get_level_data()._game_field_borders.size() == 6);
     }
 
     update_level_element_buttons();
@@ -1244,8 +1273,7 @@ void Main_game_screen::handle_level_change(Main_game_screen::Level_state const l
 
 void Main_game_screen::handle_game_state_change()
 {
-    // TODO: figure out change and put after_finish screen up
-    std::cout << __PRETTY_FUNCTION__ << " implement!" << std::endl;
+    std::cout << __PRETTY_FUNCTION__ << std::endl;
 
     if (_core.get_game_state() == Core::Game_state::Running)
     {
@@ -1255,7 +1283,14 @@ void Main_game_screen::handle_game_state_change()
     {
         pause();
 
-        _viewer.add_screen(new After_finish_screen(_viewer, _core));
+        if (_ui_state == Ui_state::Level_editor)
+        {
+            _viewer.add_screen(new After_finish_editor_screen(_viewer, _core));
+        }
+        else
+        {
+            _viewer.add_screen(new After_finish_screen(_viewer, _core));
+        }
     }
 }
 
@@ -1298,6 +1333,8 @@ void Main_game_screen::setup_intro()
     _core.get_level_data()._parameters["Game Field Height"]->set_value(100.0f);
     _core.get_level_data()._parameters["Game Field Depth"]->set_value(100.0f);
 
+    assert(_core.get_level_data()._game_field_borders.size() == 6);
+
     for (int i = 0; i < 100; ++i)
     {
         _core.update(0.01f);
@@ -1320,7 +1357,6 @@ void Main_game_screen::setup_intro()
     kfi->startInterpolation();
 
     connect(kfi, SIGNAL(endReached()), this, SLOT(intro_cam1_end_reached()));
-
 
     _intro_time = 0.0f;
     _intro_state = Intro_state::Beginning;
@@ -1577,4 +1613,8 @@ void Main_game_screen::intro_cam2_end_reached()
     pause();
 
     _core.load_next_level();
+
+    _viewer.add_screen(new Before_start_screen(_viewer, _core));
+
+    _level_state = Level_state::Running;
 }

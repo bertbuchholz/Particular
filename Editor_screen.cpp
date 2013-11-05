@@ -1,11 +1,28 @@
 #include "Editor_screen.h"
 
-#include "Pause_screen.h"
+#include "Editor_pause_screen.h"
 #include "My_viewer.h"
+
+Editor_screen::Editor_screen(My_viewer &viewer, Core &core) : Main_game_screen(viewer, core, Ui_state::Level_editor)
+{
+//    _placeable_molecules = std::vector<std::string>{ "H2O", "Na", "Cl" };
+    _placeable_molecules = { "H2O", "Na", "Cl" };
+
+    init_level_element_buttons();
+
+    Main_options_window::get_instance()->add_parameter_list("Editor_screen", _parameters);
+}
+
+Editor_screen::~Editor_screen()
+{
+    std::cout << __PRETTY_FUNCTION__ << std::endl;
+    Main_options_window::get_instance()->remove_parameter_list("Editor_screen");
+}
 
 bool Editor_screen::mousePressEvent(QMouseEvent * event)
 {
     bool handled = false;
+
 
     if (event->buttons() & Qt::LeftButton && event->modifiers() & Qt::ControlModifier)
     {
@@ -60,6 +77,11 @@ bool Editor_screen::mousePressEvent(QMouseEvent * event)
 
         if (_picked_index != -1)
         {
+            if (_mouse_state == Mouse_state::Level_element_button_selected)
+            {
+                QApplication::restoreOverrideCursor();
+            }
+
             _dragging_start = event->pos();
 
             bool found;
@@ -74,6 +96,25 @@ bool Editor_screen::mousePressEvent(QMouseEvent * event)
             }
 
             handled = true;
+        }
+        else if (_mouse_state == Mouse_state::Level_element_button_selected)
+        {
+            if (event->buttons() & Qt::LeftButton)
+            {
+                add_selected_level_element(event->pos());
+            }
+            else
+            {
+                _mouse_state = Mouse_state::None;
+                QApplication::restoreOverrideCursor();
+
+                _level_element_buttons[_selected_level_element_button_type]->reset();
+
+//                for (auto & b : _level_element_buttons)
+//                {
+//                    b.second->reset();
+//                }
+            }
         }
     }
 
@@ -131,36 +172,51 @@ bool Editor_screen::mouseMoveEvent(QMouseEvent * event)
     }
     else if (_mouse_state == Mouse_state::Dragging_handle) // TODO: currently has Y plane constraint, move constraints into Draggable, consider giving it the viewline instead of a single position
     {
-        Eigen::Hyperplane<float, 3> y_plane(Eigen::Vector3f(0.0f, 1.0f, 0.0f), _active_draggables[_picked_index]->get_position());
-
-        qglviewer::Vec qglv_origin; // camera pos
-        qglviewer::Vec qglv_dir;    // normalize(origin - camera_pos)
-
-        _viewer.camera()->convertClickToLine(event->pos(), qglv_origin, qglv_dir);
-
-        Eigen::ParametrizedLine<float, 3> view_ray(QGLV2Eigen(qglv_origin), QGLV2Eigen(qglv_dir).normalized());
-
-        Eigen::Vector3f new_position = view_ray.intersectionPoint(y_plane);
-
-        Draggable * parent = _active_draggables[_picked_index]->get_parent();
-
-        auto iter = _draggable_to_level_element.find(parent);
-
-        assert(iter != _draggable_to_level_element.end());
-
-        Level_element * level_element = iter->second;
-
-//            if (!check_for_collision(level_element))
+        if (Draggable_screen_point * d_point = dynamic_cast<Draggable_screen_point *>(_active_draggables[_picked_index]))
         {
+            d_point->set_position_from_world(Eigen::Vector3f(event->pos().x() / float(_viewer.camera()->screenWidth()), event->pos().y() / float(_viewer.camera()->screenHeight()), 0.0f));
+            d_point->update();
+        }
+        else
+        {
+            Eigen::Hyperplane<float, 3> y_plane(Eigen::Vector3f(0.0f, 1.0f, 0.0f), _active_draggables[_picked_index]->get_position());
+
+            qglviewer::Vec qglv_origin; // camera pos
+            qglviewer::Vec qglv_dir;    // normalize(origin - camera_pos)
+
+            _viewer.camera()->convertClickToLine(event->pos(), qglv_origin, qglv_dir);
+
+            Eigen::ParametrizedLine<float, 3> const view_ray(QGLV2Eigen(qglv_origin), QGLV2Eigen(qglv_dir).normalized());
+
+            Eigen::Vector3f const new_position = view_ray.intersectionPoint(y_plane);
+
+            Draggable * parent = _active_draggables[_picked_index]->get_parent();
+
             _active_draggables[_picked_index]->set_position_from_world(new_position);
             _active_draggables[_picked_index]->update();
 
-            std::cout << __PRETTY_FUNCTION__ << ": " << parent << std::endl;
+            auto iter = _draggable_to_level_element.find(parent);
 
-            level_element->accept(parent);
+            assert(iter != _draggable_to_level_element.end());
 
-//            update();
+//            if (iter != _draggable_to_level_element.end())
+            {
+                Level_element * level_element = iter->second;
+
+                //            if (!check_for_collision(level_element))
+                {
+
+
+                    std::cout << __PRETTY_FUNCTION__ << ": " << parent << std::endl;
+
+                    level_element->accept(parent);
+
+                    //            update();
+                }
+            }
         }
+
+
     }
 
     return handled;
@@ -173,6 +229,8 @@ bool Editor_screen::mouseReleaseEvent(QMouseEvent * event)
     if (_mouse_state == Mouse_state::Init_drag_molecule)
     {
         std::cout << __PRETTY_FUNCTION__ << " click on molecule" << std::endl;
+
+        _mouse_state = Mouse_state::None;
 
         if (_picked_index != -1)
         {
@@ -188,6 +246,8 @@ bool Editor_screen::mouseReleaseEvent(QMouseEvent * event)
     else if (_mouse_state == Mouse_state::Init_drag_handle)
     {
         std::cout << __PRETTY_FUNCTION__ << " click on handle" << std::endl;
+
+        _mouse_state = Mouse_state::None;
 
         if (_picked_index != -1)
         {
@@ -210,6 +270,10 @@ bool Editor_screen::mouseReleaseEvent(QMouseEvent * event)
             handled = true;
         }
     }
+    else if (_mouse_state == Mouse_state::Level_element_button_selected)
+    {
+        // do nothing, keep button selected
+    }
     else
     {
         if (_selected_level_element)
@@ -219,9 +283,8 @@ bool Editor_screen::mouseReleaseEvent(QMouseEvent * event)
         }
 
         _selection = Selection::None;
+        _mouse_state = Mouse_state::None;
     }
-
-    _mouse_state = Mouse_state::None;
 
     return handled;
 }
@@ -239,7 +302,7 @@ bool Editor_screen::keyPressEvent(QKeyEvent * event)
             // go into pause and start pause menu
             pause();
 
-            _viewer.add_screen(new Pause_screen(_viewer, _core, this)); // TODO: make this the editor pause menu
+            _viewer.add_screen(new Editor_pause_screen(_viewer, _core, this));
 
             _core.set_simulation_state(false);
 
@@ -258,4 +321,203 @@ bool Editor_screen::keyPressEvent(QKeyEvent * event)
     }
 
     return handled;
+}
+
+void Editor_screen::init_level_element_buttons()
+{
+    std::cout << __PRETTY_FUNCTION__ << std::endl;
+
+    int i = 0;
+
+//    _buttons.clear();
+//    _level_element_buttons.clear();
+
+    for (auto const& iter : _core.get_level_data()._available_elements)
+    {
+        auto const& image_iter = _element_images.find(iter.first);
+
+        if (image_iter != _element_images.end()) continue;
+
+        _element_images[iter.first] = QImage(Data_config::get_instance()->get_absolute_qfilename("textures/button_" + QString::fromStdString(iter.first) + ".png"));
+    }
+
+    for (auto const& iter : _core.get_level_data()._available_elements)
+    {
+        Eigen::Vector3f pos(0.05f + i * 0.06f, 0.95f, 0.0f);
+        Eigen::Vector2f size(0.04f, 0.04f * _viewer.camera()->aspectRatio());
+
+        QImage button_img = _element_images[iter.first];
+
+        boost::shared_ptr<Draggable_button> button(new Draggable_button(pos, size, "", std::bind(&Editor_screen::level_element_button_pressed, this, std::placeholders::_1), iter.first));
+        button->set_pressable(true);
+
+        button->set_texture(_viewer.bindTexture(button_img));
+
+        _buttons.push_back(button);
+        _level_element_buttons[iter.first] = button;
+
+        ++i;
+    }
+
+    for (std::string const& molecule : _placeable_molecules)
+    {
+        Eigen::Vector3f pos(0.05f + i * 0.06f, 0.95f, 0.0f);
+        Eigen::Vector2f size(0.04f, 0.04f * _viewer.camera()->aspectRatio());
+
+        boost::shared_ptr<Draggable_button> button(new Draggable_button(pos, size, "", std::bind(&Editor_screen::level_element_button_pressed, this, std::placeholders::_1), molecule));
+        button->set_pressable(true);
+
+        QImage button_img(Data_config::get_instance()->get_absolute_qfilename("textures/button_" + QString::fromStdString(molecule) + ".png"));
+
+        button->set_texture(_viewer.bindTexture(button_img));
+
+        _buttons.push_back(button);
+        _level_element_buttons[molecule] = button;
+
+        ++i;
+    }
+
+    _toggle_simulation_button = boost::shared_ptr<Draggable_button>(
+                new Draggable_button(Eigen::Vector3f(0.95f, 0.95f, 0.0f),
+                                     Eigen::Vector2f(0.04f, 0.04f * _viewer.camera()->aspectRatio()),
+                                     "", std::bind(&Editor_screen::toggle_simulation, this)));
+    _toggle_simulation_button->set_texture(_viewer.bindTexture(QImage(Data_config::get_instance()->get_absolute_qfilename("textures/button_play.png"))));
+    _toggle_simulation_button->set_pressable(true);
+//    _toggle_simulation_button->set_pressed(true);
+    _toggle_simulation_button->set_parameter(_core.get_parameters()["Toggle simulation"]);
+
+    _buttons.push_back(_toggle_simulation_button);
+
+    _hide_controls_button = boost::shared_ptr<Draggable_button>(
+                new Draggable_button(Eigen::Vector3f(0.1f, 0.05f, 0.0f),
+                                     Eigen::Vector2f(0.15f, 0.05f * _viewer.camera()->aspectRatio()),
+                                     "Hide Controls", std::bind(&Editor_screen::hide_controls, this)));
+    _viewer.generate_button_texture(_hide_controls_button.get());
+
+    _buttons.push_back(_hide_controls_button);
+
+    _show_controls_button = boost::shared_ptr<Draggable_button>(
+                new Draggable_button(Eigen::Vector3f(0.1f, 0.05f, 0.0f),
+                                     Eigen::Vector2f(0.15f, 0.05f * _viewer.camera()->aspectRatio()),
+                                     "Show Controls", std::bind(&Editor_screen::show_controls, this)));
+    _show_controls_button->set_visible(false);
+    _viewer.generate_button_texture(_show_controls_button.get());
+
+    _buttons.push_back(_show_controls_button);
+
+    _translation_fluctuation_slider = boost::shared_ptr<Draggable_slider>(
+                new Draggable_slider(Eigen::Vector3f(0.93f, 0.88f, 0.0f),
+                                     Eigen::Vector2f(0.1f, 0.05f),
+                                     _core.get_level_data()._parameters["Temperature"], std::bind(&Editor_screen::slider_changed, this)));
+    _translation_fluctuation_slider->set_slider_marker_texture(_slider_tex);
+    _translation_fluctuation_slider->set_texture(_viewer.bindTexture(QImage(Data_config::get_instance()->get_absolute_qfilename("textures/button_Brownian_box.png"))));
+
+    _sliders.push_back(_translation_fluctuation_slider);
+
+    boost::shared_ptr<Draggable_slider> damping_slider = boost::shared_ptr<Draggable_slider>(
+                new Draggable_slider(Eigen::Vector3f(0.93f, 0.80f, 0.0f),
+                                     Eigen::Vector2f(0.1f, 0.05f),
+                                     _core.get_level_data()._parameters["Damping"], std::bind(&Editor_screen::slider_changed, this)));
+    damping_slider->set_slider_marker_texture(_slider_tex);
+
+    _sliders.push_back(damping_slider);
+
+    boost::shared_ptr<Draggable_slider> gravity_slider = boost::shared_ptr<Draggable_slider>(
+                new Draggable_slider(Eigen::Vector3f(0.93f, 0.72f, 0.0f),
+                                     Eigen::Vector2f(0.1f, 0.05f),
+                                     _core.get_level_data()._parameters["gravity"], std::bind(&Editor_screen::slider_changed, this)));
+    gravity_slider->set_slider_marker_texture(_slider_tex);
+
+    _sliders.push_back(gravity_slider);
+
+    update_draggable_to_level_element();
+    update_active_draggables();
+}
+
+void Editor_screen::level_element_button_pressed(const std::string &type)
+{
+    for (auto const& pair : _level_element_buttons)
+    {
+        if (pair.first == type) continue;
+
+        pair.second->reset();
+    }
+
+    if (_level_element_buttons[type]->is_pressed())
+    {
+        _mouse_state = Mouse_state::Level_element_button_selected;
+        _selected_level_element_button_type = type;
+        QApplication::setOverrideCursor(QCursor(Qt::CrossCursor));
+    }
+    else
+    {
+        _mouse_state = Mouse_state::None;
+        QApplication::restoreOverrideCursor();
+    }
+}
+
+void Editor_screen::add_selected_level_element(const QPoint &mouse_pos)
+{
+    Eigen::Hyperplane<float, 3> xz_plane(Eigen::Vector3f::UnitY(),
+                                         Eigen::Vector3f(0.0f, _core.get_level_data()._game_field_borders[Level_data::Plane::Neg_Y]->get_position()[1], 0.0f));
+
+    qglviewer::Vec qglv_origin; // camera pos
+    qglviewer::Vec qglv_dir;    // origin - camera_pos
+
+    _viewer.camera()->convertClickToLine(mouse_pos, qglv_origin, qglv_dir);
+
+    Eigen::Vector3f origin = QGLV2Eigen(qglv_origin);
+    Eigen::Vector3f dir    = QGLV2Eigen(qglv_dir).normalized();
+
+    Eigen::ParametrizedLine<float, 3> line(origin, dir);
+
+    Eigen::Vector3f placement_position = line.intersectionPoint(xz_plane);
+    placement_position[1] = 0.0f;
+
+//    if (std::find(_placeable_molecules.begin(), _placeable_molecules.end(), _selected_level_element_button_type) == _placeable_molecules.end())
+//    {
+        _core.get_level_data()._available_elements[_selected_level_element_button_type] -= 1;
+//    }
+
+    add_element(placement_position, _selected_level_element_button_type);
+}
+
+void Editor_screen::toggle_simulation()
+{
+    _core.set_simulation_state(_toggle_simulation_button->is_pressed());
+}
+
+void Editor_screen::slider_changed()
+{
+    std::cout << __PRETTY_FUNCTION__ << std::endl;
+}
+
+void Editor_screen::hide_controls()
+{
+    std::cout << __PRETTY_FUNCTION__ << std::endl;
+
+    for (boost::shared_ptr<Draggable_button> const& b : _buttons)
+    {
+        b->set_visible(false);
+    }
+
+    _show_controls_button->set_visible(true);
+
+    update_draggable_to_level_element();
+    update_active_draggables();
+}
+
+void Editor_screen::show_controls()
+{
+    std::cout << __PRETTY_FUNCTION__ << std::endl;
+
+    for (boost::shared_ptr<Draggable_button> const& b : _buttons)
+    {
+        b->set_visible(true);
+    }
+
+    _show_controls_button->set_visible(false);
+
+    update_draggable_to_level_element();
+    update_active_draggables();
 }

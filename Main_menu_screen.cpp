@@ -4,7 +4,7 @@
 #include "Before_start_screen.h"
 #include "Editor_screen.h"
 
-Main_menu_screen::Main_menu_screen(My_viewer &viewer, Core &core) : Screen(viewer), _core(core) // , _calling_screen(calling_state)
+Main_menu_screen::Main_menu_screen(My_viewer &viewer, Core &core) : Screen(viewer), _core(core)
 {
     _type = Screen::Type::Modal;
 
@@ -57,7 +57,7 @@ void Main_menu_screen::draw()
     {
 //            if (button->is_visible())
         {
-            _viewer.draw_button(button.get(), false);
+            _viewer.draw_button(button.get(), false, alpha);
         }
     }
 
@@ -144,8 +144,6 @@ void Main_menu_screen::start_new_game()
 
     _core.get_progress().reset();
 
-    _core.change_level_state(Main_game_screen::Level_state::Intro);
-
     _core.clear();
 
     for (Targeted_particle & p : _game_name_system.get_particles())
@@ -153,6 +151,8 @@ void Main_menu_screen::start_new_game()
         p.target = Eigen::Vector3f::Random().normalized();
         p.target *= 1.5f;
     }
+
+    _core.change_level_state(Main_game_screen::Level_state::Intro);
 
     kill();
 }
@@ -186,12 +186,10 @@ void Main_menu_screen::start_editor()
 {
     _viewer.camera()->frame()->setConstraint(nullptr);
 
-//    _viewer.replace_screens(new Main_game_screen(_viewer, _core, Main_game_screen::Ui_state::Level_editor));
-    _viewer.replace_screens(new Editor_screen(_viewer, _core));
-
     _core.load_level_defaults();
+    _core.set_simulation_state(false);
 
-    kill();
+    _viewer.replace_screens(new Editor_screen(_viewer, _core));
 }
 
 void Main_menu_screen::update_event(const float time_step)

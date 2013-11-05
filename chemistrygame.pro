@@ -79,7 +79,10 @@ SOURCES += main.cpp \
     Statistics_screen.cpp \
     Main_options_window.cpp \
     Level_data.cpp \
-    Editor_screen.cpp
+    Editor_screen.cpp \
+    My_viewer.cpp \
+    Editor_pause_screen.cpp \
+    After_finish_editor_screen.cpp
 
 OTHER_FILES += TODO.txt \
     data/shaders/picking.vert \
@@ -131,4 +134,6 @@ HEADERS += \
     Main_options_window.h \
     After_finish_screen.h \
     Statistics_screen.h \
-    Editor_screen.h
+    Editor_screen.h \
+    Editor_pause_screen.h \
+    After_finish_editor_screen.h

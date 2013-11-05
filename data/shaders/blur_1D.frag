@@ -30,13 +30,32 @@ vec3 blur(vec2 pos, int num_steps)
     return result / weight_sum;
 }
 
+vec4 blur_with_alpha(vec2 pos, int num_steps)
+{
+    int resolution = num_steps / 2;
+    vec2 step = direction / tex_size;
+
+    vec4 result = vec4(0.0, 0.0, 0.0, 0.0);
+
+    float weight_sum = 0.0;
+
+    for (int u = -resolution; u <= resolution; ++u)
+    {
+        float weight = wendland_2_1(abs(float(u) / float(resolution + 1)));
+        result += texture2D(texture, pos + step * float(u)) * weight;
+        weight_sum += weight;
+    }
+
+    return result / weight_sum;
+}
+
 void main(void)
 {
     vec2 tex_coord = gl_TexCoord[0].st;
 
 //    vec4 color = texture2D(texture, tex_coord);
 
-    vec4 color = vec4(blur(tex_coord, int(blur_strength)), 1.0);
+    vec4 color = blur_with_alpha(tex_coord, int(blur_strength));
 
     gl_FragColor = color;
 }

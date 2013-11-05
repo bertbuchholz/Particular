@@ -9,6 +9,7 @@ class Box_barrier;
 class Blow_barrier;
 class Tractor_barrier;
 class Moving_box_barrier;
+class Charged_barrier;
 
 class Molecule_releaser;
 class Atom_cannon;
@@ -21,11 +22,14 @@ class Particle_system_element;
 class Level_element_visitor
 {
 public:
+    virtual ~Level_element_visitor() {}
+
     virtual void visit(Plane_barrier *) const {}
     virtual void visit(Box_barrier *) const {}
     virtual void visit(Blow_barrier *) const {}
     virtual void visit(Tractor_barrier *) const {}
     virtual void visit(Moving_box_barrier *) const {}
+    virtual void visit(Charged_barrier *) const {}
 
     virtual void visit(Molecule_releaser *) const {}
     virtual void visit(Atom_cannon *) const {}

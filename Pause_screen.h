@@ -98,7 +98,7 @@ public:
         {
 //            if (button->is_visible())
             {
-                _viewer.draw_button(button.get(), false);
+                _viewer.draw_button(button.get(), false, alpha);
             }
         }
 

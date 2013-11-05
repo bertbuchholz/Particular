@@ -16,6 +16,7 @@ BOOST_CLASS_EXPORT_GUID(Box_portal, "Box_portal")
 BOOST_CLASS_EXPORT_GUID(Sphere_portal, "Sphere_portal")
 BOOST_CLASS_EXPORT_GUID(Brownian_box, "Brownian_box")
 BOOST_CLASS_EXPORT_GUID(Tractor_barrier, "Tractor_barrier")
+BOOST_CLASS_EXPORT_GUID(Charged_barrier, "Charged_barrier")
 
 BOOST_CLASS_EXPORT_GUID(Molecule_capture_condition, "Molecule_capture_condition")
 

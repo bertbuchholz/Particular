@@ -516,6 +516,13 @@ float Box_barrier::falloff_function(const float distance) const
     }
 }
 
+Charged_barrier::Charged_barrier(Eigen::Vector3f const& min, Eigen::Vector3f const& max, float const strength, float const radius, float const charge) :
+    Box_barrier(min, max, strength, radius), _charge(charge)
+{
+    add_property(new Parameter("charge", charge, -50.0f, 50.0f));
+
+    set_property_values(_properties);
+}
 
 Eigen::Vector3f Charged_barrier::calc_force_on_molecule(const Molecule &m) const
 {
@@ -532,6 +539,21 @@ Eigen::Vector3f Charged_barrier::calc_force_on_molecule(const Molecule &m) const
     }
 
     return (_strength * falloff_function(distance) + _charge * m._accumulated_charge) * (get_transform() * (local_pos - closest_point).normalized());
+}
+
+float Charged_barrier::get_charge() const
+{
+    return _charge;
+}
+
+void Charged_barrier::set_property_values(const Parameter_list &properties)
+{
+    _charge = properties["charge"]->get_value<float>();
+}
+
+void Charged_barrier::accept(const Level_element_visitor *visitor)
+{
+    visitor->visit(this);
 }
 
 

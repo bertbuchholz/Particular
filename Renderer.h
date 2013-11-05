@@ -178,7 +178,7 @@ public:
     {
         if (level_data._game_field_borders.size() != 6)
         {
-            std::cout << __PRETTY_FUNCTION__ << " no game field borders or too many/few, not drawing temperature mesh" << std::endl;
+            std::cout << __PRETTY_FUNCTION__ << " no game field borders or too many/few, not drawing temperature mesh: " << level_data._game_field_borders.size() << std::endl;
             return;
         }
 
@@ -336,8 +336,17 @@ public:
 
         assert(_scene_fbo->isValid());
 
-        glEnable(GL_LIGHTING);
         glDisable(GL_TEXTURE_2D);
+
+        //        glDisable(GL_LIGHTING);
+
+//        glColor3f(1.0f, 1.0f, 1.0f);
+
+//        draw_backdrop_quad();
+
+//        glBindTexture(GL_TEXTURE_2D, 0);
+
+        glEnable(GL_LIGHTING);
 
         std::list<Molecule> const& molecules = level_data._molecules;
 
@@ -387,7 +396,7 @@ public:
         glPushAttrib(GL_COLOR_BUFFER_BIT | GL_VIEWPORT_BIT | GL_ENABLE_BIT);
 
         glDisable(GL_DEPTH_TEST);
-        glViewport(0.0f, 0.0f, camera->screenWidth(), camera->screenHeight());
+//        glViewport(0.0f, 0.0f, camera->screenWidth(), camera->screenHeight());
 
         _screen_quad_program->bind();
         _screen_quad_program->setUniformValue("texture", 0);
@@ -778,22 +787,23 @@ public:
 
         // draw the complete scene into an FB
 
-        glEnable(GL_TEXTURE_2D);
+//        glEnable(GL_TEXTURE_2D);
+        glDisable(GL_TEXTURE_2D);
 
-        glColor3f(1.0f, 1.0f, 1.0f);
-        glDisable(GL_LIGHTING);
+//        glColor3f(1.0f, 1.0f, 1.0f);
+//        glDisable(GL_LIGHTING);
 
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, _backdrop_texture);
-//        draw_backdrop_quad();
+//        glActiveTexture(GL_TEXTURE0);
+//        glBindTexture(GL_TEXTURE_2D, _backdrop_texture);
+////        draw_backdrop_quad();
 
-        glPushMatrix();
-        glTranslatef(0.0f, 200.0f, 0.0f);
-        glScalef(300.0f, 1.0f, 300.0f);
-        draw_mesh(_bg_hemisphere_mesh);
-        glPopMatrix();
+//        glPushMatrix();
+//        glTranslatef(0.0f, 200.0f, 0.0f);
+//        glScalef(300.0f, 1.0f, 300.0f);
+//        draw_mesh(_bg_hemisphere_mesh);
+//        glPopMatrix();
 
-        glBindTexture(GL_TEXTURE_2D, 0);
+//        glBindTexture(GL_TEXTURE_2D, 0);
 
         glEnable(GL_LIGHTING);
         glDisable(GL_TEXTURE_2D);

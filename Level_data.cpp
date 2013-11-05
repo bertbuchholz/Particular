@@ -20,8 +20,10 @@ Level_data::Level_data()
     _parameters.add_parameter(new Parameter("translation_damping", 0.5f, 0.0f, 10.0f, update_variables));
     _parameters.add_parameter(new Parameter("rotation_fluctuation", 0.0f, -10.0f, 100.0f, update_variables));
     _parameters.add_parameter(new Parameter("translation_fluctuation", 0.0f, -10.0f, 100.0f, update_variables));
+    _parameters.add_parameter(new Parameter("Temperature", 0.0f, -50.0f, 50.0f, update_variables));
+    _parameters.add_parameter(new Parameter("Damping", 0.0f, 0.0f, 3.0f, update_variables));
 
-    _parameters.add_parameter(new Parameter("gravity", 0.0f, -100.0f, 100.0f, update_variables));
+    _parameters.add_parameter(new Parameter("gravity", 0.0f, 0.0f, 10.0f, update_variables));
 
     _parameters.add_parameter(new Parameter("background_name", std::string("iss_interior_1.png")));
 
@@ -191,10 +193,16 @@ void Level_data::update_variables()
     _score_time_factor = _parameters["score_time_factor"]->get_value<float>();
     _background_name = _parameters["background_name"]->get_value<std::string>();
 
-    _rotation_damping = _parameters["rotation_damping"]->get_value<float>();
-    _translation_damping = _parameters["translation_damping"]->get_value<float>();
-    _rotation_fluctuation = _parameters["rotation_fluctuation"]->get_value<float>();
-    _translation_fluctuation = _parameters["translation_fluctuation"]->get_value<float>();
+//    _rotation_damping = _parameters["rotation_damping"]->get_value<float>();
+//    _translation_damping = _parameters["translation_damping"]->get_value<float>();
+//    _rotation_fluctuation = _parameters["rotation_fluctuation"]->get_value<float>();
+//    _translation_fluctuation = _parameters["translation_fluctuation"]->get_value<float>();
+
+    _rotation_fluctuation = _parameters["Temperature"]->get_value<float>();
+    _translation_fluctuation = _parameters["Temperature"]->get_value<float>();
+
+    _rotation_damping = _parameters["Damping"]->get_value<float>();
+    _translation_damping = _parameters["Damping"]->get_value<float>();
 
     //        _gravity = _parameters["gravity"]->get_value<float>();
     _external_forces["gravity"]._force[2] = -_parameters["gravity"]->get_value<float>();
@@ -205,6 +213,8 @@ void Level_data::update_variables()
     {
         _available_elements[iter.first] = iter.second->get_value<int>();
     }
+
+    update_parameters(); // FIXME: need to update parameters in case one of the meta params has been changed so UI is updated for those values depending on them
 }
 
 void Level_data::update_parameters()
@@ -216,6 +226,9 @@ void Level_data::update_parameters()
     _parameters["translation_damping"]->set_value_no_update(_translation_damping);
     _parameters["rotation_fluctuation"]->set_value_no_update(_rotation_fluctuation);
     _parameters["translation_fluctuation"]->set_value_no_update(_translation_fluctuation);
+
+    _parameters["Temperature"]->set_value_no_update((_rotation_fluctuation + _translation_fluctuation) * 0.5f);
+    _parameters["Damping"]->set_value_no_update((_rotation_damping + _translation_damping) * 0.5f);
 
     //        _parameters["gravity"]->set_value_no_update(_gravity);
     _parameters["gravity"]->set_value_no_update(-_external_forces["gravity"]._force[2]);

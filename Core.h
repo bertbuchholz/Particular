@@ -193,6 +193,7 @@ public:
 
     void toggle_simulation();
     void set_simulation_state(bool const s);
+    bool get_simulation_state() const;
     void update_physics_timestep();
 
 //    void set_parameters(Parameter_list const& parameters);

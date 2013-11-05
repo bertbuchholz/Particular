@@ -10,7 +10,7 @@
 class Statistics_screen : public Screen
 {
 public:
-    Statistics_screen(My_viewer & viewer, Core & core);
+    Statistics_screen(My_viewer & viewer, Core & core, Screen * calling_screen);
 
     void init();
 
@@ -36,6 +36,8 @@ private:
     boost::shared_ptr<Draggable_button> _next_level_button;
 
     Picking _picking;
+
+    Screen * _calling_screen;
 };
 
 #endif // STATISTICS_SCREEN_H

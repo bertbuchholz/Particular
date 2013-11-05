@@ -382,7 +382,7 @@ void Core::compute_force_and_torque(Molecule &receiver)
         }
     }
 
-    receiver._force += -_level_data._translation_damping * receiver._v;
+    receiver._force += -_level_data._translation_damping * translation_to_rotation_ratio * receiver._v;
     receiver._torque += -_level_data._rotation_damping * receiver._omega;
 }
 
@@ -955,6 +955,11 @@ void Core::set_simulation_state(const bool s)
     _parameters["Toggle simulation"]->set_value(s);
 }
 
+bool Core::get_simulation_state() const
+{
+    return _parameters["Toggle simulation"]->get_value<bool>();
+}
+
 void Core::update_physics_timestep()
 {
     _physics_timer.setInterval(_parameters["physics_timestep_ms"]->get_value<int>());
@@ -1091,6 +1096,7 @@ void Core::add_molecule_external_force(const Molecule_external_force &force)
 void Core::load_level_defaults()
 {
 //    _level_data = Level_data();
+    clear();
     _level_data.load_defaults();
 
     Main_options_window::get_instance()->add_parameter_list("Level Data", _level_data._parameters);

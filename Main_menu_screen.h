@@ -16,7 +16,7 @@ class My_viewer;
 class Main_menu_screen : public Screen
 {
 public:
-    Main_menu_screen(My_viewer & viewer, Core & core /*, Screen * calling_state */);
+    Main_menu_screen(My_viewer & viewer, Core & core);
 
     bool mousePressEvent(QMouseEvent * event) override;
 
@@ -37,8 +37,6 @@ public:
 
 private:
     Core & _core;
-
-//    Screen * _calling_screen;
 
     Targeted_particle_system _game_name_system;
 

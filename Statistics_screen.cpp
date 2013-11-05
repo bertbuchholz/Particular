@@ -79,7 +79,7 @@ void Statistics_screen::draw()
     {
 //            if (button->is_visible())
         {
-            _viewer.draw_button(button.get(), false);
+            _viewer.draw_button(button.get(), false, alpha);
         }
     }
 
@@ -122,7 +122,8 @@ void Statistics_screen::setup_statistics(const Sensor_data &sensor_data)
 
 void Statistics_screen::exit()
 {
-    _viewer.add_screen(new After_finish_screen(_viewer, _core));
+//    _viewer.add_screen(new After_finish_screen(_viewer, _core));
+    _calling_screen->resume();
 
     kill();
 }
@@ -136,7 +137,7 @@ void Statistics_screen::repeat()
 }
 
 
-Statistics_screen::Statistics_screen(My_viewer & viewer, Core & core) : Screen(viewer), _core(core)
+Statistics_screen::Statistics_screen(My_viewer & viewer, Core & core, Screen *calling_screen) : Screen(viewer), _core(core), _calling_screen(calling_screen)
 {
     _type = Screen::Type::Modal;
 

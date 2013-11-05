@@ -239,6 +239,11 @@ protected:
 
 };
 
+class Draggable_screen_point : public Draggable
+{
+
+};
+
 class Draggable_point : public Draggable
 {
 
@@ -365,15 +370,64 @@ class Draggable_button : public Draggable_label
 {
 public:
     Draggable_button(Eigen::Vector3f const& position, Eigen::Vector2f const& size, std::string const& text, std::function<void(void)> callback) :
-        Draggable_label(position, size, text), _callback(callback)
+        Draggable_label(position, size, text), _callback(callback), _is_pressable(false), _is_pressed(false), _parameter(nullptr)
     { }
 
     Draggable_button(Eigen::Vector3f const& position, Eigen::Vector2f const& size, std::string const& text, std::function<void(std::string const&)> callback, std::string const& callback_data) :
-        Draggable_label(position, size, text), _callback_with_data(callback), _callback_data(callback_data)
+        Draggable_label(position, size, text), _callback_with_data(callback), _callback_data(callback_data), _is_pressable(false), _is_pressed(false), _parameter(nullptr)
     { }
+
+    ~Draggable_button()
+    {
+        if (_parameter)
+        {
+            _parameter->remove_observer(this);
+        }
+    }
+
+    void set_pressable(bool const is_pressable)
+    {
+        _is_pressable = is_pressable;
+    }
+
+    void set_pressed(bool const pressed)
+    {
+        _is_pressed = pressed;
+    }
+
+    bool is_pressed() const
+    {
+        return _is_pressed;
+    }
+
+    bool is_pressable() const
+    {
+        return _is_pressable;
+    }
+
+    void reset()
+    {
+        _is_pressed = false;
+    }
+
+    void set_parameter(Parameter * p)
+    {
+        _parameter = p;
+        p->add_observer(this);
+    }
+
+    void notify() override
+    {
+        set_pressed(_parameter->get_value<bool>());
+    }
 
     void clicked() override
     {
+        if (_is_pressable)
+        {
+            _is_pressed = !_is_pressed;
+        }
+
         if (_callback_with_data) _callback_with_data(_callback_data);
         else if (_callback) _callback();
     }
@@ -383,6 +437,11 @@ private:
     std::function<void(std::string const&)> _callback_with_data;
 
     std::string _callback_data;
+
+    bool _is_pressable;
+    bool _is_pressed;
+
+    Parameter * _parameter;
 };
 
 class Draggable_statistics : public Draggable_label
@@ -460,60 +519,39 @@ private:
     float _min_value;
 };
 
-//class Draggable_statistics : public Draggable
-//{
-//public:
-//    Draggable_statistics(Eigen::Vector3f const& position, Eigen::Vector2f const& size, std::string const& text) :
-//        Draggable(position), _texture(0), _extent(size), _text(text), _animation_duration(3.0f)
-//    {
-//        _draggable = false;
-//    }
 
-//    std::vector<Draggable *> get_draggables(Level_element::Edit_type const /* edit_type */) override
-//    {
-//        std::vector<Draggable *> elements;
 
-//        elements.push_back(this);
+class Draggable_slider : public Draggable_label
+{
+public:
 
-//        return elements;
-//    }
+    Draggable_slider() {}
 
-//    Eigen::Vector2f const& get_extent() const
-//    {
-//        return _extent;
-//    }
+//    Draggable_slider(Eigen::Vector3f const& position, Eigen::Vector2f const& size, std::string const& text, std::function<void(void)> callback) :
+    Draggable_slider(Eigen::Vector3f const& position, Eigen::Vector2f const& size, Parameter * parameter, std::function<void(void)> callback);
 
-//    void start_animation()
-//    {
-//        _current_time = 0.0f;
-//    }
+    void update() override;
 
-//    virtual void animate(float const timestep)
-//    {
-//        float normalized_time = _current_time / _animation_duration;
+    std::vector<Draggable*> get_draggables(Level_element::Edit_type const /* edit_type */) override;
 
-//        if (normalized_time < 0.1f)
-//        {
-//            float const alpha = normalized_time / 0.1f;
+    const Draggable_screen_point &get_slider_marker() const;
 
-//            _main_label.set_alpha(alpha);
-//        }
-//        else if (normalized_time >= 0.1f && normalized_time < 0.2f)
-//        {
+    GLuint get_slider_marker_texture() const;
+    void set_slider_marker_texture(GLuint const texture);
 
-//        }
-//     }
+private:
+    void init();
 
-//private:
-//    Eigen::Vector2f _extent;
+    Draggable_screen_point  _property_handle;
 
-//    Draggable_label _main_label;
-//    std::vector<Draggable_label> _axes_labels;
+    std::function<void(void)> _callback;
 
-//    float _current_time;
+    Parameter * _parameter;
 
-//    float _animation_duration;
-//};
+    GLuint _slider_marker_texture;
+};
+
+
 
 class Draggable_box : public Draggable
 {
@@ -888,6 +926,15 @@ public:
     }
 
     void visit(Box_barrier * b) const override
+    {
+        std::cout << __PRETTY_FUNCTION__ << std::endl;
+        b->set_transform(_transform);
+        b->set_position(get_position());
+        b->set_size(_extent_2 * 2.0f);
+        b->set_property_values(_properties);
+    }
+
+    void visit(Charged_barrier * b) const override
     {
         std::cout << __PRETTY_FUNCTION__ << std::endl;
         b->set_transform(_transform);

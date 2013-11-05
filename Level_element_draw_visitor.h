@@ -70,6 +70,41 @@ public:
         glPopMatrix();
     }
 
+    void visit(Charged_barrier * b) const override
+    {
+        glPushMatrix();
+
+        glTranslatef(b->get_position()[0], b->get_position()[1], b->get_position()[2]);
+        glMultMatrixf(b->get_transform().data());
+
+        float charge = b->get_charge();
+        charge /= 50.0f;
+
+        if (charge < 0.0f)
+        {
+            charge *= -1.0f;
+            Color c = charge * Atom::atom_colors[int(Atom::Type::Cl)] + (1.0f - charge) * Color(0.8f, 0.8f, 0.8f);
+            glColor3fv(c.data());
+        }
+        else
+        {
+            Color c = charge * Atom::atom_colors[int(Atom::Type::Na)] + (1.0f - charge) * Color(0.8f, 0.8f, 0.8f);
+            glColor3fv(c.data());
+        }
+
+//        glColor3f(0.7f, 0.7f, 0.7f);
+        draw_box(b->get_box().min(), b->get_box().max());
+
+        if (b->is_selected())
+        {
+            glColor3f(1.0f, 1.0f, 0.7f);
+            draw_box(b->get_box().min(), b->get_box().max(), 1.05f, true);
+            glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+        }
+
+        glPopMatrix();
+    }
+
     void visit(Moving_box_barrier * b) const override
     {
         glPushMatrix();
@@ -478,6 +513,8 @@ public:
 
         float const arc_fraction = 1.0f / float(min_capped_molecules);
 
+        glDisable(GL_LIGHTING);
+
         for (int i = 0; i < min_capped_molecules; ++i)
         {
             if (i < num_capped_molecules)
@@ -508,8 +545,6 @@ public:
             glVertex3fv(p.position.data());
         }
         glEnd();
-
-        glDisable(GL_LIGHTING);
 
         if (b->is_selected())
         {

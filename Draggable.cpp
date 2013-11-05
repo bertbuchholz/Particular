@@ -1,3 +1,79 @@
 #include "Draggable.h"
 
 
+
+
+Draggable_slider::Draggable_slider(const Eigen::Vector3f &position, const Eigen::Vector2f &size, Parameter *parameter, std::function<void ()> callback) :
+    Draggable_label(position, size, ""), _callback(callback), _parameter(parameter)
+{
+    init();
+}
+
+
+void Draggable_slider::update()
+{
+    Draggable_screen_point const& p_handle = _property_handle;
+
+    Parameter * p = _parameter;
+
+    float new_value = into_range(p_handle.get_position()[0], -_slider_movement_range, _slider_movement_range);
+    new_value = (new_value + _slider_movement_range) / (2.0f * _slider_movement_range) * (p->get_max<float>() - p->get_min<float>()) + p->get_min<float>();
+
+    p->set_value(new_value);
+
+    _callback();
+}
+
+std::vector<Draggable *> Draggable_slider::get_draggables(const Level_element::Edit_type)
+{
+    std::vector<Draggable*> result;
+
+    result.push_back(&_property_handle);
+
+    return result;
+}
+
+void Draggable_slider::set_slider_marker_texture(GLuint const texture)
+{
+    _slider_marker_texture = texture;
+}
+
+GLuint Draggable_slider::get_slider_marker_texture() const
+{
+    return _slider_marker_texture;
+}
+
+const Draggable_screen_point &Draggable_slider::get_slider_marker() const
+{
+    return _property_handle;
+}
+
+void Draggable_slider::init()
+{
+    //        int i = 0;
+
+    //        for (auto const prop_iter : _properties)
+    {
+        Parameter const* property = _parameter;
+
+        _slider_movement_range = get_extent()[0] * 0.5f;
+        float const slider_range_3d = _slider_movement_range * 2.0f;
+        float const normalized_current_value = (property->get_value<float>() - property->get_min<float>()) / (property->get_max<float>() - property->get_min<float>());
+
+        assert(normalized_current_value >= 0.0f && normalized_current_value <= 1.0f);
+
+        Eigen::Vector3f const center_position = Eigen::Vector3f::Zero();
+
+        Draggable_screen_point p;
+        p.set_parent(this);
+        p.set_position(center_position + Eigen::Vector3f(normalized_current_value * slider_range_3d - slider_range_3d / 2.0f, 0.0f, 0.0f));
+
+        p.add_constraint(new Range_constraint(center_position - Eigen::Vector3f(slider_range_3d / 2.0f, 0.0f, 0.0f), center_position + Eigen::Vector3f(slider_range_3d / 2.0f, 0.0f, 0.0f)));
+
+        //            _property_handles[property->get_name()] = p;
+
+        _property_handle = p;
+
+        //            ++i;
+    }
+}

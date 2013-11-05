@@ -14,7 +14,7 @@ class Main_game_screen : public Screen
     Q_OBJECT
 
 public:
-    enum class Mouse_state { None, Init_drag_handle, Init_drag_molecule, Dragging_molecule, Dragging_handle };
+    enum class Mouse_state { None, Init_drag_handle, Init_drag_molecule, Dragging_molecule, Dragging_handle, Level_element_button_selected };
     enum class Selection { None, Level_element, Molecule };
     enum class Ui_state { Level_editor, Playing };
     enum class Level_state { Intro, Running };
@@ -50,6 +50,7 @@ public:
 
     void update_level_element_buttons();
     void level_element_button_pressed(std::string const& type);
+    void add_selected_level_element(const QPoint &mouse_pos);
 
     void change_renderer();
 
@@ -59,17 +60,19 @@ public Q_SLOTS:
     void handle_level_change(Main_game_screen::Level_state);
     void handle_game_state_change();
 
-protected:
     // Intro ---------------------
+protected Q_SLOTS:
     void intro_cam2_end_reached();
     void intro_cam1_end_reached();
     void update_intro(const float timestep);
     void setup_intro();
 
+private:
     float _intro_time;
     Intro_state _intro_state;
     // ---------------------------
 
+protected:
     Core & _core;
 
     Parameter_list _parameters;
@@ -88,12 +91,15 @@ protected:
     Ui_state _ui_state;
     Level_state _level_state;
 
+    std::string _selected_level_element_button_type;
+
     IcoSphere<OpenMesh::Vec3f, Color> _icosphere;
 
     std::vector<Draggable*> _active_draggables;
     std::unordered_map<Draggable*, Level_element*> _draggable_to_level_element;
 
     std::vector< boost::shared_ptr<Draggable_button> > _buttons;
+    std::vector< boost::shared_ptr<Draggable_slider> > _sliders;
     std::vector< boost::shared_ptr<Draggable_label> > _labels;
 
     std::unordered_map<std::string, QImage> _element_images;

@@ -63,7 +63,7 @@ void main(void)
 {
     vec2 tex_coord = gl_TexCoord[0].st;
 
-    vec4 color = texture2D(texture, tex_coord);
+//    vec4 color = texture2D(texture, tex_coord);
 
     float normalized_depth = linearize_depth(texture2D(depth_texture, tex_coord).r);
     float normalized_focus_dist = (abs(focus_distance) - clip_distances.s) / (clip_distances.t - clip_distances.s);
@@ -72,7 +72,7 @@ void main(void)
 //    color = vec4(vec3(depth), 1.0);
 
 //    color = vec4(blur(tex_coord, int(blur_strength * 30.0)), 1.0);
-    vec4 color = blur_with_alpha(tex_coord, int(blur_strength * 30));
+    vec4 color = blur_with_alpha(tex_coord, int(blur_strength * 30.0));
 
     gl_FragColor = color;
 }

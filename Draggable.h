@@ -129,6 +129,8 @@ public:
 
     void set_position_from_world(Eigen::Vector3f const& position)
     {
+//        _position = get_transform().inverse() * position;
+         // _transform should contain the position as well, so the subtraction is not necessary. this would make this more general
         _position = get_transform().inverse() * (position - get_parent()->get_position());
 
         for (Constraint * c : _constraints)
@@ -157,11 +159,11 @@ public:
         return std::vector<Draggable *>();
     }
 
-    virtual Eigen::Transform<float, 3, Eigen::Isometry> get_transform() const
+    virtual Eigen::Transform<float, 3, Eigen::Affine> get_transform() const
     {
         if (!_parent)
         {
-            return Eigen::Transform<float, 3, Eigen::Isometry>::Identity();
+            return Eigen::Transform<float, 3, Eigen::Affine>::Identity();
         }
         else
         {
@@ -530,6 +532,8 @@ public:
 //    Draggable_slider(Eigen::Vector3f const& position, Eigen::Vector2f const& size, std::string const& text, std::function<void(void)> callback) :
     Draggable_slider(Eigen::Vector3f const& position, Eigen::Vector2f const& size, Parameter * parameter, std::function<void(void)> callback);
 
+    ~Draggable_slider();
+
     void update() override;
 
     std::vector<Draggable*> get_draggables(Level_element::Edit_type const /* edit_type */) override;
@@ -538,6 +542,10 @@ public:
 
     GLuint get_slider_marker_texture() const;
     void set_slider_marker_texture(GLuint const texture);
+
+    Eigen::Transform<float, 3, Eigen::Affine> get_transform() const override;
+
+    void notify() override;
 
 private:
     void init();
@@ -576,14 +584,14 @@ public:
     {
         set_position((min + max) * 0.5f);
         _extent_2 = (max - min) * 0.5f;
-        _transform = Eigen::Transform<float, 3, Eigen::Isometry>::Identity();
+        _transform = Eigen::Transform<float, 3, Eigen::Affine>::Identity();
 
         init();
     }
 
     Draggable_box(Eigen::Vector3f const& position,
                   Eigen::Vector3f const& extent,
-                  Eigen::Transform<float, 3, Eigen::Isometry> const& transform,
+                  Eigen::Transform<float, 3, Eigen::Affine> const& transform,
                   std::vector< std::vector<Corner_type> > const& corner_types,
                   std::vector<Plane> const& position_types,
                   std::vector<Plane> const& rotation_types,
@@ -602,7 +610,7 @@ public:
 
     Draggable_box(Eigen::Vector3f const& position,
                   Eigen::Vector3f const& extent,
-                  Eigen::Transform<float, 3, Eigen::Isometry> const& transform,
+                  Eigen::Transform<float, 3, Eigen::Affine> const& transform,
                   Parameter_list const& properties = Parameter_list(),
                   Level_element * level_element = nullptr) :
         Draggable(position, level_element),
@@ -661,7 +669,7 @@ public:
 
         set_position((min + max) * 0.5f);
         _extent_2 = (max - min) * 0.5f;
-        _transform = Eigen::Transform<float, 3, Eigen::Isometry>::Identity();
+        _transform = Eigen::Transform<float, 3, Eigen::Affine>::Identity();
 
         init();
     }
@@ -733,7 +741,7 @@ public:
     {
         Eigen::Vector3f new_extent = _extent_2;
         Eigen::Vector3f new_position = Eigen::Vector3f::Zero();
-        Eigen::Transform<float, 3, Eigen::Isometry> new_transform = _transform;
+        Eigen::Transform<float, 3, Eigen::Affine> new_transform = _transform;
 
         for (size_t i = 0; i < _size_handles.size(); ++i)
         {
@@ -896,13 +904,13 @@ public:
         return result;
     }
 
-    void set_transform(Eigen::Transform<float, 3, Eigen::Isometry> const& transform)
+    void set_transform(Eigen::Transform<float, 3, Eigen::Affine> const& transform)
     {
         _transform = transform;
         setup_handles();
     }
 
-    Eigen::Transform<float, 3, Eigen::Isometry> get_transform() const override
+    Eigen::Transform<float, 3, Eigen::Affine> get_transform() const override
     {
         return _transform;
     }
@@ -1046,7 +1054,7 @@ private:
     }
 
     Eigen::Vector3f _extent_2;
-    Eigen::Transform<float, 3, Eigen::Isometry> _transform;
+    Eigen::Transform<float, 3, Eigen::Affine> _transform;
 
     std::vector<Draggable_point> _size_handles;
     std::vector<Draggable_disc> _position_handles;

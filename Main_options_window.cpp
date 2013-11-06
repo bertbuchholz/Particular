@@ -60,16 +60,18 @@ QFrame *Main_options_window::create_options_widget() const
 
 void Main_options_window::remove_parameter_list(const std::string &name)
 {
-    assert(_param_group_to_widget_map.find(name) != _param_group_to_widget_map.end());
+    if (_param_group_to_widget_map.find(name) == _param_group_to_widget_map.end()) return;
+
+//    assert(_param_group_to_widget_map.find(name) != _param_group_to_widget_map.end());
 
     QWidget * w = _param_group_to_widget_map[name];
     w->hide();
     _menu_frame->widget()->layout()->removeWidget(w);
 
-    for (QObject * q : w->children())
-    {
-        std::cout << __PRETTY_FUNCTION__ << " " << q << std::endl;
-    }
+//    for (QObject * q : w->children())
+//    {
+//        std::cout << __PRETTY_FUNCTION__ << " " << q << std::endl;
+//    }
 
     delete w;
     _param_group_to_widget_map.erase(name);

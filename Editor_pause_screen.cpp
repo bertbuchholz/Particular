@@ -120,17 +120,27 @@ void Editor_pause_screen::init()
     else
     {
         {
-            Draggable_button * button = new Draggable_button(Eigen::Vector3f(0.5f, 0.85f, 0.0f), Eigen::Vector2f(0.5f, 0.15f), "Play Level",  std::bind(&Editor_pause_screen::play_level, this));
+            Draggable_button * button = new Draggable_button(Eigen::Vector3f(0.5f, 0.8f, 0.0f), Eigen::Vector2f(0.5f, 0.1f), "Play Level",  std::bind(&Editor_pause_screen::play_level, this));
             _buttons.push_back(boost::shared_ptr<Draggable_button>(button));
         }
 
         {
-            Draggable_button * button = new Draggable_button(Eigen::Vector3f(0.5f, 0.65f, 0.0f), Eigen::Vector2f(0.5f, 0.15f), "Back to Main Menu",  std::bind(&Editor_pause_screen::return_to_main_menu, this));
+            Draggable_button * button = new Draggable_button(Eigen::Vector3f(0.5f, 0.68f, 0.0f), Eigen::Vector2f(0.5f, 0.1f), "Load Level",  std::bind(&Editor_pause_screen::load_level, this));
             _buttons.push_back(boost::shared_ptr<Draggable_button>(button));
         }
 
         {
-            Draggable_button * button = new Draggable_button(Eigen::Vector3f(0.5f, 0.45f, 0.0f), Eigen::Vector2f(0.5f, 0.15f), "Continue", std::bind(&Editor_pause_screen::continue_game, this));
+            Draggable_button * button = new Draggable_button(Eigen::Vector3f(0.5f, 0.56f, 0.0f), Eigen::Vector2f(0.5f, 0.1f), "Save Level",  std::bind(&Editor_pause_screen::save_level, this));
+            _buttons.push_back(boost::shared_ptr<Draggable_button>(button));
+        }
+
+        {
+            Draggable_button * button = new Draggable_button(Eigen::Vector3f(0.5f, 0.44, 0.0f), Eigen::Vector2f(0.5f, 0.1f), "Back to Main Menu",  std::bind(&Editor_pause_screen::return_to_main_menu, this));
+            _buttons.push_back(boost::shared_ptr<Draggable_button>(button));
+        }
+
+        {
+            Draggable_button * button = new Draggable_button(Eigen::Vector3f(0.5f, 0.32f, 0.0f), Eigen::Vector2f(0.5f, 0.1f), "Continue", std::bind(&Editor_pause_screen::continue_game, this));
             _buttons.push_back(boost::shared_ptr<Draggable_button>(button));
         }
     }
@@ -187,4 +197,48 @@ void Editor_pause_screen::return_to_editor()
     _calling_screen->kill();
 
     kill();
+}
+
+
+void Editor_pause_screen::load_level()
+{
+    QString filename;
+
+    if (QApplication::keyboardModifiers() & Qt::ControlModifier)
+    {
+        filename = "state.data";
+    }
+    else
+    {
+        filename = QFileDialog::getOpenFileName(&_viewer, tr("Load Level"),
+                                                ".",
+                                                tr("State File (*.data)"));
+    }
+
+    if (!filename.isEmpty())
+    {
+        _core.load_level(filename.toStdString());
+    }
+}
+
+
+void Editor_pause_screen::save_level()
+{
+    QString filename;
+
+    if (QApplication::keyboardModifiers() & Qt::ControlModifier)
+    {
+        filename = "state.data";
+    }
+    else
+    {
+        filename = QFileDialog::getSaveFileName(&_viewer, tr("Save Level"),
+                                                ".",
+                                                tr("State File (*.data)"));
+    }
+
+    if (!filename.isEmpty())
+    {
+        _core.save_level(filename.toStdString());
+    }
 }

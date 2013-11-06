@@ -42,8 +42,8 @@ public:
 
     void print_cam_orientation();
 
-    void save_level();
-    void load_level();
+//    void save_level();
+//    void load_level();
 
 //    void restore_parameters() override
 //    {
@@ -95,7 +95,7 @@ public:
     void draw_button(Draggable_button const* b, bool const for_picking, const float alpha = 1.0f);
     void draw_label(Draggable_label const* b, const float alpha = 1.0f);
     void draw_statistic(Draggable_statistics const& b);
-    void draw_slider(const Draggable_slider *s, const bool for_picking, const float alpha = 1.0f);
+    void draw_slider(Draggable_slider const& s, const bool for_picking, const float alpha = 1.0f);
 
     void generate_button_texture(Draggable_button * b);
     void generate_label_texture(Draggable_label * b);

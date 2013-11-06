@@ -219,7 +219,7 @@ public:
             glDisable(GL_LIGHTING);
 
             glLineWidth(3.0f);
-            glColor3f(1.0f, 1.0f, 1.0f);
+            glColor4f(0.3f, 0.35f, 0.7f, 0.6f);
 
             glPushMatrix();
             glRotatef(90.0f, 1.0f, 0.0f, 0.0f);

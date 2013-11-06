@@ -315,7 +315,7 @@ void Core::compute_force_and_torque(Molecule &receiver)
         Eigen::Vector3f force_i = force_on_atom(receiver_atom);
 
         receiver._force += force_i;
-        receiver._torque += (receiver_atom.get_position() - receiver._x).cross(force_i);
+        receiver._torque += translation_to_rotation_ratio * (receiver_atom.get_position() - receiver._x).cross(force_i);
     }
 
     for (Barrier const* b : _level_data._barriers)
@@ -382,7 +382,8 @@ void Core::compute_force_and_torque(Molecule &receiver)
         }
     }
 
-    receiver._force += -_level_data._translation_damping * translation_to_rotation_ratio * receiver._v;
+    receiver._force += -_level_data._translation_damping * receiver._v;
+//    receiver._torque += -_level_data._rotation_damping * translation_to_rotation_ratio * receiver._omega;
     receiver._torque += -_level_data._rotation_damping * receiver._omega;
 }
 

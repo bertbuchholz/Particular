@@ -1,8 +1,6 @@
 #include "Draggable.h"
 
 
-
-
 Draggable_slider::Draggable_slider(const Eigen::Vector3f &position, const Eigen::Vector2f &size, Parameter *parameter, std::function<void ()> callback) :
     Draggable_label(position, size, ""), _callback(callback), _parameter(parameter)
 {
@@ -38,6 +36,21 @@ void Draggable_slider::set_slider_marker_texture(GLuint const texture)
     _slider_marker_texture = texture;
 }
 
+Eigen::Transform<float, 3, Eigen::Affine> Draggable_slider::get_transform() const
+{
+    return Eigen::Translation3f(get_position()) * Eigen::Scaling(get_extent()[0] * 0.5f, get_extent()[1] * 0.5f, 1.0f);
+}
+
+void Draggable_slider::notify()
+{
+    float const slider_range_3d = _slider_movement_range * 2.0f;
+    float const normalized_current_value = (_parameter->get_value<float>() - _parameter->get_min<float>()) / (_parameter->get_max<float>() - _parameter->get_min<float>());
+
+    assert(normalized_current_value >= 0.0f && normalized_current_value <= 1.0f);
+
+    _property_handle.set_position(Eigen::Vector3f(normalized_current_value * slider_range_3d - slider_range_3d / 2.0f, 0.0f, 0.0f));
+}
+
 GLuint Draggable_slider::get_slider_marker_texture() const
 {
     return _slider_marker_texture;
@@ -54,9 +67,13 @@ void Draggable_slider::init()
 
     //        for (auto const prop_iter : _properties)
     {
+        _parameter->add_observer(this);
+
         Parameter const* property = _parameter;
 
-        _slider_movement_range = get_extent()[0] * 0.5f;
+
+//        _slider_movement_range = get_extent()[0] * 0.5f;
+        _slider_movement_range = 1.0f;
         float const slider_range_3d = _slider_movement_range * 2.0f;
         float const normalized_current_value = (property->get_value<float>() - property->get_min<float>()) / (property->get_max<float>() - property->get_min<float>());
 
@@ -76,4 +93,9 @@ void Draggable_slider::init()
 
         //            ++i;
     }
+}
+
+Draggable_slider::~Draggable_slider()
+{
+    _parameter->remove_observer(this);
 }

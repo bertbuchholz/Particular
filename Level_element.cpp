@@ -15,19 +15,19 @@ const Eigen::Vector3f &Level_element::get_position() const
 }
 
 
-const Eigen::Transform<float, 3, Eigen::Isometry> &Level_element::get_transform() const
+const Eigen::Transform<float, 3, Eigen::Affine> &Level_element::get_transform() const
 {
     return _transform;
 }
 
 
-Eigen::Transform<float, 3, Eigen::Isometry> const& Level_element::get_inverse_transform() const
+Eigen::Transform<float, 3, Eigen::Affine> const& Level_element::get_inverse_transform() const
 {
     return _transform;
 }
 
 
-void Level_element::set_transform(Eigen::Transform<float, 3, Eigen::Isometry> const& transform)
+void Level_element::set_transform(Eigen::Transform<float, 3, Eigen::Affine> const& transform)
 {
     _transform = transform;
     _inverse_transform = _transform.inverse();
@@ -172,9 +172,9 @@ Plane_barrier::Plane_barrier(const Eigen::Vector3f &position, const Eigen::Vecto
     m.col(1) = bitangent;
     m.col(2) = normal;
 
-    //        set_transform(Eigen::Transform<float, 3, Eigen::Isometry>::Identity());
-    set_transform(Eigen::Transform<float, 3, Eigen::Isometry>(m));
-    //        Eigen::Transform<float, 3, Eigen::Isometry> t(Eigen::AngleAxisf(M_PI * 0.5f, cross(normal, Eigen::Vector3f::UnitZ())));
+    //        set_transform(Eigen::Transform<float, 3, Eigen::Affine>::Identity());
+    set_transform(Eigen::Transform<float, 3, Eigen::Affine>(m));
+    //        Eigen::Transform<float, 3, Eigen::Affine> t(Eigen::AngleAxisf(M_PI * 0.5f, cross(normal, Eigen::Vector3f::UnitZ())));
     //        set_transform(t);
     set_position(position);
 }
@@ -283,7 +283,7 @@ void Portal::reset()
 
 Box_portal::Box_portal(const Eigen::Vector3f &min, const Eigen::Vector3f &max)
 {
-    set_transform(Eigen::Transform<float, 3, Eigen::Isometry>::Identity());
+    set_transform(Eigen::Transform<float, 3, Eigen::Affine>::Identity());
 
     set_position((min + max) * 0.5f);
 
@@ -424,7 +424,7 @@ Box_barrier::Box_barrier(const Eigen::Vector3f &min, const Eigen::Vector3f &max,
     //        _box(Eigen::AlignedBox<float, 3>(min, max)),
     _strength(strength), _radius(radius)
 {
-    set_transform(Eigen::Transform<float, 3, Eigen::Isometry>::Identity());
+    set_transform(Eigen::Transform<float, 3, Eigen::Affine>::Identity());
 
     set_position((min + max) * 0.5f);
 
@@ -757,7 +757,7 @@ float Brownian_plane::falloff_function(const float distance) const
 Brownian_box::Brownian_box(const Eigen::Vector3f &min, const Eigen::Vector3f &max, const float strength, const float radius) :
     Brownian_element(strength, radius)
 {
-    set_transform(Eigen::Transform<float, 3, Eigen::Isometry>::Identity());
+    set_transform(Eigen::Transform<float, 3, Eigen::Affine>::Identity());
 
     set_position((min + max) * 0.5f);
 

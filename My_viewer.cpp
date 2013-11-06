@@ -202,12 +202,10 @@ My_viewer::My_viewer(Core &core, const QGLFormat &format) : Options_viewer(forma
     std::vector<std::string> ui_states { "Level Editor", "Playing" };
     _parameters.add_parameter(new Parameter("Interface", 0, ui_states, std::bind(&My_viewer::change_ui_state, this)));
 
-    _parameters.add_parameter(Parameter::create_button("Save Level", std::bind(&My_viewer::save_level, this)));
-    _parameters.add_parameter(Parameter::create_button("Load Level", std::bind(static_cast<void (My_viewer::*)()>(&My_viewer::load_level), this)));
     _parameters.add_parameter(Parameter::create_button("Save Settings", std::bind(&My_viewer::save_parameters_with_check, this)));
     _parameters.add_parameter(Parameter::create_button("Load Settings", std::bind(&My_viewer::restore_parameters_with_check, this)));
-    _parameters.add_parameter(Parameter::create_button("Clear", std::bind(&My_viewer::clear, this)));
-    _parameters.add_parameter(Parameter::create_button("Reset Level", std::bind(&My_viewer::reset_level, this)));
+//    _parameters.add_parameter(Parameter::create_button("Clear", std::bind(&My_viewer::clear, this)));
+//    _parameters.add_parameter(Parameter::create_button("Reset Level", std::bind(&My_viewer::reset_level, this)));
 
     Main_options_window::get_instance()->add_parameter_list("Viewer", _parameters);
 
@@ -233,47 +231,47 @@ void My_viewer::setup_fonts()
     _particle_font = QFont(family);
 }
 
-void My_viewer::save_level()
-{
-    QString filename;
+//void My_viewer::save_level()
+//{
+//    QString filename;
 
-    if (QApplication::keyboardModifiers() & Qt::ControlModifier)
-    {
-        filename = "state.data";
-    }
-    else
-    {
-        filename = QFileDialog::getSaveFileName(this, tr("Save Level"),
-                                                ".",
-                                                tr("State File (*.data)"));
-    }
+//    if (QApplication::keyboardModifiers() & Qt::ControlModifier)
+//    {
+//        filename = "state.data";
+//    }
+//    else
+//    {
+//        filename = QFileDialog::getSaveFileName(this, tr("Save Level"),
+//                                                ".",
+//                                                tr("State File (*.data)"));
+//    }
 
-    if (!filename.isEmpty())
-    {
-        _core.save_level(filename.toStdString());
-    }
-}
+//    if (!filename.isEmpty())
+//    {
+//        _core.save_level(filename.toStdString());
+//    }
+//}
 
-void My_viewer::load_level()
-{
-    QString filename;
+//void My_viewer::load_level()
+//{
+//    QString filename;
 
-    if (QApplication::keyboardModifiers() & Qt::ControlModifier)
-    {
-        filename = "state.data";
-    }
-    else
-    {
-        filename = QFileDialog::getOpenFileName(this, tr("Load Level"),
-                                                ".",
-                                                tr("State File (*.data)"));
-    }
+//    if (QApplication::keyboardModifiers() & Qt::ControlModifier)
+//    {
+//        filename = "state.data";
+//    }
+//    else
+//    {
+//        filename = QFileDialog::getOpenFileName(this, tr("Load Level"),
+//                                                ".",
+//                                                tr("State File (*.data)"));
+//    }
 
-    if (!filename.isEmpty())
-    {
-        _core.load_level(filename.toStdString());
-    }
-}
+//    if (!filename.isEmpty())
+//    {
+//        _core.load_level(filename.toStdString());
+//    }
+//}
 
 void My_viewer::reset_level()
 {
@@ -527,33 +525,42 @@ void My_viewer::draw_label(const Draggable_label *b, float const alpha)
     glPopMatrix();
 }
 
-void My_viewer::draw_slider(const Draggable_slider *s, const bool for_picking, float const alpha)
+void My_viewer::draw_slider(Draggable_slider const& s, const bool for_picking, float const alpha)
 {
-    Draggable_screen_point const& p = s->get_slider_marker();
+    Draggable_screen_point const& p = s.get_slider_marker();
 
     glPushMatrix();
 
-    glTranslatef(s->get_position()[0], s->get_position()[1], s->get_position()[2]);
+    Eigen::Transform<float, 3, Eigen::Affine> const slider_system = s.get_transform();
 
-    glColor3f(0.2f, 0.2f, 0.3f);
+    if (!for_picking)
+    {
+        Eigen::Vector3f const line_start = slider_system * Eigen::Vector3f(-1.0f, 0.0f, 0.0f);
+        Eigen::Vector3f const line_stop  = slider_system * Eigen::Vector3f( 1.0f, 0.0f, 0.0f);
 
+        glColor3f(0.2f, 0.2f, 0.3f);
 
-    glPushMatrix();
-    glScalef(s->get_extent()[0] * 0.5f, 1.0f, 1.0f);
-    glLineWidth(2.0f);
-    glBegin(GL_LINES);
-    glVertex3f(-1.0f, 0.0f, 0.0f);
-    glVertex3f(1.0f, 0.0f, 0.0f);
-    glEnd();
-    glPopMatrix();
+        glLineWidth(2.0f);
+        glBegin(GL_LINES);
+        glVertex3fv(line_start.data());
+        glVertex3fv(line_stop.data());
+        glEnd();
 
-    glScalef(s->get_extent()[1] * 0.5f, s->get_extent()[1] * 0.5f, 1.0f);
-    glTranslatef(p.get_position()[0], p.get_position()[1], p.get_position()[2]);
-//    glScalef(s->get_extent()[0] * 0.5f, s->get_extent()[1] * 0.5f, 1.0f);
-    glScalef(0.5f, 0.5f * camera()->aspectRatio(), 1.0f);
-    glColor4f(1.0f, 1.0f, 1.0f, s->get_alpha() * alpha);
+        glColor3f(1.0f, 1.0f, 1.0f);
 
-//    glColor3f(1.0f, 0.0f, 0.0f);
+        glPushMatrix();
+        glTranslatef(s.get_position()[0] - s.get_extent()[0] * 0.5f - s.get_extent()[1] * 0.5f, s.get_position()[1], s.get_position()[2]);
+        glScalef(s.get_extent()[1] * 0.3f, s.get_extent()[1] * 0.3f * camera()->aspectRatio(), 1.0f);
+
+        draw_textured_quad(s.get_texture());
+        glPopMatrix();
+    }
+
+    Eigen::Vector3f const marker_pos = slider_system * p.get_position();
+
+    glTranslatef(marker_pos[0], marker_pos[1], marker_pos[2]);
+    glScalef(0.01f, 0.01f * camera()->aspectRatio(), 1.0f); // draw a square
+    glColor4f(1.0f, 1.0f, 1.0f, s.get_alpha() * alpha);
 
     if (for_picking)
     {
@@ -561,8 +568,7 @@ void My_viewer::draw_slider(const Draggable_slider *s, const bool for_picking, f
     }
     else
     {
-        draw_textured_quad(s->get_slider_marker_texture());
-//        draw_quad_with_tex_coords();
+        draw_textured_quad(s.get_slider_marker_texture());
     }
 
     glPopMatrix();
@@ -809,7 +815,9 @@ void My_viewer::generate_button_texture(Draggable_button *b)
 
     p.setBrush(QBrush(QColor(76, 153, 204, 120)));
 
-    p.drawRoundedRect(QRect(5, 5, pixel_size.width() - 10, pixel_size.height() - 10), pixel_size.width() * 0.1f, pixel_size.width() * 0.1f);
+//    p.drawRoundedRect(QRect(5, 5, pixel_size.width() - 10, pixel_size.height() - 10), pixel_size.width() * 0.1f, pixel_size.width() * 0.1f);
+    float const radius = std::min((pixel_size.width() - 10) * 0.5f, (pixel_size.height() - 10) * 0.5f);
+    p.drawRoundedRect(QRect(5, 5, pixel_size.width() - 10, pixel_size.height() - 10), radius, radius);
 
     QFont font = _main_font;
     //        font.setWeight(QFont::Bold);
@@ -818,7 +826,7 @@ void My_viewer::generate_button_texture(Draggable_button *b)
 
     p.setPen(QColor(255, 255, 255));
 
-    QSize text_size(pixel_size.width() * 0.8f, pixel_size.height() * 0.8f);
+    QSize text_size(pixel_size.width() * 0.8f, pixel_size.height() * 0.5f);
 
     QSize b_size = p.boundingRect(QRect(QPoint(0, 0), text_size), Qt::AlignCenter, QString::fromStdString(b->get_text())).size();
 

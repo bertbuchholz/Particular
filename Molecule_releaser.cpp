@@ -9,7 +9,7 @@ Molecule_releaser::Molecule_releaser(const Eigen::Vector3f &min, const Eigen::Ve
     _next_molecule_prepared(false),
     _animation_count(0.0f)
 {
-    set_transform(Eigen::Transform<float, 3, Eigen::Isometry>::Identity());
+    set_transform(Eigen::Transform<float, 3, Eigen::Affine>::Identity());
 
     set_position((min + max) * 0.5f);
 

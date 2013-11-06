@@ -38,7 +38,7 @@ Main_game_screen::Main_game_screen(My_viewer &viewer, Core &core, Ui_state ui_st
 
     _icosphere = IcoSphere<OpenMesh::Vec3f, Color>(2);
 
-    _rotate_tex = _viewer.bindTexture(QImage(Data_config::get_instance()->get_absolute_qfilename("textures/rotate.png"))); // do this in a separate init() that's called after opengl has been initialized
+    _rotate_tex = _viewer.bindTexture(QImage(Data_config::get_instance()->get_absolute_qfilename("textures/rotate.png")));
     _move_tex = _viewer.bindTexture(QImage(Data_config::get_instance()->get_absolute_qfilename("textures/move.png")));
     _scale_tex = _viewer.bindTexture(QImage(Data_config::get_instance()->get_absolute_qfilename("textures/scale.png")));
     _slider_tex = _viewer.bindTexture(QImage(Data_config::get_instance()->get_absolute_qfilename("textures/slider.png")));
@@ -53,7 +53,6 @@ Main_game_screen::Main_game_screen(My_viewer &viewer, Core &core, Ui_state ui_st
                                                                    Data_config::get_instance()->get_absolute_qfilename("shaders/fullscreen_square.vert"),
                                                                    Data_config::get_instance()->get_absolute_qfilename("shaders/blur_1D.frag")));
 
-    // FIXME: need to delete first
     _tmp_screen_texture[0] = create_texture(_viewer.camera()->screenWidth(), _viewer.camera()->screenHeight());
     _tmp_screen_texture[1] = create_texture(_viewer.camera()->screenWidth(), _viewer.camera()->screenHeight());
 
@@ -761,9 +760,24 @@ void Main_game_screen::draw_draggables_for_picking()
         if (Draggable_screen_point const* d_point = dynamic_cast<Draggable_screen_point const*>(draggable))
         {
             _viewer.start_normalized_screen_coordinates();
-            glTranslatef(parent->get_position()[0], parent->get_position()[1], parent->get_position()[2]);
-            glTranslatef(d_point->get_position()[0], d_point->get_position()[1], d_point->get_position()[2]);
-            glScalef(0.1f, 0.1f, 1.0f);
+
+            Eigen::Transform<float, 3, Eigen::Affine> parent_system = Eigen::Transform<float, 3, Eigen::Affine>::Identity();
+
+            if (d_point->get_parent())
+            {
+                parent_system = d_point->get_transform();
+            }
+
+            Eigen::Vector3f const point_pos = parent_system * d_point->get_position();
+
+
+//            glTranslatef(parent->get_position()[0], parent->get_position()[1], parent->get_position()[2]);
+//            glTranslatef(d_point->get_position()[0], d_point->get_position()[1], d_point->get_position()[2]);
+
+            glTranslatef(point_pos[0], point_pos[1], point_pos[2]);
+            glScalef(0.01f, 0.01f * _viewer.camera()->aspectRatio(), 1.0f); // draw a square
+
+//            glScalef(0.1f, 0.1f, 1.0f);
 //            glScalef(parent->get_extent()[1] * 0.5f, parent->get_extent()[1] * 0.5f, 1.0f);
             draw_quad_with_tex_coords();
             _viewer.stop_normalized_screen_coordinates();
@@ -1011,7 +1025,7 @@ void Main_game_screen::draw_draggables() // FIXME: use visitors or change it so 
         {
             if (slider->is_visible())
             {
-                _viewer.draw_slider(slider.get(), false);
+                _viewer.draw_slider(*slider.get(), false);
             }
         }
 
@@ -1265,7 +1279,10 @@ void Main_game_screen::handle_level_change(Main_game_screen::Level_state const l
         assert(_core.get_level_data()._game_field_borders.size() == 6);
     }
 
-    update_level_element_buttons();
+    if (_ui_state != Ui_state::Level_editor)
+    {
+        update_level_element_buttons();
+    }
 
     update_draggable_to_level_element();
     update_active_draggables();

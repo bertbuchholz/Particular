@@ -174,7 +174,9 @@ bool Editor_screen::mouseMoveEvent(QMouseEvent * event)
     {
         if (Draggable_screen_point * d_point = dynamic_cast<Draggable_screen_point *>(_active_draggables[_picked_index]))
         {
-            d_point->set_position_from_world(Eigen::Vector3f(event->pos().x() / float(_viewer.camera()->screenWidth()), event->pos().y() / float(_viewer.camera()->screenHeight()), 0.0f));
+//            d_point->set_position_from_world(Eigen::Vector3f(event->pos().x() / float(_viewer.camera()->screenWidth()), event->pos().y() / float(_viewer.camera()->screenHeight()), 0.0f));
+            d_point->set_position(d_point->get_transform().inverse() * Eigen::Vector3f(event->pos().x() / float(_viewer.camera()->screenWidth()), event->pos().y() / float(_viewer.camera()->screenHeight()), 0.0f));
+//            _position =  * (position - get_parent()->get_position());
             d_point->update();
         }
         else
@@ -405,28 +407,46 @@ void Editor_screen::init_level_element_buttons()
 
     _buttons.push_back(_show_controls_button);
 
-    _translation_fluctuation_slider = boost::shared_ptr<Draggable_slider>(
+    boost::shared_ptr<Draggable_button> button_reset(
+                new Draggable_button(Eigen::Vector3f(0.27f, 0.05f, 0.0f),
+                                     Eigen::Vector2f(0.15f, 0.05f * _viewer.camera()->aspectRatio()),
+                                     "Reset", std::bind(&Core::reset_level, &_core)));
+    _viewer.generate_button_texture(button_reset.get());
+    _buttons.push_back(button_reset);
+
+    boost::shared_ptr<Draggable_button> button_clear(
+                new Draggable_button(Eigen::Vector3f(0.44f, 0.05f, 0.0f),
+                                     Eigen::Vector2f(0.15f, 0.05f * _viewer.camera()->aspectRatio()),
+                                     "Clear", std::bind(&Editor_screen::clear_level, this)));
+    _viewer.generate_button_texture(button_clear.get());
+    _buttons.push_back(button_clear);
+
+
+    boost::shared_ptr<Draggable_slider> translation_fluctuation_slider(
                 new Draggable_slider(Eigen::Vector3f(0.93f, 0.88f, 0.0f),
                                      Eigen::Vector2f(0.1f, 0.05f),
                                      _core.get_level_data()._parameters["Temperature"], std::bind(&Editor_screen::slider_changed, this)));
-    _translation_fluctuation_slider->set_slider_marker_texture(_slider_tex);
-    _translation_fluctuation_slider->set_texture(_viewer.bindTexture(QImage(Data_config::get_instance()->get_absolute_qfilename("textures/button_Brownian_box.png"))));
+    translation_fluctuation_slider->set_slider_marker_texture(_slider_tex);
+    translation_fluctuation_slider->set_texture(_viewer.bindTexture(QImage(Data_config::get_instance()->get_absolute_qfilename("textures/slider_temperature.png"))));
 
-    _sliders.push_back(_translation_fluctuation_slider);
+    _sliders.push_back(translation_fluctuation_slider);
 
-    boost::shared_ptr<Draggable_slider> damping_slider = boost::shared_ptr<Draggable_slider>(
-                new Draggable_slider(Eigen::Vector3f(0.93f, 0.80f, 0.0f),
+    boost::shared_ptr<Draggable_slider> damping_slider(
+                new Draggable_slider(Eigen::Vector3f(0.93f, 0.83f, 0.0f),
                                      Eigen::Vector2f(0.1f, 0.05f),
                                      _core.get_level_data()._parameters["Damping"], std::bind(&Editor_screen::slider_changed, this)));
     damping_slider->set_slider_marker_texture(_slider_tex);
+    damping_slider->set_texture(_viewer.bindTexture(QImage(Data_config::get_instance()->get_absolute_qfilename("textures/slider_damping.png"))));
 
     _sliders.push_back(damping_slider);
 
-    boost::shared_ptr<Draggable_slider> gravity_slider = boost::shared_ptr<Draggable_slider>(
-                new Draggable_slider(Eigen::Vector3f(0.93f, 0.72f, 0.0f),
+    boost::shared_ptr<Draggable_slider> gravity_slider(
+                new Draggable_slider(Eigen::Vector3f(0.93f, 0.78f, 0.0f),
                                      Eigen::Vector2f(0.1f, 0.05f),
                                      _core.get_level_data()._parameters["gravity"], std::bind(&Editor_screen::slider_changed, this)));
     gravity_slider->set_slider_marker_texture(_slider_tex);
+    gravity_slider->set_texture(_viewer.bindTexture(QImage(Data_config::get_instance()->get_absolute_qfilename("textures/slider_gravity.png"))));
+
 
     _sliders.push_back(gravity_slider);
 
@@ -501,6 +521,11 @@ void Editor_screen::hide_controls()
         b->set_visible(false);
     }
 
+    for (boost::shared_ptr<Draggable_slider> const& s : _sliders)
+    {
+        s->set_visible(false);
+    }
+
     _show_controls_button->set_visible(true);
 
     update_draggable_to_level_element();
@@ -516,8 +541,20 @@ void Editor_screen::show_controls()
         b->set_visible(true);
     }
 
+    for (boost::shared_ptr<Draggable_slider> const& s : _sliders)
+    {
+        s->set_visible(true);
+    }
+
     _show_controls_button->set_visible(false);
 
     update_draggable_to_level_element();
     update_active_draggables();
+}
+
+void Editor_screen::clear_level()
+{
+    _core.clear();
+
+    _core.load_level_defaults();
 }

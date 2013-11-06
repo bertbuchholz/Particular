@@ -24,6 +24,7 @@ private:
     void hide_controls();
     void show_controls();
     void slider_changed();
+    void clear_level();
 
     std::vector<std::string> _placeable_molecules;
 
@@ -34,7 +35,7 @@ private:
     boost::shared_ptr<Draggable_button> _hide_controls_button;
     boost::shared_ptr<Draggable_button> _show_controls_button;
 
-    boost::shared_ptr<Draggable_slider> _translation_fluctuation_slider;
+//    boost::shared_ptr<Draggable_slider> _translation_fluctuation_slider;
 };
 
 

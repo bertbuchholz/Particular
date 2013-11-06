@@ -145,9 +145,9 @@ public:
     Eigen::Vector3f const& get_position() const;
     void set_position(Eigen::Vector3f const& position);
 
-    Eigen::Transform<float, 3, Eigen::Isometry> const& get_transform() const;
-    Eigen::Transform<float, 3, Eigen::Isometry> const& get_inverse_transform() const;
-    void set_transform(Eigen::Transform<float, 3, Eigen::Isometry> const& transform);
+    Eigen::Transform<float, 3, Eigen::Affine> const& get_transform() const;
+    Eigen::Transform<float, 3, Eigen::Affine> const& get_inverse_transform() const;
+    void set_transform(Eigen::Transform<float, 3, Eigen::Affine> const& transform);
 
     Edit_type is_user_editable() const;
 
@@ -207,8 +207,8 @@ protected:
     Parameter_list _properties;
 
 private:
-    Eigen::Transform<float, 3, Eigen::Isometry> _transform;
-    Eigen::Transform<float, 3, Eigen::Isometry> _inverse_transform;
+    Eigen::Transform<float, 3, Eigen::Affine> _transform;
+    Eigen::Transform<float, 3, Eigen::Affine> _inverse_transform;
 };
 
 class Barrier : public Level_element

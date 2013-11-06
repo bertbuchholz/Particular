@@ -30,6 +30,8 @@ public:
     void return_to_main_menu();
     void play_level();
     void return_to_editor();
+    void load_level();
+    void save_level();
 
 private:
     Core & _core;

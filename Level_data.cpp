@@ -16,12 +16,12 @@ Level_data::Level_data()
 
     _parameters.add_parameter(new Parameter("score_time_factor", 60.0f, 1.0f, 3000.0f, update_variables));
 
-    _parameters.add_parameter(new Parameter("rotation_damping", 0.17f, 0.0f, 10.0f, update_variables));
-    _parameters.add_parameter(new Parameter("translation_damping", 0.5f, 0.0f, 10.0f, update_variables));
+    _parameters.add_parameter(new Parameter("rotation_damping", 0.17f, 0.0f, 1.0f, update_variables));
+    _parameters.add_parameter(new Parameter("translation_damping", 0.5f, 0.0f, 1.0f, update_variables));
     _parameters.add_parameter(new Parameter("rotation_fluctuation", 0.0f, -10.0f, 100.0f, update_variables));
     _parameters.add_parameter(new Parameter("translation_fluctuation", 0.0f, -10.0f, 100.0f, update_variables));
     _parameters.add_parameter(new Parameter("Temperature", 0.0f, -50.0f, 50.0f, update_variables));
-    _parameters.add_parameter(new Parameter("Damping", 0.0f, 0.0f, 3.0f, update_variables));
+    _parameters.add_parameter(new Parameter("Damping", 0.0f, 0.0f, 1.0f, update_variables));
 
     _parameters.add_parameter(new Parameter("gravity", 0.0f, 0.0f, 10.0f, update_variables));
 

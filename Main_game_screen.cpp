@@ -76,9 +76,9 @@ Main_game_screen::Main_game_screen(My_viewer &viewer, Core &core, Ui_state ui_st
 
     Parameter_registry<World_renderer>::create_single_select_instance(&_parameters, "Renderer", std::bind(&Main_game_screen::change_renderer, this));
 
-    Main_options_window::get_instance()->add_parameter_list("Main_game_screen", _parameters);
+    _parameters["Renderer/type"]->set_value<std::string>("Shader Renderer");
 
-    change_renderer();
+    Main_options_window::get_instance()->add_parameter_list("Main_game_screen", _parameters);
 
     connect(&_core, SIGNAL(level_changed(Main_game_screen::Level_state)), this, SLOT(handle_level_change(Main_game_screen::Level_state)));
     connect(&_core, SIGNAL(game_state_changed()), this, SLOT(handle_game_state_change()));

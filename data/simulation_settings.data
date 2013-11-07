@@ -38,7 +38,7 @@
 				<_description></_description>
 				<_value>
 					<which>0</which>
-					<value>1</value>
+					<value>0</value>
 				</_value>
 				<_index>32767</_index>
 				<_value_list>
@@ -216,7 +216,7 @@
 										<_description></_description>
 										<_value>
 											<which>1</which>
-											<value>160</value>
+											<value>160.00101</value>
 										</_value>
 										<_index>1952542066</_index>
 										<_value_list>

@@ -183,9 +183,9 @@ My_viewer::My_viewer(Core &core, const QGLFormat &format) : Options_viewer(forma
     _parameters["global_scale"]->set_hidden(true);
 
     _parameters.add_parameter(new Parameter("z_near", 0.1f, 0.01f, 100.0f, std::bind(&My_viewer::change_clipping, this)));
-    _parameters["z_near"]->set_hidden(true);
+//    _parameters["z_near"]->set_hidden(true);
     _parameters.add_parameter(new Parameter("z_far", 100.0f, 1.0f, 1000.0f, std::bind(&My_viewer::change_clipping, this)));
-    _parameters["z_far"]->set_hidden(true);
+//    _parameters["z_far"]->set_hidden(true);
 
     _parameters.add_parameter(new Parameter("draw_closest_force", true, update));
     _parameters["draw_closest_force"]->set_hidden(true);
@@ -206,8 +206,6 @@ My_viewer::My_viewer(Core &core, const QGLFormat &format) : Options_viewer(forma
     _parameters.add_parameter(Parameter::create_button("Load Settings", std::bind(&My_viewer::restore_parameters_with_check, this)));
 //    _parameters.add_parameter(Parameter::create_button("Clear", std::bind(&My_viewer::clear, this)));
 //    _parameters.add_parameter(Parameter::create_button("Reset Level", std::bind(&My_viewer::reset_level, this)));
-
-    Main_options_window::get_instance()->add_parameter_list("Viewer", _parameters);
 
     setup_fonts();
 
@@ -722,6 +720,17 @@ void My_viewer::keyPressEvent(QKeyEvent *event)
 
         handled = true;
     }
+    else if (event->key() == Qt::Key_O)
+    {
+        Main_options_window * w = Main_options_window::create();
+        w->add_parameter_list("Viewer", _parameters);
+        w->show();
+
+        handled = true;
+    }
+
+
+
 
     if (!handled)
     {

@@ -133,6 +133,8 @@ private:
 class Level_element
 {
 public:
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
     enum class Edit_type { None = 0, Rotate = 0b1, Translate = 0b10, Scale = 0b100, Property = 0b1000, All = 0b1111  };
 
     virtual ~Level_element() {}

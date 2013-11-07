@@ -83,6 +83,8 @@ private:
 class Draggable : public Level_element_visitor, public Notifiable
 {
 public:
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
     Draggable(Level_element * level_element = nullptr) : Draggable(Eigen::Vector3f::Zero(), level_element)
     { }
 
@@ -259,6 +261,8 @@ class Draggable_disc : public Draggable
 class Draggable_label : public Draggable
 {
 public:
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
     Draggable_label() {}
 
     Draggable_label(Eigen::Vector3f const& position, Eigen::Vector2f const& size, std::string const& text) :
@@ -564,6 +568,8 @@ private:
 class Draggable_box : public Draggable
 {
 public:
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
     enum class Corner_type { Min = -1, Max = 1 };
     enum class Axis { X = 0, Y, Z };
     enum class Plane { Neg_X, Neg_Y, Neg_Z, Pos_X, Pos_Y, Pos_Z };

@@ -25,6 +25,10 @@ CONFIG += qt \
 
 #CONFIG -= app_bundle
 
+# see: http://eigen.tuxfamily.org/index.php?title=FAQ#Vectorization
+#DEFINES += EIGEN_DONT_VECTORIZE
+DEFINES += EIGEN_DISABLE_UNALIGNED_ARRAY_ASSERT
+
 EXT_DIR = ../extern
 BERT_SHARED_DIR = ../shared
 

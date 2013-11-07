@@ -24,48 +24,56 @@ bool Editor_screen::mousePressEvent(QMouseEvent * event)
     bool handled = false;
 
 
-    if (event->buttons() & Qt::LeftButton && event->modifiers() & Qt::ControlModifier)
+//    if (event->buttons() & Qt::LeftButton && event->modifiers() & Qt::ControlModifier)
+//    {
+//        add_element_event(event->pos());
+//        handled = true;
+//    }
+//    else
+
+//    if (event->buttons() & Qt::LeftButton && event->modifiers() & Qt::AltModifier)
+//    {
+//        std::cout << __PRETTY_FUNCTION__ << " Drag/Click" << std::endl;
+//        _dragging_start = event->pos();
+
+////            _picked_index = _picking.do_pick(event->pos().x(), height() - event->pos().y(), std::bind(&My_viewer::draw_molecules_for_picking, this));
+//        _picked_index = _picking.do_pick(event->pos().x() / float(_viewer.camera()->screenWidth()), (_viewer.camera()->screenHeight() - event->pos().y())  / float(_viewer.camera()->screenHeight()), std::bind(&Main_game_screen::draw_molecules_for_picking, this));
+////            _picked_index = _picking.do_pick(event->pos().x(), height() - event->pos().y(), std::bind(&Molecule_renderer::picking_draw, _molecule_renderer));
+
+//        std::cout << __PRETTY_FUNCTION__ << " index: " << _picked_index << std::endl;
+
+//        if (_picked_index != -1)
+//        {
+//            bool found;
+//            qglviewer::Vec world_pos = _viewer.camera()->pointUnderPixel(event->pos(), found);
+
+//            if (found)
+//            {
+//                boost::optional<Molecule const&> picked_molecule = _core.get_molecule(_picked_index);
+
+//                assert(picked_molecule);
+
+//                Molecule_external_force & f = _core.get_user_force();
+//                f._molecule_id = _picked_index;
+////                    qglviewer::Vec dir = world_pos - camera()->position();
+////                    dir.normalize();
+//                f._force.setZero();
+//                f._origin = QGLV2Eigen(world_pos);
+//                f._local_origin = picked_molecule->_R.transpose() * (f._origin - picked_molecule->_x);
+//                f._end_time = _core.get_current_time();
+
+//                _mouse_state = Mouse_state::Init_drag_molecule;
+
+//                std::cout << "Apply force: " << f._origin << std::endl;
+//            }
+//        }
+
+//        handled = true;
+//    }
+//    else
+
+    if (_mouse_state == Mouse_state::Level_element_button_selected)
     {
-        add_element_event(event->pos());
-        handled = true;
-    }
-    else if (event->buttons() & Qt::LeftButton && event->modifiers() & Qt::AltModifier)
-    {
-        std::cout << __PRETTY_FUNCTION__ << " Drag/Click" << std::endl;
-        _dragging_start = event->pos();
-
-//            _picked_index = _picking.do_pick(event->pos().x(), height() - event->pos().y(), std::bind(&My_viewer::draw_molecules_for_picking, this));
-        _picked_index = _picking.do_pick(event->pos().x() / float(_viewer.camera()->screenWidth()), (_viewer.camera()->screenHeight() - event->pos().y())  / float(_viewer.camera()->screenHeight()), std::bind(&Main_game_screen::draw_molecules_for_picking, this));
-//            _picked_index = _picking.do_pick(event->pos().x(), height() - event->pos().y(), std::bind(&Molecule_renderer::picking_draw, _molecule_renderer));
-
-        std::cout << __PRETTY_FUNCTION__ << " index: " << _picked_index << std::endl;
-
-        if (_picked_index != -1)
-        {
-            bool found;
-            qglviewer::Vec world_pos = _viewer.camera()->pointUnderPixel(event->pos(), found);
-
-            if (found)
-            {
-                boost::optional<Molecule const&> picked_molecule = _core.get_molecule(_picked_index);
-
-                assert(picked_molecule);
-
-                Molecule_external_force & f = _core.get_user_force();
-                f._molecule_id = _picked_index;
-//                    qglviewer::Vec dir = world_pos - camera()->position();
-//                    dir.normalize();
-                f._force.setZero();
-                f._origin = QGLV2Eigen(world_pos);
-                f._local_origin = picked_molecule->_R.transpose() * (f._origin - picked_molecule->_x);
-                f._end_time = _core.get_current_time();
-
-                _mouse_state = Mouse_state::Init_drag_molecule;
-
-                std::cout << "Apply force: " << f._origin << std::endl;
-            }
-        }
-
         handled = true;
     }
     else
@@ -97,25 +105,6 @@ bool Editor_screen::mousePressEvent(QMouseEvent * event)
 
             handled = true;
         }
-        else if (_mouse_state == Mouse_state::Level_element_button_selected)
-        {
-            if (event->buttons() & Qt::LeftButton)
-            {
-                add_selected_level_element(event->pos());
-            }
-            else
-            {
-                _mouse_state = Mouse_state::None;
-                QApplication::restoreOverrideCursor();
-
-                _level_element_buttons[_selected_level_element_button_type]->reset();
-
-//                for (auto & b : _level_element_buttons)
-//                {
-//                    b.second->reset();
-//                }
-            }
-        }
     }
 
     return handled;
@@ -131,6 +120,10 @@ bool Editor_screen::mouseMoveEvent(QMouseEvent * event)
         {
             _mouse_state = Mouse_state::Dragging_molecule;
         }
+    }
+    else if (_mouse_state == Mouse_state::Level_element_button_selected)
+    {
+        handled = true;
     }
     else if (_mouse_state == Mouse_state::Dragging_molecule)
     {
@@ -217,9 +210,8 @@ bool Editor_screen::mouseMoveEvent(QMouseEvent * event)
                 }
             }
         }
-
-
     }
+
 
     return handled;
 }
@@ -274,7 +266,19 @@ bool Editor_screen::mouseReleaseEvent(QMouseEvent * event)
     }
     else if (_mouse_state == Mouse_state::Level_element_button_selected)
     {
-        // do nothing, keep button selected
+        if (event->button() & Qt::LeftButton)
+        {
+            add_selected_level_element(event->pos());
+        }
+        else
+        {
+            _mouse_state = Mouse_state::None;
+            QApplication::restoreOverrideCursor();
+
+            _level_element_buttons[_selected_level_element_button_type]->reset();
+        }
+
+        handled = true;
     }
     else
     {

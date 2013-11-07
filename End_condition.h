@@ -10,7 +10,7 @@ public:
 
     enum class State { Not_finished, Finished };
 
-    End_condition() : _type(Type::Or)
+    End_condition() : _type(Type::And)
     { }
 
     virtual ~End_condition() {}

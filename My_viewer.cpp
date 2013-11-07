@@ -273,11 +273,6 @@ void My_viewer::setup_fonts()
 //    }
 //}
 
-void My_viewer::reset_level()
-{
-    _core.reset_level();
-}
-
 Eigen::Vector3f My_viewer::calc_camera_starting_point_from_borders()
 {
     float const game_field_width_x = _core.get_level_data()._game_field_borders[Level_data::Plane::Pos_X]->get_position()[0]

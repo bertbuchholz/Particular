@@ -52,7 +52,6 @@ public:
 //        update();
 //    }
 
-    void reset_level();
 
     Eigen::Vector3f calc_camera_starting_point_from_borders();
 

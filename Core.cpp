@@ -742,11 +742,11 @@ void Core::start_level()
 {
     std::cout << __PRETTY_FUNCTION__ << std::endl;
 
+    set_new_game_state(Game_state::Running);
+
     reset_level();
 
     set_simulation_state(true);
-
-    set_new_game_state(Game_state::Running);
 }
 
 

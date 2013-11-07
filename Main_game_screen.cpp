@@ -2,6 +2,7 @@
 
 #include "My_viewer.h"
 #include "Pause_screen.h"
+#include "Editor_pause_screen.h"
 #include "Before_start_screen.h"
 #include "After_finish_screen.h"
 #include "After_finish_editor_screen.h"
@@ -297,7 +298,14 @@ bool Main_game_screen::keyPressEvent(QKeyEvent * event)
                 // go into pause and start pause menu
                 pause();
 
-                _viewer.add_screen(new Pause_screen(_viewer, _core, this));
+                if (_ui_state == Ui_state::Level_editor)
+                {
+                    _viewer.add_screen(new Editor_pause_screen(_viewer, _core, this));
+                }
+                else
+                {
+                    _viewer.add_screen(new Pause_screen(_viewer, _core, this));
+                }
 
                 _core.set_simulation_state(false);
 
@@ -1279,7 +1287,8 @@ void Main_game_screen::handle_level_change(Main_game_screen::Level_state const l
         assert(_core.get_level_data()._game_field_borders.size() == 6);
     }
 
-    if (_ui_state != Ui_state::Level_editor)
+//    if (_ui_state != Ui_state::Level_editor)
+    if (_core.get_game_state() == Core::Game_state::Running)
     {
         update_level_element_buttons();
     }

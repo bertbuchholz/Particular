@@ -175,11 +175,11 @@ void Editor_pause_screen::return_to_main_menu()
 
 void Editor_pause_screen::play_level()
 {
-    kill();
+    _viewer.replace_screens(new Main_game_screen(_viewer, _core, Main_game_screen::Ui_state::Level_editor));
 
     _core.start_level();
 
-    _calling_screen->resume();
+//    _viewer.replace_screens(new Editor_screen(_viewer, _core));
 }
 
 void Editor_pause_screen::return_to_editor()
@@ -192,11 +192,7 @@ void Editor_pause_screen::return_to_editor()
 
     _core.set_simulation_state(false);
 
-    _viewer.add_screen(new Editor_screen(_viewer, _core));
-
-    _calling_screen->kill();
-
-    kill();
+    _viewer.replace_screens(new Editor_screen(_viewer, _core));
 }
 
 

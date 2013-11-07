@@ -63,7 +63,7 @@ private:
     }
 };
 
-REGISTER_CLASS_WITH_PARAMETERS(Atomic_force, Null_force);
+//REGISTER_CLASS_WITH_PARAMETERS(Atomic_force, Null_force);
 
 
 class Coulomb_force : public Atomic_force
@@ -71,7 +71,8 @@ class Coulomb_force : public Atomic_force
 public:
     static std::string name()
     {
-        return "Coulomb_force";
+        return "Coulomb Force";
+//        return "Coulomb_force";
     }
 
     std::string get_instance_name() const override
@@ -86,18 +87,18 @@ public:
 
     void update_variables(Parameter_list const& parameters) override
     {
-        _strength = parameters["strength"]->get_value<float>();
+        _strength = parameters["Strength"]->get_value<float>();
     }
 
     void update_parameters(Parameter_list & parameters) const override
     {
-        parameters["strength"]->set_value_no_update(_strength);
+        parameters["Strength"]->set_value_no_update(_strength);
     }
 
     static Parameter_list get_parameters()
     {
         Parameter_list parameters;
-        parameters.add_parameter(new Parameter("strength", 1.0f, 1.0f, 1000.0f));
+        parameters.add_parameter(new Parameter("Strength", 1.0f, 1.0f, 1000.0f));
         return parameters;
     }
 
@@ -159,14 +160,15 @@ private:
     float _radius;
 };
 
-REGISTER_CLASS_WITH_PARAMETERS(Atomic_force, Wendland_force);
+//REGISTER_CLASS_WITH_PARAMETERS(Atomic_force, Wendland_force);
 
 class Lennard_jones_force : public Atomic_force
 {
 public:
     static std::string name()
     {
-        return "Lennard_jones_force";
+//        return "Lennard_jones_force";
+        return "Van der Waals Force";
     }
 
     std::string get_instance_name() const override
@@ -181,21 +183,21 @@ public:
 
     void update_variables(Parameter_list const& parameters) override
     {
-        _strength = parameters["strength"]->get_value<float>();
-        _radius_factor = parameters["radius_factor"]->get_value<float>();
+        _strength = parameters["Strength"]->get_value<float>();
+        _radius_factor = parameters["Radius Factor"]->get_value<float>();
     }
 
     void update_parameters(Parameter_list & parameters) const override
     {
-        parameters["strength"]->set_value(_strength);
-        parameters["radius_factor"]->set_value(_radius_factor);
+        parameters["Strength"]->set_value(_strength);
+        parameters["Radius Factor"]->set_value(_radius_factor);
     }
 
     static Parameter_list get_parameters()
     {
         Parameter_list parameters;
-        parameters.add_parameter(new Parameter("strength", 1.0f, 0.001f, 10.0f));
-        parameters.add_parameter(new Parameter("radius_factor",   1.0f, 0.5f, 10.0f));
+        parameters.add_parameter(new Parameter("Strength", 1.0f, 0.001f, 10.0f));
+        parameters.add_parameter(new Parameter("Radius Factor",   1.0f, 0.5f, 10.0f));
         return parameters;
     }
 

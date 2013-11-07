@@ -1255,7 +1255,8 @@ void Main_game_screen::handle_game_state_change()
 {
     std::cout << __PRETTY_FUNCTION__ << std::endl;
 
-    if (_core.get_game_state() == Core::Game_state::Running)
+    // check for killing when this state is started from the editor, don't want to revive the dying editor
+    if (_core.get_game_state() == Core::Game_state::Running && get_state() != State::Killing)
     {
         resume();
     }
@@ -1305,7 +1306,7 @@ void Main_game_screen::setup_intro()
 //    _parameters["Level_data/rotation_damping"]->set_value(0.5f);
 //    _parameters["Level_data/translation_damping"]->set_value(0.1f);
 
-    _core.get_parameters()["mass_factor"]->set_value(0.1f);
+    _core.get_parameters()["Mass Factor"]->set_value(0.1f);
 
 //    _parameters["Core/mass_factor"]->set_value(0.1f);
 

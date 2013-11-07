@@ -74,7 +74,7 @@ Core::Core() :
     _parameters.add_parameter(new Parameter("levels", std::string(""), update_variables));
 
     _parameters.add_parameter(new Parameter("Toggle simulation", false, std::bind(&Core::toggle_simulation, this)));
-    _parameters.add_parameter(new Parameter("mass_factor", 1.0f, 0.01f, 10.0f, update_variables));
+    _parameters.add_parameter(new Parameter("Mass Factor", 1.0f, 0.01f, 10.0f, update_variables));
     _parameters.add_parameter(new Parameter("do_constrain_forces", true, update_variables));
     _parameters.add_parameter(new Parameter("max_force", 10.0f, 0.1f, 500.0f, update_variables));
     _parameters.add_parameter(new Parameter("max_force_distance", 10.0f, 1.0f, 1000.0f, update_variables));
@@ -974,7 +974,7 @@ void Core::update_variables()
 
     _do_constrain_forces = _parameters["do_constrain_forces"]->get_value<bool>();
     _max_force = _parameters["max_force"]->get_value<float>();
-    _mass_factor = _parameters["mass_factor"]->get_value<float>();
+    _mass_factor = _parameters["Mass Factor"]->get_value<float>();
     _max_force_distance = _parameters["max_force_distance"]->get_value<float>();
 
     _atomic_forces = std::vector< std::unique_ptr<Atomic_force> >(Parameter_registry<Atomic_force>::get_unique_ptr_classes_from_multi_select_instance(_parameters.get_child("Atomic Force Type")));
@@ -987,7 +987,7 @@ void Core::update_parameters()
 
     _parameters["do_constrain_forces"]->set_value_no_update(_do_constrain_forces);
     _parameters["max_force"]->set_value_no_update(_max_force);
-    _parameters["mass_factor"]->set_value_no_update(_mass_factor);
+    _parameters["Mass Factor"]->set_value_no_update(_mass_factor);
     _parameters["max_force_distance"]->set_value_no_update(_max_force_distance);
 
     for (std::unique_ptr<Atomic_force> const& f : _atomic_forces)

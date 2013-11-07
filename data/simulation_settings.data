@@ -1,21 +1,47 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
 <!DOCTYPE boost_serialization>
-<boost_serialization signature="serialization::archive" version="10">
+<boost_serialization signature="serialization::archive" version="9">
 <simulation_settings.data class_id="0" tracking_level="1" version="0" object_id="_0">
 	<_list class_id="1" tracking_level="0" version="0">
 		<count>8</count>
 		<item_version>0</item_version>
 		<item class_id="2" tracking_level="0" version="0">
-			<first>Toggle simulation</first>
+			<first>Mass Factor</first>
 			<second class_id="3" tracking_level="1" version="0" object_id="_1">
-				<_name>Toggle simulation</_name>
+				<_name>Mass Factor</_name>
 				<_description></_description>
 				<_value class_id="4" tracking_level="0" version="0">
+					<which>1</which>
+					<value>0.1</value>
+				</_value>
+				<_index>2293760</_index>
+				<_value_list class_id="5" tracking_level="0" version="0">
+					<count>2</count>
+					<item_version>0</item_version>
+					<item>
+						<which>1</which>
+						<value>0.0099999998</value>
+					</item>
+					<item>
+						<which>1</which>
+						<value>10</value>
+					</item>
+				</_value_list>
+				<_special_type>0</_special_type>
+				<_order_index>0</_order_index>
+			</second>
+		</item>
+		<item>
+			<first>Toggle simulation</first>
+			<second class_id_reference="3" object_id="_2">
+				<_name>Toggle simulation</_name>
+				<_description></_description>
+				<_value>
 					<which>0</which>
 					<value>1</value>
 				</_value>
 				<_index>32767</_index>
-				<_value_list class_id="5" tracking_level="0" version="0">
+				<_value_list>
 					<count>0</count>
 					<item_version>0</item_version>
 				</_value_list>
@@ -25,7 +51,7 @@
 		</item>
 		<item>
 			<first>do_constrain_forces</first>
-			<second class_id_reference="3" object_id="_2">
+			<second class_id_reference="3" object_id="_3">
 				<_name>do_constrain_forces</_name>
 				<_description></_description>
 				<_value>
@@ -43,7 +69,7 @@
 		</item>
 		<item>
 			<first>levels</first>
-			<second class_id_reference="3" object_id="_3">
+			<second class_id_reference="3" object_id="_4">
 				<_name>levels</_name>
 				<_description></_description>
 				<_value>
@@ -57,32 +83,6 @@
 				</_value_list>
 				<_special_type>0</_special_type>
 				<_order_index>0</_order_index>
-			</second>
-		</item>
-		<item>
-			<first>mass_factor</first>
-			<second class_id_reference="3" object_id="_4">
-				<_name>mass_factor</_name>
-				<_description></_description>
-				<_value>
-					<which>1</which>
-					<value>0.1</value>
-				</_value>
-				<_index>32661</_index>
-				<_value_list>
-					<count>2</count>
-					<item_version>0</item_version>
-					<item>
-						<which>1</which>
-						<value>0.0099999998</value>
-					</item>
-					<item>
-						<which>1</which>
-						<value>10</value>
-					</item>
-				</_value_list>
-				<_special_type>0</_special_type>
-				<_order_index>2</_order_index>
 			</second>
 		</item>
 		<item>
@@ -201,42 +201,24 @@
 					<item_version>0</item_version>
 				</_list>
 				<_children>
-					<count>4</count>
+					<count>2</count>
 					<item_version>0</item_version>
 					<item>
-						<first>Coulomb_force</first>
+						<first>Coulomb Force</first>
 						<second class_id_reference="0" object_id="_10">
 							<_list>
 								<count>2</count>
 								<item_version>0</item_version>
 								<item>
-									<first>multi_enable</first>
+									<first>Strength</first>
 									<second class_id_reference="3" object_id="_11">
-										<_name>multi_enable</_name>
-										<_description></_description>
-										<_value>
-											<which>0</which>
-											<value>1</value>
-										</_value>
-										<_index>0</_index>
-										<_value_list>
-											<count>0</count>
-											<item_version>0</item_version>
-										</_value_list>
-										<_special_type>0</_special_type>
-										<_order_index>0</_order_index>
-									</second>
-								</item>
-								<item>
-									<first>strength</first>
-									<second class_id_reference="3" object_id="_12">
-										<_name>strength</_name>
+										<_name>Strength</_name>
 										<_description></_description>
 										<_value>
 											<which>1</which>
 											<value>160</value>
 										</_value>
-										<_index>0</_index>
+										<_index>1952542066</_index>
 										<_value_list>
 											<count>2</count>
 											<item_version>0</item_version>
@@ -253,6 +235,24 @@
 										<_order_index>1</_order_index>
 									</second>
 								</item>
+								<item>
+									<first>multi_enable</first>
+									<second class_id_reference="3" object_id="_12">
+										<_name>multi_enable</_name>
+										<_description></_description>
+										<_value>
+											<which>0</which>
+											<value>1</value>
+										</_value>
+										<_index>1694525440</_index>
+										<_value_list>
+											<count>0</count>
+											<item_version>0</item_version>
+										</_value_list>
+										<_special_type>0</_special_type>
+										<_order_index>0</_order_index>
+									</second>
+								</item>
 							</_list>
 							<_children>
 								<count>0</count>
@@ -262,33 +262,15 @@
 						</second>
 					</item>
 					<item>
-						<first>Lennard_jones_force</first>
+						<first>Van der Waals Force</first>
 						<second class_id_reference="0" object_id="_13">
 							<_list>
 								<count>3</count>
 								<item_version>0</item_version>
 								<item>
-									<first>multi_enable</first>
+									<first>Radius Factor</first>
 									<second class_id_reference="3" object_id="_14">
-										<_name>multi_enable</_name>
-										<_description></_description>
-										<_value>
-											<which>0</which>
-											<value>1</value>
-										</_value>
-										<_index>131072</_index>
-										<_value_list>
-											<count>0</count>
-											<item_version>0</item_version>
-										</_value_list>
-										<_special_type>0</_special_type>
-										<_order_index>0</_order_index>
-									</second>
-								</item>
-								<item>
-									<first>radius_factor</first>
-									<second class_id_reference="3" object_id="_15">
-										<_name>radius_factor</_name>
+										<_name>Radius Factor</_name>
 										<_description></_description>
 										<_value>
 											<which>1</which>
@@ -312,15 +294,15 @@
 									</second>
 								</item>
 								<item>
-									<first>strength</first>
-									<second class_id_reference="3" object_id="_16">
-										<_name>strength</_name>
+									<first>Strength</first>
+									<second class_id_reference="3" object_id="_15">
+										<_name>Strength</_name>
 										<_description></_description>
 										<_value>
 											<which>1</which>
 											<value>0.1</value>
 										</_value>
-										<_index>0</_index>
+										<_index>1868963941</_index>
 										<_value_list>
 											<count>2</count>
 											<item_version>0</item_version>
@@ -337,120 +319,22 @@
 										<_order_index>2</_order_index>
 									</second>
 								</item>
-							</_list>
-							<_children>
-								<count>0</count>
-								<item_version>0</item_version>
-							</_children>
-							<_children_type>0</_children_type>
-						</second>
-					</item>
-					<item>
-						<first>Null_force</first>
-						<second class_id_reference="0" object_id="_17">
-							<_list>
-								<count>1</count>
-								<item_version>0</item_version>
 								<item>
 									<first>multi_enable</first>
-									<second class_id_reference="3" object_id="_18">
+									<second class_id_reference="3" object_id="_16">
 										<_name>multi_enable</_name>
 										<_description></_description>
 										<_value>
 											<which>0</which>
-											<value>0</value>
+											<value>1</value>
 										</_value>
-										<_index>0</_index>
+										<_index>18</_index>
 										<_value_list>
 											<count>0</count>
 											<item_version>0</item_version>
 										</_value_list>
 										<_special_type>0</_special_type>
 										<_order_index>0</_order_index>
-									</second>
-								</item>
-							</_list>
-							<_children>
-								<count>0</count>
-								<item_version>0</item_version>
-							</_children>
-							<_children_type>0</_children_type>
-						</second>
-					</item>
-					<item>
-						<first>Wendland_force</first>
-						<second class_id_reference="0" object_id="_19">
-							<_list>
-								<count>3</count>
-								<item_version>0</item_version>
-								<item>
-									<first>multi_enable</first>
-									<second class_id_reference="3" object_id="_20">
-										<_name>multi_enable</_name>
-										<_description></_description>
-										<_value>
-											<which>0</which>
-											<value>0</value>
-										</_value>
-										<_index>0</_index>
-										<_value_list>
-											<count>0</count>
-											<item_version>0</item_version>
-										</_value_list>
-										<_special_type>0</_special_type>
-										<_order_index>0</_order_index>
-									</second>
-								</item>
-								<item>
-									<first>radius</first>
-									<second class_id_reference="3" object_id="_21">
-										<_name>radius</_name>
-										<_description></_description>
-										<_value>
-											<which>1</which>
-											<value>5</value>
-										</_value>
-										<_index>0</_index>
-										<_value_list>
-											<count>2</count>
-											<item_version>0</item_version>
-											<item>
-												<which>1</which>
-												<value>1</value>
-											</item>
-											<item>
-												<which>1</which>
-												<value>100</value>
-											</item>
-										</_value_list>
-										<_special_type>0</_special_type>
-										<_order_index>1</_order_index>
-									</second>
-								</item>
-								<item>
-									<first>strength</first>
-									<second class_id_reference="3" object_id="_22">
-										<_name>strength</_name>
-										<_description></_description>
-										<_value>
-											<which>1</which>
-											<value>100</value>
-										</_value>
-										<_index>0</_index>
-										<_value_list>
-											<count>2</count>
-											<item_version>0</item_version>
-											<item>
-												<which>1</which>
-												<value>1</value>
-											</item>
-											<item>
-												<which>1</which>
-												<value>10000</value>
-											</item>
-										</_value_list>
-										<_special_type>0</_special_type>
-										<_order_index>2</_order_index>
 									</second>
 								</item>
 							</_list>

@@ -164,12 +164,8 @@ void Editor_pause_screen::return_to_main_menu()
 
     if (button == QMessageBox::Yes)
     {
-        _viewer.add_screen(new Main_game_screen(_viewer, _core, Main_game_screen::Ui_state::Playing));
+        _viewer.replace_screens(new Main_game_screen(_viewer, _core, Main_game_screen::Ui_state::Playing));
         _viewer.add_screen(new Main_menu_screen(_viewer, _core));
-
-        _calling_screen->kill();
-
-        kill();
     }
 }
 
@@ -178,8 +174,6 @@ void Editor_pause_screen::play_level()
     _viewer.replace_screens(new Main_game_screen(_viewer, _core, Main_game_screen::Ui_state::Level_editor));
 
     _core.start_level();
-
-//    _viewer.replace_screens(new Editor_screen(_viewer, _core));
 }
 
 void Editor_pause_screen::return_to_editor()

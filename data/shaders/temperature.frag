@@ -52,7 +52,7 @@ void main(void)
         vec4 scene_color = texture2D(scene_texture, screen_coords + refracted_coord);
         scene_color.a = 1.0;
 
-        vec4 tint = vec4(1.0, 1.0, 1.0, 1.0) * (1.0 - f) + vec4(0.6, 0.8, 1.0, 1.0) * f * 1.2;
+        vec4 tint = vec4(1.0, 1.0, 1.0, 1.0) * (1.0 - f) + vec4(0.8, 0.84, 0.87, 1.0) * f * 1.0;
 
 //        color = ice_color * f + scene_color * (1.0 - f);
         color = scene_color * tint;

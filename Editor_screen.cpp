@@ -426,6 +426,14 @@ void Editor_screen::init_level_element_buttons()
     _buttons.push_back(button_clear);
 
 
+    boost::shared_ptr<Draggable_button> button_advanced_options(
+                new Draggable_button(Eigen::Vector3f(0.61f, 0.05f, 0.0f),
+                                     Eigen::Vector2f(0.15f, 0.05f * _viewer.camera()->aspectRatio()),
+                                     "Adv. Options", std::bind(&Editor_screen::show_advanced_options, this)));
+    _viewer.generate_button_texture(button_advanced_options.get());
+    _buttons.push_back(button_advanced_options);
+
+
     boost::shared_ptr<Draggable_slider> translation_fluctuation_slider(
                 new Draggable_slider(Eigen::Vector3f(0.93f, 0.88f, 0.0f),
                                      Eigen::Vector2f(0.1f, 0.05f),
@@ -561,4 +569,25 @@ void Editor_screen::clear_level()
     _core.clear();
 
     _core.load_level_defaults();
+}
+
+void Editor_screen::show_advanced_options()
+{
+    Parameter_list elements_list;
+    elements_list.add_child("Available elements", _core.get_level_data()._parameters.get_child("Available elements"));
+
+    Parameter_list sim_list;
+    sim_list.add_parameter(_core.get_parameters()["Mass Factor"]);
+    sim_list.add_child("Intermolecular Forces", _core.get_parameters().get_child("Atomic Force Type"));
+
+    _advanced_options_window = std::unique_ptr<Main_options_window>(Main_options_window::create());
+
+    _advanced_options_window->add_parameter_list("Level Options", elements_list);
+    _advanced_options_window->add_parameter_list("Adv. Simulation Options", sim_list);
+
+//    _advanced_options_window->add_parameter_list("Available elements", *_core.get_level_data()._parameters.get_child("Available elements"));
+
+//    _advanced_options_window->add_parameter_list("Intermolecular Forces", *_core.get_parameters().get_child("Atomic Force Type"));
+
+    _advanced_options_window->show();
 }

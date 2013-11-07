@@ -711,19 +711,21 @@ void My_viewer::keyPressEvent(QKeyEvent *event)
         handled = true;
     }
 
-    if (!handled)
-    {
-        Base::keyPressEvent(event);
-    }
-
     if (event->key() == Qt::Key_S)
     {
         std::cout << __PRETTY_FUNCTION__ << " Screen Stack" << std::endl;
 
         for (std::unique_ptr<Screen> const& s : _screen_stack)
         {
-            std::cout << typeid(*(s.get())).name() << " state: " << int(s->get_state()) << std::endl;
+            std::cout << typeid(*(s.get())).name() << " state: " << int(s->get_state()) << " ptr: " << s.get() << std::endl;
         }
+
+        handled = true;
+    }
+
+    if (!handled)
+    {
+        Base::keyPressEvent(event);
     }
 }
 
@@ -751,10 +753,8 @@ void My_viewer::add_screen(Screen *s)
     _screen_stack.push_front(std::unique_ptr<Screen>(s));
 }
 
-void My_viewer::remove_all_screens()
+void My_viewer::kill_all_screens()
 {
-//    _screen_stack.clear();
-
     for (std::unique_ptr<Screen> const& s : _screen_stack)
     {
         s->kill();
@@ -763,7 +763,7 @@ void My_viewer::remove_all_screens()
 
 void My_viewer::replace_screens(Screen *s)
 {
-    remove_all_screens();
+    kill_all_screens();
     add_screen(s);
 }
 

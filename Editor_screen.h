@@ -3,6 +3,8 @@
 
 #include "Main_game_screen.h"
 
+#include "Main_options_window.h"
+
 class Editor_screen : public Main_game_screen
 {
 public:
@@ -25,6 +27,7 @@ private:
     void show_controls();
     void slider_changed();
     void clear_level();
+    void show_advanced_options();
 
     std::vector<std::string> _placeable_molecules;
 
@@ -34,6 +37,8 @@ private:
     boost::shared_ptr<Draggable_button> _toggle_simulation_button;
     boost::shared_ptr<Draggable_button> _hide_controls_button;
     boost::shared_ptr<Draggable_button> _show_controls_button;
+
+    std::unique_ptr<Main_options_window> _advanced_options_window;
 
 //    boost::shared_ptr<Draggable_slider> _translation_fluctuation_slider;
 };

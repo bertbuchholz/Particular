@@ -34,6 +34,11 @@ QWidget *Main_options_window::add_parameter_list(const std::string &name, const 
     return group_box;
 }
 
+void Main_options_window::show()
+{
+    _menu_frame->show();
+}
+
 
 QFrame *Main_options_window::create_options_widget() const
 {
@@ -88,15 +93,19 @@ Main_options_window *Main_options_window::get_instance()
     return _instance.get();
 }
 
+Main_options_window * Main_options_window::create()
+{
+    return new Main_options_window();
+}
+
 
 Main_options_window::Main_options_window()
 {
-    _menu_frame = new QScrollArea;
+    _menu_frame = std::unique_ptr<QScrollArea>(new QScrollArea);
 
     _menu_frame->setWidget(create_options_widget());
     _menu_frame->setWidgetResizable(true);
     _menu_frame->setWindowFlags(_menu_frame->windowFlags() | Qt::Tool);
-    _menu_frame->show();
 }
 
 

@@ -81,7 +81,7 @@ public:
     void animate() override;
 
     void add_screen(Screen * s);
-    void remove_all_screens();
+    void kill_all_screens();
     void replace_screens(Screen * s);
 
     void clear();

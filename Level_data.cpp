@@ -28,12 +28,12 @@ Level_data::Level_data()
     _parameters.add_parameter(new Parameter("background_name", std::string("iss_interior_1.png")));
 
     Parameter_list * available_list = _parameters.add_child("Available elements");
-    available_list->add_parameter(new Parameter("Box_barrier", 0, 0, 10));
-    available_list->add_parameter(new Parameter("Brownian_box", 0, 0, 10));
-    available_list->add_parameter(new Parameter("Box_portal", 0, 0, 10));
-    available_list->add_parameter(new Parameter("Molecule_releaser", 0, 0, 10));
-    available_list->add_parameter(new Parameter("Charged_barrier", 0, 0, 10));
-    available_list->add_parameter(new Parameter("Tractor_barrier", 0, 0, 10));
+    available_list->add_parameter(new Parameter("Box_barrier", 0, 0, 10, update_variables));
+    available_list->add_parameter(new Parameter("Brownian_box", 0, 0, 10, update_variables));
+    available_list->add_parameter(new Parameter("Box_portal", 0, 0, 10, update_variables));
+    available_list->add_parameter(new Parameter("Molecule_releaser", 0, 0, 10, update_variables));
+    available_list->add_parameter(new Parameter("Charged_barrier", 0, 0, 10, update_variables));
+    available_list->add_parameter(new Parameter("Tractor_barrier", 0, 0, 10, update_variables));
 }
 
 bool Level_data::validate_elements()
@@ -237,7 +237,7 @@ void Level_data::update_parameters()
 
     for (auto & iter : *available_list)
     {
-        iter.second->set_value(_available_elements[iter.first]);
+        iter.second->set_value_no_update(_available_elements[iter.first]);
     }
 }
 

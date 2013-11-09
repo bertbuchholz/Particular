@@ -3,6 +3,7 @@
 #include "Editor_pause_screen.h"
 #include "My_viewer.h"
 
+
 Editor_screen::Editor_screen(My_viewer &viewer, Core &core) : Main_game_screen(viewer, core, Ui_state::Level_editor)
 {
 //    _placeable_molecules = std::vector<std::string>{ "H2O", "Na", "Cl" };
@@ -23,88 +24,51 @@ bool Editor_screen::mousePressEvent(QMouseEvent * event)
 {
     bool handled = false;
 
-
 //    if (event->buttons() & Qt::LeftButton && event->modifiers() & Qt::ControlModifier)
 //    {
 //        add_element_event(event->pos());
 //        handled = true;
 //    }
-//    else
 
-//    if (event->buttons() & Qt::LeftButton && event->modifiers() & Qt::AltModifier)
-//    {
-//        std::cout << __PRETTY_FUNCTION__ << " Drag/Click" << std::endl;
-//        _dragging_start = event->pos();
-
-////            _picked_index = _picking.do_pick(event->pos().x(), height() - event->pos().y(), std::bind(&My_viewer::draw_molecules_for_picking, this));
-//        _picked_index = _picking.do_pick(event->pos().x() / float(_viewer.camera()->screenWidth()), (_viewer.camera()->screenHeight() - event->pos().y())  / float(_viewer.camera()->screenHeight()), std::bind(&Main_game_screen::draw_molecules_for_picking, this));
-////            _picked_index = _picking.do_pick(event->pos().x(), height() - event->pos().y(), std::bind(&Molecule_renderer::picking_draw, _molecule_renderer));
-
-//        std::cout << __PRETTY_FUNCTION__ << " index: " << _picked_index << std::endl;
-
-//        if (_picked_index != -1)
-//        {
-//            bool found;
-//            qglviewer::Vec world_pos = _viewer.camera()->pointUnderPixel(event->pos(), found);
-
-//            if (found)
-//            {
-//                boost::optional<Molecule const&> picked_molecule = _core.get_molecule(_picked_index);
-
-//                assert(picked_molecule);
-
-//                Molecule_external_force & f = _core.get_user_force();
-//                f._molecule_id = _picked_index;
-////                    qglviewer::Vec dir = world_pos - camera()->position();
-////                    dir.normalize();
-//                f._force.setZero();
-//                f._origin = QGLV2Eigen(world_pos);
-//                f._local_origin = picked_molecule->_R.transpose() * (f._origin - picked_molecule->_x);
-//                f._end_time = _core.get_current_time();
-
-//                _mouse_state = Mouse_state::Init_drag_molecule;
-
-//                std::cout << "Apply force: " << f._origin << std::endl;
-//            }
-//        }
-
-//        handled = true;
-//    }
-//    else
-
-    if (_mouse_state == Mouse_state::Level_element_button_selected)
+    for (auto const& tooltip : _tooltips_map)
     {
+        _labels.erase(std::remove(_labels.begin(), _labels.end(), tooltip.second), _labels.end());
+    }
+
+    _tooltips_map.clear();
+
+    _picked_index = _picking.do_pick(event->pos().x() / float(_viewer.camera()->screenWidth()), (_viewer.camera()->screenHeight() - event->pos().y())  / float(_viewer.camera()->screenHeight()),
+                                     std::bind(&Main_game_screen::draw_draggables_for_picking, this));
+
+    std::cout << __PRETTY_FUNCTION__ << " picked_index: " << _picked_index << std::endl;
+
+    if (_picked_index != -1)
+    {
+        if (_mouse_state == Mouse_state::Level_element_button_selected)
+        {
+            QApplication::restoreOverrideCursor();
+
+            _level_element_buttons[_selected_level_element_button_type]->reset();
+        }
+
+        _dragging_start = event->pos();
+
+        bool found;
+        qglviewer::Vec const world_pos = _viewer.camera()->pointUnderPixel(event->pos(), found);
+
+        _mouse_state = Mouse_state::Init_drag_handle;
+        std::cout << __PRETTY_FUNCTION__ << " Init_drag_handle" << std::endl;
+
+        if (found)
+        {
+            _dragging_start_3d = QGLV2Eigen(world_pos);
+        }
+
         handled = true;
     }
-    else
+    else if (_mouse_state == Mouse_state::Level_element_button_selected)
     {
-        _picked_index = _picking.do_pick(event->pos().x() / float(_viewer.camera()->screenWidth()), (_viewer.camera()->screenHeight() - event->pos().y())  / float(_viewer.camera()->screenHeight()),
-                                         std::bind(&Main_game_screen::draw_draggables_for_picking, this));
-
-        std::cout << __PRETTY_FUNCTION__ << " picked_index: " << _picked_index << std::endl;
-
-        if (_picked_index != -1)
-        {
-            if (_mouse_state == Mouse_state::Level_element_button_selected)
-            {
-                QApplication::restoreOverrideCursor();
-            }
-
-            _dragging_start = event->pos();
-
-            bool found;
-            qglviewer::Vec world_pos = _viewer.camera()->pointUnderPixel(event->pos(), found);
-
-            _mouse_state = Mouse_state::Init_drag_handle;
-            std::cout << __PRETTY_FUNCTION__ << " Init_drag_handle" << std::endl;
-
-            if (found)
-            {
-                _dragging_start_3d = QGLV2Eigen(world_pos);
-            }
-
-            handled = true;
-        }
+        handled = true;
     }
 
     return handled;
@@ -114,46 +78,9 @@ bool Editor_screen::mouseMoveEvent(QMouseEvent * event)
 {
     bool handled = false;
 
-    if (_mouse_state == Mouse_state::Init_drag_molecule)
+
+    if (_mouse_state == Mouse_state::Level_element_button_selected)
     {
-        if (_picked_index != -1 && (_dragging_start - event->pos()).manhattanLength() > 0)
-        {
-            _mouse_state = Mouse_state::Dragging_molecule;
-        }
-    }
-    else if (_mouse_state == Mouse_state::Level_element_button_selected)
-    {
-        handled = true;
-    }
-    else if (_mouse_state == Mouse_state::Dragging_molecule)
-    {
-        boost::optional<Molecule const&> picked_molecule = _core.get_molecule(_picked_index);
-
-        assert(picked_molecule);
-
-        Molecule_external_force & f = _core.get_user_force();
-
-        f._plane_normal = -1.0f * QGLV2Eigen(_viewer.camera()->viewDirection());
-
-        Eigen::Hyperplane<float, 3> view_plane(f._plane_normal, f._origin);
-
-        qglviewer::Vec qglv_origin; // camera pos
-        qglviewer::Vec qglv_dir;    // origin - camera_pos
-
-        _viewer.camera()->convertClickToLine(event->pos(), qglv_origin, qglv_dir);
-
-        Eigen::Vector3f origin = QGLV2Eigen(qglv_origin);
-        Eigen::Vector3f dir    = QGLV2Eigen(qglv_dir).normalized();
-
-        Eigen::ParametrizedLine<float, 3> line(origin, dir);
-
-        Eigen::Vector3f new_force_target = line.intersectionPoint(view_plane);
-
-        f._origin = picked_molecule->_R * f._local_origin + picked_molecule->_x;
-        //                f._force = 1.0f * (new_force_target - f._origin).normalized();
-        f._force = new_force_target - f._origin;
-        f._end_time = _core.get_current_time() + 0.1f;
-
         handled = true;
     }
     else if (_mouse_state == Mouse_state::Init_drag_handle && _active_draggables[_picked_index]->is_draggable() && event->buttons() & Qt::LeftButton)
@@ -162,6 +89,8 @@ bool Editor_screen::mouseMoveEvent(QMouseEvent * event)
         {
             _mouse_state = Mouse_state::Dragging_handle;
         }
+
+        handled = true;
     }
     else if (_mouse_state == Mouse_state::Dragging_handle) // TODO: currently has Y plane constraint, move constraints into Draggable, consider giving it the viewline instead of a single position
     {
@@ -210,6 +139,54 @@ bool Editor_screen::mouseMoveEvent(QMouseEvent * event)
                 }
             }
         }
+
+        handled = true;
+    }
+    else
+    {
+        int const new_picking_index = _picking.do_pick(event->pos().x() / float(_viewer.camera()->screenWidth()), (_viewer.camera()->screenHeight() - event->pos().y())  / float(_viewer.camera()->screenHeight()),
+                                         std::bind(&Main_game_screen::draw_draggables_for_picking, this));
+
+        if (new_picking_index != _picked_index)
+        {
+            if (_picked_index != -1)
+            {
+                // stopped hovering over item
+                std::cout << __PRETTY_FUNCTION__ << " stopped hovering" << std::endl;
+
+                Draggable * parent = _active_draggables[_picked_index]->get_parent();
+                _labels.erase(std::remove(_labels.begin(), _labels.end(), _tooltips_map[parent]), _labels.end());
+                _tooltips_map.erase(parent);
+
+                _picked_index = -1;
+            }
+
+            if (new_picking_index != -1)
+            {
+                // entered new picked item
+
+                _picked_index = new_picking_index;
+                std::cout << __PRETTY_FUNCTION__ << " started hovering" << std::endl;
+
+                Draggable * parent = _active_draggables[_picked_index]->get_parent();
+
+//                auto iter = _draggable_to_level_element.find(parent);
+
+//                assert(iter != _draggable_to_level_element.end());
+
+//                Level_element * level_element = iter->second;
+
+                // TODO: change to real extent, needs to be known in base Draggable
+                // TODO: Draggable needs tooltip text
+                boost::shared_ptr<Draggable_tooltip> s(_viewer.generate_tooltip(parent->get_position(), Eigen::Vector3f(0.05f, 0.05f, 0.0f),
+                                                               "Blablabla Blablabla Blablabla Blablabla Blablabla Blablabla Blablabla Blablabla Blablabla Blablabla Blablabla"));
+
+                s->start_fade_in();
+
+                _labels.push_back(s);
+                _tooltips_map[parent] = s;
+            }
+        }
     }
 
 
@@ -220,24 +197,7 @@ bool Editor_screen::mouseReleaseEvent(QMouseEvent * event)
 {
     bool handled = false;
 
-    if (_mouse_state == Mouse_state::Init_drag_molecule)
-    {
-        std::cout << __PRETTY_FUNCTION__ << " click on molecule" << std::endl;
-
-        _mouse_state = Mouse_state::None;
-
-        if (_picked_index != -1)
-        {
-            _selection = Selection::Molecule;
-
-            Molecule_external_force & f = _core.get_user_force();
-
-            f._end_time = _core.get_current_time() + 0.5f;
-
-            handled = true;
-        }
-    }
-    else if (_mouse_state == Mouse_state::Init_drag_handle)
+    if (_mouse_state == Mouse_state::Init_drag_handle)
     {
         std::cout << __PRETTY_FUNCTION__ << " click on handle" << std::endl;
 

@@ -199,8 +199,8 @@ My_viewer::My_viewer(Core &core, const QGLFormat &format) : Options_viewer(forma
     _parameters.add_parameter(new Parameter("draw_handles", true, update));
     _parameters["draw_handles"]->set_hidden(true);
 
-    std::vector<std::string> ui_states { "Level Editor", "Playing" };
-    _parameters.add_parameter(new Parameter("Interface", 0, ui_states, std::bind(&My_viewer::change_ui_state, this)));
+//    std::vector<std::string> ui_states { "Level Editor", "Playing" };
+//    _parameters.add_parameter(new Parameter("Interface", 0, ui_states, std::bind(&My_viewer::change_ui_state, this)));
 
     _parameters.add_parameter(Parameter::create_button("Save Settings", std::bind(&My_viewer::save_parameters_with_check, this)));
     _parameters.add_parameter(Parameter::create_button("Load Settings", std::bind(&My_viewer::restore_parameters_with_check, this)));
@@ -229,47 +229,6 @@ void My_viewer::setup_fonts()
     _particle_font = QFont(family);
 }
 
-//void My_viewer::save_level()
-//{
-//    QString filename;
-
-//    if (QApplication::keyboardModifiers() & Qt::ControlModifier)
-//    {
-//        filename = "state.data";
-//    }
-//    else
-//    {
-//        filename = QFileDialog::getSaveFileName(this, tr("Save Level"),
-//                                                ".",
-//                                                tr("State File (*.data)"));
-//    }
-
-//    if (!filename.isEmpty())
-//    {
-//        _core.save_level(filename.toStdString());
-//    }
-//}
-
-//void My_viewer::load_level()
-//{
-//    QString filename;
-
-//    if (QApplication::keyboardModifiers() & Qt::ControlModifier)
-//    {
-//        filename = "state.data";
-//    }
-//    else
-//    {
-//        filename = QFileDialog::getOpenFileName(this, tr("Load Level"),
-//                                                ".",
-//                                                tr("State File (*.data)"));
-//    }
-
-//    if (!filename.isEmpty())
-//    {
-//        _core.load_level(filename.toStdString());
-//    }
-//}
 
 Eigen::Vector3f My_viewer::calc_camera_starting_point_from_borders()
 {
@@ -295,29 +254,29 @@ Eigen::Vector3f My_viewer::calc_camera_starting_point_from_borders()
     return Eigen::Vector3f(0.0f, y_max, 0.0f);
 }
 
-void My_viewer::change_ui_state()
-{
-    if (_parameters["Interface"]->get_value<std::string>() == "Level Editor")
-    {
-        _screen_stack.clear();
-        add_screen(new Main_game_screen(*this, _core, Main_game_screen::Ui_state::Level_editor));
+//void My_viewer::change_ui_state()
+//{
+//    if (_parameters["Interface"]->get_value<std::string>() == "Level Editor")
+//    {
+//        _screen_stack.clear();
+//        add_screen(new Main_game_screen(*this, _core, Main_game_screen::Ui_state::Level_editor));
 
-        camera()->frame()->setConstraint(nullptr);
+//        camera()->frame()->setConstraint(nullptr);
 
-        load_defaults();
-    }
-    else if (_parameters["Interface"]->get_value<std::string>() == "Playing")
-    {
-        _screen_stack.clear();
-        add_screen(new Main_game_screen(*this, _core, Main_game_screen::Ui_state::Playing));
+//        load_defaults();
+//    }
+//    else if (_parameters["Interface"]->get_value<std::string>() == "Playing")
+//    {
+//        _screen_stack.clear();
+//        add_screen(new Main_game_screen(*this, _core, Main_game_screen::Ui_state::Playing));
 
-        //            update_game_camera();
-        load_defaults();
-        init_game();
-    }
+//        //            update_game_camera();
+//        load_defaults();
+//        init_game();
+//    }
 
-    update();
-}
+//    update();
+//}
 
 void My_viewer::update_game_camera()
 {
@@ -371,6 +330,7 @@ void My_viewer::init()
     restoreStateFromFile();
 
     qglviewer::ManipulatedCameraFrame * frame = camera()->frame();
+    frame->setSpinningSensitivity(1000.0f);
     _my_camera = new StandardCamera(0.1f, 1000.0f);
     _my_camera->setFrame(frame);
     setCamera(_my_camera);
@@ -402,7 +362,7 @@ void My_viewer::start()
 
     startAnimation();
 
-    _parameters["Interface"]->set_value(std::string("Playing"));
+//    _parameters["Interface"]->set_value(std::string("Playing"));
 
     _screen_stack.clear();
     add_screen(new Main_game_screen(*this, _core));
@@ -622,6 +582,8 @@ void My_viewer::mousePressEvent(QMouseEvent *event)
 
     for (std::unique_ptr<Screen> const& s : _screen_stack)
     {
+        if (s->get_state() == Screen::State::Killing || s->get_state() == Screen::State::Killed) continue;
+
         handled = s->mousePressEvent(event);
 
         if (handled || int(s->get_type()) & int(Screen::Type::Modal))
@@ -632,6 +594,7 @@ void My_viewer::mousePressEvent(QMouseEvent *event)
 
     if (!handled)
     {
+        std::cout << __PRETTY_FUNCTION__ << std::endl;
         Base::mousePressEvent(event);
     }
 }
@@ -642,6 +605,8 @@ void My_viewer::mouseMoveEvent(QMouseEvent *event)
 
     for (std::unique_ptr<Screen> const& s : _screen_stack)
     {
+        if (s->get_state() == Screen::State::Killing || s->get_state() == Screen::State::Killed) continue;
+
         handled = s->mouseMoveEvent(event);
 
         if (handled || int(s->get_type()) & int(Screen::Type::Modal))
@@ -652,22 +617,23 @@ void My_viewer::mouseMoveEvent(QMouseEvent *event)
 
     if (!handled)
     {
+        std::cout << __PRETTY_FUNCTION__ << std::endl;
         Base::mouseMoveEvent(event);
     }
 }
 
-bool My_viewer::check_for_collision(const Level_element *level_element)
-{
-    for (boost::shared_ptr<Level_element> const& l : _core.get_level_data()._level_elements)
-    {
-        if (l.get() != level_element && level_element->does_intersect(l.get()))
-        {
-            return true;
-        }
-    }
+//bool My_viewer::check_for_collision(const Level_element *level_element)
+//{
+//    for (boost::shared_ptr<Level_element> const& l : _core.get_level_data()._level_elements)
+//    {
+//        if (l.get() != level_element && level_element->does_intersect(l.get()))
+//        {
+//            return true;
+//        }
+//    }
 
-    return false;
-}
+//    return false;
+//}
 
 void My_viewer::mouseReleaseEvent(QMouseEvent *event)
 {
@@ -675,6 +641,8 @@ void My_viewer::mouseReleaseEvent(QMouseEvent *event)
 
     for (std::unique_ptr<Screen> const& s : _screen_stack)
     {
+        if (s->get_state() == Screen::State::Killing || s->get_state() == Screen::State::Killed) continue;
+
         handled = s->mouseReleaseEvent(event);
 
         if (handled || int(s->get_type()) & int(Screen::Type::Modal))
@@ -685,6 +653,7 @@ void My_viewer::mouseReleaseEvent(QMouseEvent *event)
 
     if (!handled)
     {
+        std::cout << __PRETTY_FUNCTION__ << std::endl;
         Base::mouseReleaseEvent(event);
     }
 }
@@ -728,9 +697,6 @@ void My_viewer::keyPressEvent(QKeyEvent *event)
 
         handled = true;
     }
-
-
-
 
     if (!handled)
     {
@@ -776,12 +742,12 @@ void My_viewer::replace_screens(Screen *s)
     add_screen(s);
 }
 
-void My_viewer::clear()
-{
-    _core.clear();
+//void My_viewer::clear()
+//{
+//    _core.clear();
 
-    load_defaults();
-}
+//    load_defaults();
+//}
 
 void My_viewer::load_defaults()
 {
@@ -940,10 +906,71 @@ void My_viewer::generate_statistics_texture(Draggable_statistics &b)
     b.set_texture(bindTexture(img));
 }
 
+Draggable_tooltip * My_viewer::generate_tooltip(Eigen::Vector3f const& screen_pos, Eigen::Vector3f const& element_extent, std::string const& text)
+{
+    std::cout << __PRETTY_FUNCTION__ << std::endl;
+
+    QSize const pixel_size(camera()->screenWidth() * 0.3f, camera()->screenHeight() * 0.5f);
+
+    QImage text_image(pixel_size, QImage::Format_ARGB32);
+    text_image.fill(QColor(0, 0, 0, 0));
+
+    QPainter p(&text_image);
+    p.setRenderHint(QPainter::Antialiasing);
+    p.setCompositionMode(QPainter::CompositionMode_SourceOver);
+
+    QFont font = _main_font;
+    font.setPointSizeF(20000.0f / float(camera()->screenWidth())); // TODO: scale by screensize
+    p.setFont(font);
+
+    p.setPen(QColor(255, 255, 255));
+
+    // TODO: adaptive placement
+
+    QRect final_text_bb;
+    p.drawText(text_image.rect(), Qt::AlignLeft | Qt::TextWordWrap, QString::fromStdString(text), &final_text_bb);
+    p.end();
+
+    text_image = text_image.copy(final_text_bb);
+
+    Eigen::Vector2f const uniform_bb(final_text_bb.width() / float(camera()->screenWidth()),
+                                     final_text_bb.height() / float(camera()->screenHeight()));
+
+    Eigen::Vector3f final_screen_pos = screen_pos;
+
+    float const min_y_distance = 0.5f * uniform_bb[1] + 0.5f * element_extent[1] + 0.01f;
+
+    if (screen_pos[1] - min_y_distance - 0.5f * uniform_bb[1] >= 0.0f) // tooltip fits below the object
+    {
+        final_screen_pos[1] = screen_pos[1] - min_y_distance;
+    }
+    else
+    {
+        final_screen_pos[1] = screen_pos[1] + min_y_distance;
+    }
+
+    final_screen_pos[0] = std::max(uniform_bb[0] * 0.5f + 0.05f, final_screen_pos[0]);
+    final_screen_pos[0] = std::min(1.0f - (uniform_bb[0] * 0.5f + 0.05f), final_screen_pos[0]);
+
+    Draggable_tooltip * tooltip = new Draggable_tooltip(final_screen_pos, Eigen::Vector2f(0.3f, final_text_bb.height() / float(camera()->screenHeight())), "");
+
+    tooltip->set_texture(bindTexture(text_image));
+
+    return tooltip;
+}
+
 void My_viewer::quit_game()
 {
     _core.quit();
     close();
+}
+
+Eigen::Vector2f My_viewer::qpixel_to_uniform_screen_pos(const QPoint & p)
+{
+    return Eigen::Vector2f(
+                p.x() / float(camera()->screenWidth()),
+                (camera()->screenHeight() - p.y())  / float(camera()->screenHeight())
+                );
 }
 
 void My_viewer::handle_level_change(const Main_game_screen::Level_state state)

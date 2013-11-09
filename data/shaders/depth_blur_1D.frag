@@ -67,7 +67,19 @@ void main(void)
 
     float normalized_depth = linearize_depth(texture2D(depth_texture, tex_coord).r);
     float normalized_focus_dist = (abs(focus_distance) - clip_distances.s) / (clip_distances.t - clip_distances.s);
+//    float normalized_focus_dist = (200.0 - clip_distances.s) / (clip_distances.t - clip_distances.s);
     float blur_strength = abs(normalized_focus_dist - normalized_depth) / (1.0 - normalized_focus_dist);
+
+//    float blur_strength = 0.0;
+
+//    if (normalized_depth < normalized_focus_dist)
+//    {
+//        blur_strength = 1.0 - (normalized_depth / normalized_focus_dist);
+//    }
+//    else
+//    {
+//        blur_strength = normalized_depth / (1.0 - normalized_focus_dist);
+//    }
 
 //    color = vec4(vec3(depth), 1.0);
 
@@ -75,4 +87,5 @@ void main(void)
     vec4 color = blur_with_alpha(tex_coord, int(blur_strength * 30.0));
 
     gl_FragColor = color;
+//    gl_FragColor = vec4(normalized_depth, normalized_depth, normalized_depth, 1.0);
 }

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
 <!DOCTYPE boost_serialization>
-<boost_serialization signature="serialization::archive" version="9">
+<boost_serialization signature="serialization::archive" version="10">
 <simulation_settings.data class_id="0" tracking_level="1" version="0" object_id="_0">
 	<_list class_id="1" tracking_level="0" version="0">
 		<count>8</count>
@@ -28,7 +28,7 @@
 					</item>
 				</_value_list>
 				<_special_type>0</_special_type>
-				<_order_index>0</_order_index>
+				<_order_index>2</_order_index>
 			</second>
 		</item>
 		<item>

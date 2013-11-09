@@ -99,3 +99,51 @@ Draggable_slider::~Draggable_slider()
 {
     _parameter->remove_observer(this);
 }
+
+
+Draggable_tooltip::~Draggable_tooltip()
+{
+    std::cout << __PRETTY_FUNCTION__ << std::endl;
+}
+
+void Draggable_tooltip::start_fade_in()
+{
+    _transition_progress = 0.0f;
+
+    _state = State::Fading_in;
+}
+
+void Draggable_tooltip::start_fade_out()
+{
+    _transition_progress = 0.0f;
+
+    _state = State::Fading_in;
+}
+
+void Draggable_tooltip::animate(const float timestep)
+{
+    if (_state == State::Fading_in)
+    {
+        _transition_progress += timestep / _fade_in_time;
+
+        _alpha = _transition_progress;
+
+        if (_transition_progress >= 1.0f)
+        {
+            _state = State::None;
+        }
+    }
+    else if (_state == State::Fading_out)
+    {
+        _transition_progress += timestep / _fade_out_time;
+
+        _alpha = 1.0f - _transition_progress;
+
+        if (_transition_progress >= 1.0f)
+        {
+            _state = State::None;
+
+            // notify about death
+        }
+    }
+}

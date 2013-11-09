@@ -391,20 +391,20 @@ void Main_game_screen::update_event(const float time_step)
     {
         // normal update
 
-        if (_mouse_state == Mouse_state::Dragging_molecule)
-        {
-            boost::optional<Molecule const&> picked_molecule = _core.get_molecule(_picked_index);
+//        if (_mouse_state == Mouse_state::Dragging_molecule)
+//        {
+//            boost::optional<Molecule const&> picked_molecule = _core.get_molecule(_picked_index);
 
-            assert(picked_molecule);
+//            assert(picked_molecule);
 
-            Molecule_external_force & f = _core.get_user_force();
+//            Molecule_external_force & f = _core.get_user_force();
 
-            Eigen::Vector3f old_force_target = f._origin + f._force;
+//            Eigen::Vector3f old_force_target = f._origin + f._force;
 
-            f._origin = picked_molecule->_R * f._local_origin + picked_molecule->_x;
-            f._force = old_force_target - f._origin;
-            f._end_time = _core.get_current_time() + 0.1f;
-        }
+//            f._origin = picked_molecule->_R * f._local_origin + picked_molecule->_x;
+//            f._force = old_force_target - f._origin;
+//            f._end_time = _core.get_current_time() + 0.1f;
+//        }
     }
 
     if (_level_state == Level_state::Intro)

@@ -463,7 +463,8 @@ void Shader_renderer::render(QGLFramebufferObject *main_fbo, const Level_data &l
     glBindTexture(GL_TEXTURE_2D, _depth_texture);
     _blur_program->setUniformValue("clip_distances", QVector2D(camera->zNear(), camera->zFar()));
     _blur_program->setUniformValue("tex_size", screen_size);
-    _blur_program->setUniformValue("focus_distance", float(camera->position()[1]));
+//    _blur_program->setUniformValue("focus_distance", float(camera->position()[1]));
+    _blur_program->setUniformValue("focus_distance", float(camera->position().norm()));
     _blur_program->setUniformValue("direction", QVector2D(1.0, 0.0));
 
     draw_quad_with_tex_coords();
@@ -480,6 +481,13 @@ void Shader_renderer::render(QGLFramebufferObject *main_fbo, const Level_data &l
     _blur_program->release();
 
     _post_fbo->release();
+
+
+//    QGLFramebufferObject::blitFramebuffer(main_fbo, QRect(0, 0, screen_size.width(), screen_size.height()),
+//                                          _post_fbo.get(), QRect(0, 0, screen_size.width(), screen_size.height()),
+//                                          GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+//    return;
 
 
     //        draw_temperature(level_data);

@@ -14,7 +14,7 @@ class Main_game_screen : public Screen, public QGLFunctions
     Q_OBJECT
 
 public:
-    enum class Mouse_state { None, Init_drag_handle, Init_drag_molecule, Dragging_molecule, Dragging_handle, Level_element_button_selected };
+    enum class Mouse_state { None, Init_drag_handle, /* Init_drag_molecule, Dragging_molecule, */ Dragging_handle, Level_element_button_selected };
     enum class Selection { None, Level_element, Molecule };
     enum class Ui_state { Level_editor, Playing };
     enum class Level_state { Intro, Running };
@@ -101,6 +101,7 @@ protected:
     std::vector< boost::shared_ptr<Draggable_button> > _buttons;
     std::vector< boost::shared_ptr<Draggable_slider> > _sliders;
     std::vector< boost::shared_ptr<Draggable_label> > _labels;
+    std::unordered_map<Draggable*, boost::shared_ptr<Draggable_tooltip> > _tooltips_map;
 
     std::unordered_map<std::string, QImage> _element_images;
 

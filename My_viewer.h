@@ -57,7 +57,7 @@ public:
 
     void update_game_camera();
 
-    void change_ui_state();
+//    void change_ui_state();
     void change_clipping();
 
     void init() override;
@@ -71,7 +71,7 @@ public:
     void start_normalized_screen_coordinates();
     void stop_normalized_screen_coordinates();
 
-    bool check_for_collision(Level_element const* level_element);
+//    bool check_for_collision(Level_element const* level_element);
 
     void mousePressEvent(QMouseEvent *event);
     void mouseMoveEvent(QMouseEvent * event) override;
@@ -84,7 +84,7 @@ public:
     void kill_all_screens();
     void replace_screens(Screen * s);
 
-    void clear();
+//    void clear();
 
     void load_defaults() override;
     void resizeEvent(QResizeEvent *ev);
@@ -100,12 +100,17 @@ public:
     void generate_label_texture(Draggable_label * b);
     void generate_statistics_texture(Draggable_statistics & b);
 
+    Draggable_tooltip * generate_tooltip(Eigen::Vector3f const& screen_pos, const Eigen::Vector3f &element_extent, std::string const& text);
+
+
     void quit_game();
 
 
     QFont const& get_particle_font() const { return _particle_font; }
 
     QFont const& get_main_font() const { return _main_font; }
+
+    Eigen::Vector2f qpixel_to_uniform_screen_pos(QPoint const& p);
 
 public Q_SLOTS:
     void handle_level_change(Main_game_screen::Level_state const state);

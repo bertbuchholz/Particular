@@ -322,6 +322,33 @@ private:
 };
 
 
+class Draggable_tooltip : public Draggable_label
+{
+public:
+    enum class State { None, Fading_in, Fading_out };
+
+    Draggable_tooltip(Eigen::Vector3f const& position, Eigen::Vector2f const& size, std::string const& text) :
+        Draggable_label(position, size, text), _fade_in_time(0.3f), _fade_out_time(0.3f), _transition_progress(0.0f), _state(State::None)
+    { }
+
+    ~Draggable_tooltip();
+
+    void start_fade_in();
+
+    void start_fade_out();
+
+    void animate(const float timestep) override;
+
+
+protected:
+    float _fade_in_time;
+    float _fade_out_time;
+
+    float _transition_progress;
+
+    State _state;
+};
+
 class Draggable_atom_label : public Draggable_label
 {
 public:

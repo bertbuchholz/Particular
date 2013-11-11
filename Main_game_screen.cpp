@@ -24,6 +24,8 @@ class Widget_text_combination : public QWidget
 Main_game_screen::Main_game_screen(My_viewer &viewer, Core &core, Ui_state ui_state) : Screen(viewer),
     _core(core),
 //    _renderer(renderer),
+    _ui_renderer(_viewer.get_renderer()),
+    _picked_index(-1),
     _mouse_state(Mouse_state::None),
     _selection(Selection::None),
     _selected_level_element(nullptr),
@@ -292,7 +294,7 @@ bool Main_game_screen::keyPressEvent(QKeyEvent * event)
 
 void Main_game_screen::draw()
 {
-    setup_gl_points(true);
+    _renderer->setup_gl_points(true);
 
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
@@ -303,7 +305,7 @@ void Main_game_screen::draw()
 
     _renderer->render(_main_fbo.get(), _core.get_level_data(), _core.get_current_time(), _viewer.camera());
 
-    setup_gl_points(false);
+    _renderer->setup_gl_points(false);
     glPointSize(8.0f);
 
     glDisable(GL_LIGHTING);
@@ -426,10 +428,11 @@ void Main_game_screen::delete_selected_element()
     }
     else if (_selection == Selection::Level_element)
     {
-        Draggable * parent = _active_draggables[_picked_index]->get_parent();
-        assert(_draggable_to_level_element.find(parent) != _draggable_to_level_element.end());
+//        Draggable * parent = _active_draggables[_picked_index]->get_parent();
+//        assert(_draggable_to_level_element.find(parent) != _draggable_to_level_element.end());
 
-        _core.get_level_data().delete_level_element(_draggable_to_level_element.find(parent)->second);
+//        _core.get_level_data().delete_level_element(_draggable_to_level_element.find(parent)->second);
+        _core.get_level_data().delete_level_element(_selected_level_element);
 
         update_draggable_to_level_element();
         update_active_draggables();
@@ -732,15 +735,10 @@ void Main_game_screen::draw_draggables_for_picking()
 
             Eigen::Vector3f const point_pos = parent_system * d_point->get_position();
 
-
-//            glTranslatef(parent->get_position()[0], parent->get_position()[1], parent->get_position()[2]);
-//            glTranslatef(d_point->get_position()[0], d_point->get_position()[1], d_point->get_position()[2]);
-
             glTranslatef(point_pos[0], point_pos[1], point_pos[2]);
-            glScalef(0.01f, 0.01f * _viewer.camera()->aspectRatio(), 1.0f); // draw a square
+            // TODO: extent must be part of draggable, otherwise all Draggable_screen_point will be of the same size
+            glScalef(0.01f, 0.01f * _viewer.camera()->aspectRatio(), 1.0f);
 
-//            glScalef(0.1f, 0.1f, 1.0f);
-//            glScalef(parent->get_extent()[1] * 0.5f, parent->get_extent()[1] * 0.5f, 1.0f);
             draw_quad_with_tex_coords();
             _viewer.stop_normalized_screen_coordinates();
         }
@@ -777,7 +775,8 @@ void Main_game_screen::update_active_draggables()
     {
         Level_element::Edit_type edit_type = Level_element::Edit_type::All;
 
-        if (_ui_state != Ui_state::Level_editor)
+        if (_core.get_game_state() == Core::Game_state::Running)
+//        if (_ui_state != Ui_state::Level_editor)
         {
             edit_type = d.second->is_user_editable();
         }
@@ -786,30 +785,39 @@ void Main_game_screen::update_active_draggables()
         std::copy(draggables.begin(), draggables.end(), std::back_inserter(_active_draggables));
     }
 
-//    if (_ui_state != Ui_state::Level_editor)
+    for (boost::shared_ptr<Draggable_button> const& button : _buttons)
     {
-        for (boost::shared_ptr<Draggable_button> const& button : _buttons)
+        if (button->is_visible())
         {
-            if (button->is_visible())
-            {
-                Draggable_button * b = button.get();
+            Draggable_button * b = button.get();
 
-                std::vector<Draggable*> const draggables = b->get_draggables(Level_element::Edit_type::None);
-                std::copy(draggables.begin(), draggables.end(), std::back_inserter(_active_draggables));
-            }
-        }
-
-        for (boost::shared_ptr<Draggable_slider> const& slider : _sliders)
-        {
-            if (slider->is_visible())
-            {
-                Draggable_slider * b = slider.get();
-
-                std::vector<Draggable*> const draggables = b->get_draggables(Level_element::Edit_type::None);
-                std::copy(draggables.begin(), draggables.end(), std::back_inserter(_active_draggables));
-            }
+            std::vector<Draggable*> const draggables = b->get_draggables(Level_element::Edit_type::None);
+            std::copy(draggables.begin(), draggables.end(), std::back_inserter(_active_draggables));
         }
     }
+
+    for (boost::shared_ptr<Draggable_slider> const& slider : _sliders)
+    {
+        if (slider->is_visible())
+        {
+            Draggable_slider * b = slider.get();
+
+            std::vector<Draggable*> const draggables = b->get_draggables(Level_element::Edit_type::None);
+            std::copy(draggables.begin(), draggables.end(), std::back_inserter(_active_draggables));
+        }
+    }
+
+    for (boost::shared_ptr<Draggable_spinbox> const& spinbox : _spinboxes)
+    {
+        if (spinbox->is_visible())
+        {
+            Draggable_spinbox * b = spinbox.get();
+
+            std::vector<Draggable*> const draggables = b->get_draggables(Level_element::Edit_type::None);
+            std::copy(draggables.begin(), draggables.end(), std::back_inserter(_active_draggables));
+        }
+    }
+
 }
 
 void Main_game_screen::update_draggable_to_level_element()
@@ -885,6 +893,8 @@ void Main_game_screen::draw_draggables() // FIXME: use visitors or change it so 
 
             Level_element::Edit_type edit_type = d.second->is_user_editable();
 
+            bool const always_draw = _ui_state == Ui_state::Level_editor && _core.get_game_state() != Core::Game_state::Running;
+
             //                draw_box(d_box->get_min(), d_box->get_max());
 
             glPushMatrix();
@@ -892,7 +902,7 @@ void Main_game_screen::draw_draggables() // FIXME: use visitors or change it so 
             glTranslatef(d_box->get_position()[0], d_box->get_position()[1], d_box->get_position()[2]);
             glMultMatrixf(d_box->get_transform().data());
 
-            if (_ui_state == Ui_state::Level_editor || (int(edit_type) & int(Level_element::Edit_type::Scale)))
+            if (always_draw || (int(edit_type) & int(Level_element::Edit_type::Scale)))
             {
                 for (Draggable_point const& p : corners)
                 {
@@ -908,7 +918,7 @@ void Main_game_screen::draw_draggables() // FIXME: use visitors or change it so 
                 }
             }
 
-            if (_ui_state == Ui_state::Level_editor || (int(edit_type) & int(Level_element::Edit_type::Translate)))
+            if (always_draw || (int(edit_type) & int(Level_element::Edit_type::Translate)))
             {
                 for (Draggable_disc const& d_disc : d_box->get_position_points())
                 {
@@ -924,7 +934,7 @@ void Main_game_screen::draw_draggables() // FIXME: use visitors or change it so 
                 }
             }
 
-            if (_ui_state == Ui_state::Level_editor || (int(edit_type) & int(Level_element::Edit_type::Rotate)))
+            if (always_draw || (int(edit_type) & int(Level_element::Edit_type::Rotate)))
             {
                 for (Draggable_disc const& d_disc : d_box->get_rotation_handles())
                 {
@@ -940,7 +950,7 @@ void Main_game_screen::draw_draggables() // FIXME: use visitors or change it so 
                 }
             }
 
-            if (_ui_state == Ui_state::Level_editor || (int(edit_type) & int(Level_element::Edit_type::Property)))
+            if (always_draw || (int(edit_type) & int(Level_element::Edit_type::Property)))
             {
                 for (auto iter : d_box->get_property_handles())
                 {
@@ -963,36 +973,41 @@ void Main_game_screen::draw_draggables() // FIXME: use visitors or change it so 
     }
 
 
-//    if (_ui_state != Ui_state::Level_editor)
+    _viewer.start_normalized_screen_coordinates();
+
+    for (boost::shared_ptr<Draggable_button> const& button : _buttons)
     {
-        _viewer.start_normalized_screen_coordinates();
-
-        for (boost::shared_ptr<Draggable_button> const& button : _buttons)
+        if (button->is_visible())
         {
-            if (button->is_visible())
-            {
-                _viewer.draw_button(button.get(), false);
-            }
+            _viewer.draw_button(button.get(), false);
         }
-
-        for (boost::shared_ptr<Draggable_label> const& label : _labels)
-        {
-            if (label->is_visible())
-            {
-                _viewer.draw_label(label.get());
-            }
-        }
-
-        for (boost::shared_ptr<Draggable_slider> const& slider : _sliders)
-        {
-            if (slider->is_visible())
-            {
-                _viewer.draw_slider(*slider.get(), false);
-            }
-        }
-
-        _viewer.stop_normalized_screen_coordinates();
     }
+
+    for (boost::shared_ptr<Draggable_slider> const& slider : _sliders)
+    {
+        if (slider->is_visible())
+        {
+            _viewer.draw_slider(*slider.get(), false);
+        }
+    }
+
+    for (boost::shared_ptr<Draggable_spinbox> const& spinbox : _spinboxes)
+    {
+        if (spinbox->is_visible())
+        {
+            _ui_renderer.draw_spinbox(*spinbox.get(), false);
+        }
+    }
+
+    for (boost::shared_ptr<Draggable_label> const& label : _labels)
+    {
+        if (label->is_visible())
+        {
+            _viewer.draw_label(label.get());
+        }
+    }
+
+    _viewer.stop_normalized_screen_coordinates();
 
     glEnable(GL_DEPTH_TEST);
 }
@@ -1148,7 +1163,7 @@ void Main_game_screen::update_level_element_buttons()
 
             QPainter p(&button_img);
 
-            QFont font = _viewer.get_main_font();
+            QFont font = _ui_renderer.get_main_font();
             //        font.setWeight(QFont::Bold);
             font.setPixelSize(100);
             //                font.setPointSizeF(20.0f);
@@ -1415,7 +1430,7 @@ void Main_game_screen::update_intro(const float timestep)
                 }
 
                 Draggable_label * label = new Draggable_atom_label(Eigen::Vector3f(0.5f, 0.8f, 0.0f), Eigen::Vector2f(0.1f, 0.1f), sign, &a, _viewer.camera());
-                _viewer.generate_label_texture(label);
+                _ui_renderer.generate_label_texture(label);
                 _labels.push_back(boost::shared_ptr<Draggable_label>(label));
             }
 
@@ -1519,7 +1534,7 @@ void Main_game_screen::update_intro(const float timestep)
                     }
 
                     Draggable_label * label = new Draggable_atom_label(Eigen::Vector3f(0.5f, 0.8f, 0.0f), Eigen::Vector2f(0.1f, 0.1f), sign, &a, _viewer.camera());
-                    _viewer.generate_label_texture(label);
+                    _ui_renderer.generate_label_texture(label);
 
                     _labels.push_back(boost::shared_ptr<Draggable_label>(label));
                 }
@@ -1584,7 +1599,7 @@ void Main_game_screen::intro_cam1_end_reached()
         }
 
         Draggable_label * label = new Draggable_atom_label(Eigen::Vector3f(0.5f, 0.8f, 0.0f), Eigen::Vector2f(0.1f, 0.1f), sign, &a, _viewer.camera());
-        _viewer.generate_label_texture(label);
+        _ui_renderer.generate_label_texture(label);
         _labels.push_back(boost::shared_ptr<Draggable_label>(label));
     }
 }

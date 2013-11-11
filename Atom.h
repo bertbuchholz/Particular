@@ -424,51 +424,7 @@ public:
         _omega = Eigen::Vector3f::Zero();
     }
 
-    void init()
-    {
-        Eigen::Matrix3f identity(Eigen::Matrix3f::Identity());
-//        identity.setIdentity();
-
-        Eigen::Vector3f center_of_mass = Eigen::Vector3f::Zero();
-
-        _I_body.setZero();
-        _mass = 0.0f;
-
-        for (Atom const& a : _atoms)
-        {
-            _mass += a._mass;
-            center_of_mass += a._mass * a._r_0;
-
-            _I_body += a._mass * ((a._r_0.dot(a._r_0) * identity) - (a._r_0 * a._r_0.transpose()));
-
-            _accumulated_charge += a._charge;
-        }
-
-        if (_I_body.isZero())
-        {
-            _I_body = identity;
-        }
-
-        _I_body_inv = _I_body.inverse();
-
-        center_of_mass /= _mass;
-
-        for (Atom & a : _atoms)
-        {
-            a._r_0 = a._r_0 - center_of_mass;
-            a.set_position(_R * a._r_0 + _x);
-        }
-
-        // sanity check
-        Eigen::Vector3f particle_pos_sum = Eigen::Vector3f::Zero();
-
-        for (Atom const& a : _atoms)
-        {
-            particle_pos_sum += a._mass * a._r_0;
-        }
-
-        assert(particle_pos_sum.norm() < 1e-4f);
-    }
+    void init();
 
     Body_state to_state() const
     {

@@ -39,7 +39,7 @@ void Statistics_screen::init()
 
     for (boost::shared_ptr<Draggable_button> const& button : _buttons)
     {
-        _viewer.generate_button_texture(button.get());
+        _renderer.generate_button_texture(button.get());
     }
 
 //    for (boost::shared_ptr<Draggable_label> const& label : _labels)
@@ -49,7 +49,7 @@ void Statistics_screen::init()
 
     for (Draggable_statistics & stat : _statistics)
     {
-        _viewer.generate_statistics_texture(stat);
+        _renderer.generate_statistics_texture(stat);
     }
 
     setup_statistics(_core.get_sensor_data());
@@ -57,31 +57,9 @@ void Statistics_screen::init()
 
 void Statistics_screen::draw()
 {
-    float alpha = 1.0f;
-
-    if (get_state() == State::Killing || get_state() == State::Resuming)
-    {
-        if (get_state() == State::Killing)
-        {
-            alpha = 1.0f - _transition_progress;
-        }
-        else if (get_state() == State::Resuming)
-        {
-            alpha = _transition_progress;
-        }
-    }
-
-    glColor4f(1.0f, 1.0f, 1.0f, alpha);
+    Menu_screen::draw();
 
     _viewer.start_normalized_screen_coordinates();
-
-    for (boost::shared_ptr<Draggable_button> const& button : _buttons)
-    {
-//            if (button->is_visible())
-        {
-            _viewer.draw_button(button.get(), false, alpha);
-        }
-    }
 
     for (Draggable_statistics const& stat : _statistics)
     {
@@ -91,18 +69,6 @@ void Statistics_screen::draw()
     _viewer.stop_normalized_screen_coordinates();
 }
 
-void Statistics_screen::draw_draggables_for_picking()
-{
-    _viewer.start_normalized_screen_coordinates();
-
-    for (size_t i = 0; i < _buttons.size(); ++i)
-    {
-        _picking.set_index(i);
-        _viewer.draw_button(_buttons[i].get(), true);
-    }
-
-    _viewer.stop_normalized_screen_coordinates();
-}
 
 void Statistics_screen::update_event(const float time_step)
 {
@@ -122,7 +88,6 @@ void Statistics_screen::setup_statistics(const Sensor_data &sensor_data)
 
 void Statistics_screen::exit()
 {
-//    _viewer.add_screen(new After_finish_screen(_viewer, _core));
     _calling_screen->resume();
 
     kill();
@@ -137,29 +102,12 @@ void Statistics_screen::repeat()
 }
 
 
-Statistics_screen::Statistics_screen(My_viewer & viewer, Core & core, Screen *calling_screen) : Screen(viewer), _core(core), _calling_screen(calling_screen)
+Statistics_screen::Statistics_screen(My_viewer & viewer, Core & core, Screen *calling_screen) :
+    Menu_screen(viewer, core), _calling_screen(calling_screen)
 {
     _type = Screen::Type::Modal;
 
     init();
 
     _picking.init(_viewer.context());
-}
-
-bool Statistics_screen::mousePressEvent(QMouseEvent *event)
-{
-    if (event->buttons() & Qt::LeftButton)
-    {
-        int picked_index = _picking.do_pick(
-                    event->pos().x() / float(_viewer.camera()->screenWidth()),
-                    (_viewer.camera()->screenHeight() - event->pos().y())  / float(_viewer.camera()->screenHeight()),
-                    std::bind(&Statistics_screen::draw_draggables_for_picking, this));
-
-        if (picked_index > -1)
-        {
-            _buttons[picked_index]->clicked();
-        }
-    }
-
-    return true;
 }

@@ -142,7 +142,7 @@ bool Editor_screen::mouseMoveEvent(QMouseEvent * event)
 
         handled = true;
     }
-    else
+    else if (_mouse_state == Mouse_state::None)
     {
         int const new_picking_index = _picking.do_pick(event->pos().x() / float(_viewer.camera()->screenWidth()), (_viewer.camera()->screenHeight() - event->pos().y())  / float(_viewer.camera()->screenHeight()),
                                          std::bind(&Main_game_screen::draw_draggables_for_picking, this));
@@ -177,14 +177,16 @@ bool Editor_screen::mouseMoveEvent(QMouseEvent * event)
 //                Level_element * level_element = iter->second;
 
                 // TODO: change to real extent, needs to be known in base Draggable
-                // TODO: Draggable needs tooltip text
-                boost::shared_ptr<Draggable_tooltip> s(_viewer.generate_tooltip(parent->get_position(), Eigen::Vector3f(0.05f, 0.05f, 0.0f),
-                                                               "Blablabla Blablabla Blablabla Blablabla Blablabla Blablabla Blablabla Blablabla Blablabla Blablabla Blablabla"));
+                if (!parent->get_tooltip_text().empty())
+                {
+                    boost::shared_ptr<Draggable_tooltip> s(_ui_renderer.generate_tooltip(parent->get_position(), Eigen::Vector3f(0.05f, 0.05f, 0.0f),
+                                                                                    parent->get_tooltip_text()));
 
-                s->start_fade_in();
+                    s->start_fade_in();
 
-                _labels.push_back(s);
-                _tooltips_map[parent] = s;
+                    _labels.push_back(s);
+                    _tooltips_map[parent] = s;
+                }
             }
         }
     }
@@ -205,6 +207,11 @@ bool Editor_screen::mouseReleaseEvent(QMouseEvent * event)
 
         if (_picked_index != -1)
         {
+            if (Draggable_screen_point * d_point = dynamic_cast<Draggable_screen_point *>(_active_draggables[_picked_index]))
+            {
+                d_point->update();
+            }
+
             _selection = Selection::Level_element;
             Draggable * parent = _active_draggables[_picked_index]->get_parent();
             parent->clicked();
@@ -272,6 +279,8 @@ bool Editor_screen::keyPressEvent(QKeyEvent * event)
 
             _core.set_simulation_state(false);
 
+            QApplication::restoreOverrideCursor(); // in case we were in placement mode
+
             handled = true;
         }
         else if (get_state() == State::Paused || get_state() == State::Pausing)
@@ -294,9 +303,6 @@ void Editor_screen::init_level_element_buttons()
     std::cout << __PRETTY_FUNCTION__ << std::endl;
 
     int i = 0;
-
-//    _buttons.clear();
-//    _level_element_buttons.clear();
 
     for (auto const& iter : _core.get_level_data()._available_elements)
     {
@@ -321,9 +327,23 @@ void Editor_screen::init_level_element_buttons()
 
         _buttons.push_back(button);
         _level_element_buttons[iter.first] = button;
+        _normal_controls.push_back(button);
+
+        boost::shared_ptr<Draggable_spinbox> spinbox(
+                    new Draggable_spinbox(pos + Eigen::Vector3f(0.0f, -0.1f, 0.0f),
+                                          Eigen::Vector2f(0.04f, 0.1f),
+                                          _core.get_level_data()._parameters["Available elements/" + iter.first]));
+
+        spinbox->set_tooltip_text("Number of available items of this type when playing the level");
+        spinbox->set_alpha(0.7f);
+
+        _spinboxes.push_back(spinbox);
+
+        _advanced_controls.push_back(spinbox);
 
         ++i;
     }
+
 
     for (std::string const& molecule : _placeable_molecules)
     {
@@ -336,9 +356,12 @@ void Editor_screen::init_level_element_buttons()
         QImage button_img(Data_config::get_instance()->get_absolute_qfilename("textures/button_" + QString::fromStdString(molecule) + ".png"));
 
         button->set_texture(_viewer.bindTexture(button_img));
+        button->set_tooltip_text("Molecule: " + molecule);
 
         _buttons.push_back(button);
         _level_element_buttons[molecule] = button;
+
+        _normal_controls.push_back(button);
 
         ++i;
     }
@@ -351,76 +374,162 @@ void Editor_screen::init_level_element_buttons()
     _toggle_simulation_button->set_pressable(true);
 //    _toggle_simulation_button->set_pressed(true);
     _toggle_simulation_button->set_parameter(_core.get_parameters()["Toggle simulation"]);
+    _toggle_simulation_button->set_tooltip_text("Pause/continue the simulation");
 
     _buttons.push_back(_toggle_simulation_button);
+    _normal_controls.push_back(_toggle_simulation_button);
+
 
     _hide_controls_button = boost::shared_ptr<Draggable_button>(
                 new Draggable_button(Eigen::Vector3f(0.1f, 0.05f, 0.0f),
                                      Eigen::Vector2f(0.15f, 0.05f * _viewer.camera()->aspectRatio()),
                                      "Hide Controls", std::bind(&Editor_screen::hide_controls, this)));
-    _viewer.generate_button_texture(_hide_controls_button.get());
+    _ui_renderer.generate_button_texture(_hide_controls_button.get());
+//    _hide_controls_button->set_tooltip_text("Hide the controls");
 
     _buttons.push_back(_hide_controls_button);
+    _normal_controls.push_back(_hide_controls_button);
+
 
     _show_controls_button = boost::shared_ptr<Draggable_button>(
                 new Draggable_button(Eigen::Vector3f(0.1f, 0.05f, 0.0f),
                                      Eigen::Vector2f(0.15f, 0.05f * _viewer.camera()->aspectRatio()),
                                      "Show Controls", std::bind(&Editor_screen::show_controls, this)));
     _show_controls_button->set_visible(false);
-    _viewer.generate_button_texture(_show_controls_button.get());
+    _ui_renderer.generate_button_texture(_show_controls_button.get());
 
     _buttons.push_back(_show_controls_button);
+    _normal_controls.push_back(_show_controls_button);
+
 
     boost::shared_ptr<Draggable_button> button_reset(
                 new Draggable_button(Eigen::Vector3f(0.27f, 0.05f, 0.0f),
                                      Eigen::Vector2f(0.15f, 0.05f * _viewer.camera()->aspectRatio()),
                                      "Reset", std::bind(&Core::reset_level, &_core)));
-    _viewer.generate_button_texture(button_reset.get());
+    _ui_renderer.generate_button_texture(button_reset.get());
+    button_reset->set_tooltip_text("Reset and delete all non-persistent elements");
+
     _buttons.push_back(button_reset);
+    _normal_controls.push_back(button_reset);
+
 
     boost::shared_ptr<Draggable_button> button_clear(
                 new Draggable_button(Eigen::Vector3f(0.44f, 0.05f, 0.0f),
                                      Eigen::Vector2f(0.15f, 0.05f * _viewer.camera()->aspectRatio()),
                                      "Clear", std::bind(&Editor_screen::clear_level, this)));
-    _viewer.generate_button_texture(button_clear.get());
+    _ui_renderer.generate_button_texture(button_clear.get());
+    button_clear->set_tooltip_text("Delete all elements");
+
     _buttons.push_back(button_clear);
+    _normal_controls.push_back(button_clear);
 
 
-    boost::shared_ptr<Draggable_button> button_advanced_options(
+    _button_show_advanced_options = boost::shared_ptr<Draggable_button>(
                 new Draggable_button(Eigen::Vector3f(0.61f, 0.05f, 0.0f),
                                      Eigen::Vector2f(0.15f, 0.05f * _viewer.camera()->aspectRatio()),
-                                     "Adv. Options", std::bind(&Editor_screen::show_advanced_options, this)));
-    _viewer.generate_button_texture(button_advanced_options.get());
-    _buttons.push_back(button_advanced_options);
+                                     "Show Adv. Options", std::bind(&Editor_screen::show_advanced_options, this)));
+    _ui_renderer.generate_button_texture(_button_show_advanced_options.get());
+    _button_show_advanced_options->set_tooltip_text("Show advanced options, useful for playable level design and more fun in general");
+    _button_show_advanced_options->set_visible(false);
+
+    _buttons.push_back(_button_show_advanced_options);
+    _normal_controls.push_back(_button_show_advanced_options);
+
+
+    _button_hide_advanced_options = boost::shared_ptr<Draggable_button>(
+                new Draggable_button(Eigen::Vector3f(0.61f, 0.05f, 0.0f),
+                                     Eigen::Vector2f(0.15f, 0.05f * _viewer.camera()->aspectRatio()),
+                                     "Hide Adv. Options", std::bind(&Editor_screen::hide_advanced_options, this)));
+    _ui_renderer.generate_button_texture(_button_hide_advanced_options.get());
+
+    _buttons.push_back(_button_hide_advanced_options);
+    _normal_controls.push_back(_button_hide_advanced_options);
 
 
     boost::shared_ptr<Draggable_slider> translation_fluctuation_slider(
                 new Draggable_slider(Eigen::Vector3f(0.93f, 0.88f, 0.0f),
                                      Eigen::Vector2f(0.1f, 0.05f),
-                                     _core.get_level_data()._parameters["Temperature"], std::bind(&Editor_screen::slider_changed, this)));
+                                     _core.get_level_data()._parameters["Temperature"]));
     translation_fluctuation_slider->set_slider_marker_texture(_slider_tex);
     translation_fluctuation_slider->set_texture(_viewer.bindTexture(QImage(Data_config::get_instance()->get_absolute_qfilename("textures/slider_temperature.png"))));
+    translation_fluctuation_slider->set_tooltip_text("Overall temperature control, things start moving fast and randomly when it is hot");
 
     _sliders.push_back(translation_fluctuation_slider);
+    _normal_controls.push_back(translation_fluctuation_slider);
+
 
     boost::shared_ptr<Draggable_slider> damping_slider(
                 new Draggable_slider(Eigen::Vector3f(0.93f, 0.83f, 0.0f),
                                      Eigen::Vector2f(0.1f, 0.05f),
-                                     _core.get_level_data()._parameters["Damping"], std::bind(&Editor_screen::slider_changed, this)));
+                                     _core.get_level_data()._parameters["Damping"]));
     damping_slider->set_slider_marker_texture(_slider_tex);
     damping_slider->set_texture(_viewer.bindTexture(QImage(Data_config::get_instance()->get_absolute_qfilename("textures/slider_damping.png"))));
+    damping_slider->set_tooltip_text("Damping, controls how quickly moving objects lose their speed");
 
     _sliders.push_back(damping_slider);
+    _normal_controls.push_back(damping_slider);
+
 
     boost::shared_ptr<Draggable_slider> gravity_slider(
                 new Draggable_slider(Eigen::Vector3f(0.93f, 0.78f, 0.0f),
                                      Eigen::Vector2f(0.1f, 0.05f),
-                                     _core.get_level_data()._parameters["gravity"], std::bind(&Editor_screen::slider_changed, this)));
+                                     _core.get_level_data()._parameters["gravity"]));
     gravity_slider->set_slider_marker_texture(_slider_tex);
     gravity_slider->set_texture(_viewer.bindTexture(QImage(Data_config::get_instance()->get_absolute_qfilename("textures/slider_gravity.png"))));
-
+    gravity_slider->set_tooltip_text("Gravity, controls how fast the apple falls");
 
     _sliders.push_back(gravity_slider);
+    _normal_controls.push_back(gravity_slider);
+
+
+    boost::shared_ptr<Draggable_label> adv_options_label(
+                new Draggable_label(Eigen::Vector3f(0.9f, 0.71f, 0.0f),
+                                     Eigen::Vector2f(0.15f, 0.07f),
+                                     "Adv. Controls:"));
+    _ui_renderer.generate_label_texture(adv_options_label.get());
+
+    _labels.push_back(adv_options_label);
+    _advanced_controls.push_back(adv_options_label);
+
+
+    boost::shared_ptr<Draggable_slider> mass_slider(
+                new Draggable_slider(Eigen::Vector3f(0.93f, 0.67f, 0.0f),
+                                     Eigen::Vector2f(0.1f, 0.05f),
+                                     _core.get_parameters()["Mass Factor"]));
+    mass_slider->set_slider_marker_texture(_slider_tex);
+    mass_slider->set_texture(_viewer.bindTexture(QImage(Data_config::get_instance()->get_absolute_qfilename("textures/slider_mass.png"))));
+    mass_slider->set_tooltip_text("Mass, controls the relative mass of the atoms");
+
+    _sliders.push_back(mass_slider);
+    _advanced_controls.push_back(mass_slider);
+
+
+    boost::shared_ptr<Draggable_slider> coulomb_slider(
+                new Draggable_slider(Eigen::Vector3f(0.93f, 0.62f, 0.0f),
+                                     Eigen::Vector2f(0.1f, 0.05f),
+//                                     _core.get_parameters().get_child("Atomic Force Type"), std::bind(&Editor_screen::slider_changed, this)));
+                                     _core.get_parameters()["Atomic Force Type/Coulomb Force/Strength"]));
+    coulomb_slider->set_slider_marker_texture(_slider_tex);
+    coulomb_slider->set_texture(_viewer.bindTexture(QImage(Data_config::get_instance()->get_absolute_qfilename("textures/slider_coulomb.png"))));
+    coulomb_slider->set_tooltip_text("Coulomb Force, controls the strength of electric attraction and repulsion between molecules");
+
+    _sliders.push_back(coulomb_slider);
+    _advanced_controls.push_back(coulomb_slider);
+
+
+    boost::shared_ptr<Draggable_slider> waals_slider(
+                new Draggable_slider(Eigen::Vector3f(0.93f, 0.57f, 0.0f),
+                                     Eigen::Vector2f(0.1f, 0.05f),
+                                     _core.get_parameters()["Atomic Force Type/Van der Waals Force/Strength"]));
+    waals_slider->set_slider_marker_texture(_slider_tex);
+    waals_slider->set_texture(_viewer.bindTexture(QImage(Data_config::get_instance()->get_absolute_qfilename("textures/slider_waals.png"))));
+    waals_slider->set_tooltip_text("Van der Waals Potential, controls the strength of attraction between chargeless molecules");
+
+    _sliders.push_back(waals_slider);
+    _advanced_controls.push_back(waals_slider);
+
+
+    hide_advanced_options();
 
     update_draggable_to_level_element();
     update_active_draggables();
@@ -488,14 +597,14 @@ void Editor_screen::hide_controls()
 {
     std::cout << __PRETTY_FUNCTION__ << std::endl;
 
-    for (boost::shared_ptr<Draggable_button> const& b : _buttons)
+    for (boost::shared_ptr<Draggable> const& d : _normal_controls)
     {
-        b->set_visible(false);
+        d->set_visible(false);
     }
 
-    for (boost::shared_ptr<Draggable_slider> const& s : _sliders)
+    for (boost::shared_ptr<Draggable> const& d : _advanced_controls)
     {
-        s->set_visible(false);
+        d->set_visible(false);
     }
 
     _show_controls_button->set_visible(true);
@@ -508,17 +617,29 @@ void Editor_screen::show_controls()
 {
     std::cout << __PRETTY_FUNCTION__ << std::endl;
 
-    for (boost::shared_ptr<Draggable_button> const& b : _buttons)
-    {
-        b->set_visible(true);
-    }
+//    for (boost::shared_ptr<Draggable_button> const& b : _buttons)
+//    {
+//        b->set_visible(true);
+//    }
 
-    for (boost::shared_ptr<Draggable_slider> const& s : _sliders)
+//    for (boost::shared_ptr<Draggable_slider> const& s : _sliders)
+//    {
+//        s->set_visible(true);
+//    }
+
+//    for (boost::shared_ptr<Draggable_spinbox> const& s : _spinboxes)
+//    {
+//        s->set_visible(true);
+//    }
+
+    for (boost::shared_ptr<Draggable> const& d : _normal_controls)
     {
-        s->set_visible(true);
+        d->set_visible(true);
     }
 
     _show_controls_button->set_visible(false);
+
+    _button_hide_advanced_options->set_visible(false);
 
     update_draggable_to_level_element();
     update_active_draggables();
@@ -533,21 +654,47 @@ void Editor_screen::clear_level()
 
 void Editor_screen::show_advanced_options()
 {
-    Parameter_list elements_list;
-    elements_list.add_child("Available elements", _core.get_level_data()._parameters.get_child("Available elements"));
+//    Parameter_list elements_list;
+//    elements_list.add_child("Available elements", _core.get_level_data()._parameters.get_child("Available elements"));
 
-    Parameter_list sim_list;
-    sim_list.add_parameter(_core.get_parameters()["Mass Factor"]);
-    sim_list.add_child("Intermolecular Forces", _core.get_parameters().get_child("Atomic Force Type"));
+//    Parameter_list sim_list;
+//    sim_list.add_parameter(_core.get_parameters()["Mass Factor"]);
+//    sim_list.add_child("Intermolecular Forces", _core.get_parameters().get_child("Atomic Force Type"));
 
-    _advanced_options_window = std::unique_ptr<Main_options_window>(Main_options_window::create());
+//    _advanced_options_window = std::unique_ptr<Main_options_window>(Main_options_window::create());
 
-    _advanced_options_window->add_parameter_list("Level Options", elements_list);
-    _advanced_options_window->add_parameter_list("Adv. Simulation Options", sim_list);
+//    _advanced_options_window->add_parameter_list("Level Options", elements_list);
+//    _advanced_options_window->add_parameter_list("Adv. Simulation Options", sim_list);
 
-//    _advanced_options_window->add_parameter_list("Available elements", *_core.get_level_data()._parameters.get_child("Available elements"));
+////    _advanced_options_window->add_parameter_list("Available elements", *_core.get_level_data()._parameters.get_child("Available elements"));
 
-//    _advanced_options_window->add_parameter_list("Intermolecular Forces", *_core.get_parameters().get_child("Atomic Force Type"));
+////    _advanced_options_window->add_parameter_list("Intermolecular Forces", *_core.get_parameters().get_child("Atomic Force Type"));
 
-    _advanced_options_window->show();
+//    _advanced_options_window->show();
+
+    for (boost::shared_ptr<Draggable> const& d : _advanced_controls)
+    {
+        d->set_visible(true);
+    }
+
+    _button_show_advanced_options->set_visible(false);
+    _button_hide_advanced_options->set_visible(true);
+
+    update_draggable_to_level_element();
+    update_active_draggables();
+}
+
+
+void Editor_screen::hide_advanced_options()
+{
+    for (boost::shared_ptr<Draggable> const& d : _advanced_controls)
+    {
+        d->set_visible(false);
+    }
+
+    _button_hide_advanced_options->set_visible(false);
+    _button_show_advanced_options->set_visible(true);
+
+    update_draggable_to_level_element();
+    update_active_draggables();
 }

@@ -3,7 +3,7 @@
 #include "My_viewer.h"
 
 
-Before_start_screen::Before_start_screen(My_viewer &viewer, Core &core) : Screen(viewer), _core(core)
+Before_start_screen::Before_start_screen(My_viewer &viewer, Core &core) : Menu_screen(viewer, core)
 {
     _type = Screen::Type::Modal;
 
@@ -12,72 +12,13 @@ Before_start_screen::Before_start_screen(My_viewer &viewer, Core &core) : Screen
     _picking.init(_viewer.context());
 }
 
-bool Before_start_screen::mousePressEvent(QMouseEvent *event)
-{
-    if (event->buttons() & Qt::LeftButton)
-    {
-        int picked_index = _picking.do_pick(
-                    event->pos().x() / float(_viewer.camera()->screenWidth()),
-                    (_viewer.camera()->screenHeight() - event->pos().y()) / float(_viewer.camera()->screenHeight()),
-                    std::bind(&Before_start_screen::draw_draggables_for_picking, this));
-
-        if (picked_index > -1)
-        {
-            _buttons[picked_index]->clicked();
-        }
-    }
-
-    return true;
-}
-
 void Before_start_screen::draw()
 {
-    float alpha = 1.0f;
+    Menu_screen::draw();
 
-    if (get_state() == State::Killing || get_state() == State::Resuming)
-    {
-        if (get_state() == State::Killing)
-        {
-            alpha = 1.0f - _transition_progress;
-        }
-        else if (get_state() == State::Resuming)
-        {
-            alpha = _transition_progress;
-        }
-    }
-
-    glColor4f(1.0f, 1.0f, 1.0f, alpha);
-
-    _viewer.start_normalized_screen_coordinates();
-
-    for (boost::shared_ptr<Draggable_button> const& button : _buttons)
-    {
-        //            if (button->is_visible())
-        {
-            _viewer.draw_button(button.get(), false, alpha);
-        }
-    }
-
-    _viewer.stop_normalized_screen_coordinates();
-
-    draw_particle_system(_particle_system, _viewer.height());
+    _renderer.draw_particle_system(_particle_system, _viewer.height());
 }
 
-void Before_start_screen::draw_draggables_for_picking()
-{
-    _viewer.start_normalized_screen_coordinates();
-
-    for (size_t i = 0; i < _buttons.size(); ++i)
-    {
-        //            if (button->is_visible())
-        {
-            _picking.set_index(i);
-            _viewer.draw_button(_buttons[i].get(), true);
-        }
-    }
-
-    _viewer.stop_normalized_screen_coordinates();
-}
 
 void Before_start_screen::init()
 {
@@ -94,7 +35,7 @@ void Before_start_screen::init()
 
     for (boost::shared_ptr<Draggable_button> const& button : _buttons)
     {
-        _viewer.generate_button_texture(button.get());
+        _renderer.generate_button_texture(button.get());
     }
 
     _particle_system = Targeted_particle_system(3.0f);

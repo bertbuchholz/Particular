@@ -98,7 +98,7 @@ public:
     static Parameter_list get_parameters()
     {
         Parameter_list parameters;
-        parameters.add_parameter(new Parameter("Strength", 1.0f, 1.0f, 1000.0f));
+        parameters.add_parameter(new Parameter("Strength", 1.0f, 1.0f, 200.0f));
         return parameters;
     }
 
@@ -196,8 +196,8 @@ public:
     static Parameter_list get_parameters()
     {
         Parameter_list parameters;
-        parameters.add_parameter(new Parameter("Strength", 1.0f, 0.001f, 10.0f));
-        parameters.add_parameter(new Parameter("Radius Factor",   1.0f, 0.5f, 10.0f));
+        parameters.add_parameter(new Parameter("Strength", 0.1f, 0.001f, 1.0f));
+        parameters.add_parameter(new Parameter("Radius Factor",   1.4f, 0.5f, 2.0f));
         return parameters;
     }
 

@@ -2,6 +2,7 @@
 #define BARRIER_DRAW_VISITOR_H
 
 #include <Draw_functions.h>
+#include <GL_utilities.h>
 
 #include "Visitor.h"
 #include "Level_element.h"

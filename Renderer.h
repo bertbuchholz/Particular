@@ -4,35 +4,37 @@
 #include <QGLShaderProgram>
 #include <QGLFramebufferObject>
 
-#include <glm/glm.hpp>
-#include <glm/gtc/type_ptr.hpp>
-#include <glm/gtc/matrix_transform.hpp>
+#include <QGLFunctions>
 
-#include <Draw_functions.h>
 #include <MyOpenMesh.h>
-#include <GL_utilities.h>
 #include <Icosphere.h>
-#include <StandardCamera.h>
-#include <Geometry_utils.h>
-#include <Color_utilities.h>
 
+#include "Draggable.h"
 #include "Level_data.h"
 #include "Level_element_draw_visitor.h"
-#include "Data_config.h"
 
-class World_renderer
+//void setup_gl_points(bool const distance_dependent);
+
+class World_renderer : public QGLFunctions
 {
 public:
-    ~World_renderer() {}
+    virtual ~World_renderer() {}
 
-    virtual void init(QGLContext const* /* context */, QSize const& /* size */) {}
+    virtual void init(QGLContext const* context, QSize const& size);
 
     virtual void resize(QSize const& /* size */) {}
 
 //    virtual void render(std::vector<Molecule> const& molecules, StandardCamera const* = nullptr) const = 0;
-    virtual void render(QGLFramebufferObject * main_fbo, Level_data const& level_data, float const time, qglviewer::Camera const* = nullptr) = 0;
+    virtual void render(QGLFramebufferObject * /* main_fbo */, Level_data const& /* level_data */,
+                        float const /* time */, qglviewer::Camera const* = nullptr) {}
 
     virtual void update(Level_data const& /* level_data */) {}
+
+    void setup_gl_points(bool const distance_dependent) const;
+
+    void draw_particle_system(Targeted_particle_system const& system, int const height) const;
+
+    void draw_textured_quad(const GLuint tex_id) const;
 
     virtual void set_parameters(Parameter_list const& /* parameters */)
     { }
@@ -42,10 +44,43 @@ public:
         Parameter_list parameters;
         return parameters;
     }
+
+
+protected:
+    float _aspect_ratio;
+
+    QSize _screen_size;
 };
 
 
-class Editor_renderer : public World_renderer, public QGLFunctions
+class Ui_renderer : public World_renderer
+{
+public:
+    virtual void init(QGLContext const* context, QSize const& size);
+
+    void draw_spinbox(Draggable_spinbox const& s, const bool for_picking, float const alpha = 1.0f) const;
+
+    void generate_button_texture(Draggable_button *b) const;
+    void generate_label_texture(Draggable_label *b) const;
+    void generate_statistics_texture(Draggable_statistics &b) const;
+    Draggable_tooltip * generate_tooltip(Eigen::Vector3f const& screen_pos, Eigen::Vector3f const& element_extent, std::string const& text) const;
+
+    void setup_fonts();
+
+    QFont const& get_main_font() const { return _main_font; }
+
+
+protected:
+    std::vector<GLuint> _number_textures;
+
+    GLuint _spinbox_arrowup_texture;
+    GLuint _spinbox_arrowdown_texture;
+
+    QFont _main_font;
+};
+
+
+class Editor_renderer : public World_renderer
 {
 public:
     Editor_renderer()
@@ -122,7 +157,7 @@ REGISTER_CLASS_WITH_PARAMETERS(World_renderer, Editor_renderer);
 
 
 
-class Shader_renderer : public World_renderer, public QGLFunctions
+class Shader_renderer : public World_renderer
 {
 public:
     Shader_renderer()
@@ -201,7 +236,5 @@ private:
 };
 
 REGISTER_CLASS_WITH_PARAMETERS(World_renderer, Shader_renderer);
-
-void setup_gl_points(bool const distance_dependent);
 
 #endif // RENDERER_H

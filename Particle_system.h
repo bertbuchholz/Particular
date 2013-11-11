@@ -112,6 +112,6 @@ private:
     float _age;
 };
 
-void draw_particle_system(Targeted_particle_system const& system, int const height);
+//void draw_particle_system(Targeted_particle_system const& system, int const height);
 
 #endif // PARTICLE_SYSTEM_H

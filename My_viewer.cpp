@@ -1,13 +1,5 @@
 #include "My_viewer.h"
 
-float get_scale(QSize const& b_size, QSize const& target_size)
-{
-    float const width_ratio = target_size.width() / float(b_size.width());
-    float const height_ratio = target_size.height() / float(b_size.height());
-
-    return std::min(width_ratio, height_ratio);
-}
-
 class Game_camera_constraint_old : public qglviewer::Constraint
 {
 public:
@@ -220,12 +212,12 @@ void My_viewer::print_cam_orientation()
 
 void My_viewer::setup_fonts()
 {
-    int id = QFontDatabase::addApplicationFont(Data_config::get_instance()->get_absolute_qfilename("fonts/Matiz.ttf"));
-    QString family = QFontDatabase::applicationFontFamilies(id).at(0);
-    _main_font = QFont(family);
+//    int id = QFontDatabase::addApplicationFont(Data_config::get_instance()->get_absolute_qfilename("fonts/Matiz.ttf"));
+//    QString family = QFontDatabase::applicationFontFamilies(id).at(0);
+//    _main_font = QFont(family);
 
-    id = QFontDatabase::addApplicationFont(Data_config::get_instance()->get_absolute_qfilename("fonts/LondrinaOutline-Regular.otf"));
-    family = QFontDatabase::applicationFontFamilies(id).at(0);
+    int id = QFontDatabase::addApplicationFont(Data_config::get_instance()->get_absolute_qfilename("fonts/LondrinaOutline-Regular.otf"));
+    QString family = QFontDatabase::applicationFontFamilies(id).at(0);
     _particle_font = QFont(family);
 }
 
@@ -335,10 +327,11 @@ void My_viewer::init()
     _my_camera->setFrame(frame);
     setCamera(_my_camera);
 
+    _renderer.init(context(), size());
+
     glEnable(GL_NORMALIZE);
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
 
     setSceneRadius(50.0f);
 
@@ -365,7 +358,9 @@ void My_viewer::start()
 //    _parameters["Interface"]->set_value(std::string("Playing"));
 
     _screen_stack.clear();
-    add_screen(new Main_game_screen(*this, _core));
+    Screen * s = new Main_game_screen(*this, _core);
+    s->pause();
+    add_screen(s);
     add_screen(new Main_menu_screen(*this, _core));
 }
 
@@ -527,6 +522,80 @@ void My_viewer::draw_slider(Draggable_slider const& s, const bool for_picking, f
     glPopMatrix();
 }
 
+//void My_viewer::draw_spinbox(Draggable_spinbox const& s, const bool for_picking, float const alpha)
+//{
+////    Draggable_screen_point const& p = s.get_slider_marker();
+
+//    glPushMatrix();
+
+//    Eigen::Transform<float, 3, Eigen::Affine> const spinbox_system = s.get_transform();
+
+////    if (!for_picking)
+////    {
+////        Eigen::Vector3f const line_start = spinbox_system * Eigen::Vector3f(-1.0f, 0.0f, 0.0f);
+////        Eigen::Vector3f const line_stop  = spinbox_system * Eigen::Vector3f( 1.0f, 0.0f, 0.0f);
+
+////        glColor3f(0.2f, 0.2f, 0.3f);
+
+////        glLineWidth(2.0f);
+////        glBegin(GL_LINES);
+////        glVertex3fv(line_start.data());
+////        glVertex3fv(line_stop.data());
+////        glEnd();
+
+////        glColor3f(1.0f, 1.0f, 1.0f);
+
+////        glPushMatrix();
+////        glTranslatef(s.get_position()[0] - s.get_extent()[0] * 0.5f - s.get_extent()[1] * 0.5f, s.get_position()[1], s.get_position()[2]);
+////        glScalef(s.get_extent()[1] * 0.3f, s.get_extent()[1] * 0.3f * camera()->aspectRatio(), 1.0f);
+
+////        draw_textured_quad(s.get_texture());
+////        glPopMatrix();
+////    }
+
+//    Eigen::Vector3f const decrement_pos = spinbox_system * s.get_decrement_draggable().get_position();
+
+//    glPushMatrix();
+//    glTranslatef(decrement_pos[0], decrement_pos[1], decrement_pos[2]);
+//    glScalef(0.01f, 0.01f * camera()->aspectRatio(), 1.0f); // draw a square
+//    glColor4f(1.0f, 1.0f, 0.0f, s.get_alpha() * alpha);
+
+//    if (for_picking)
+//    {
+//        draw_quad_with_tex_coords();
+//    }
+//    else
+//    {
+//        draw_quad_with_tex_coords();
+////        draw_textured_quad(s.get_slider_marker_texture());
+//    }
+
+//    glPopMatrix();
+
+//    Eigen::Vector3f const increment_pos = spinbox_system * s.get_increment_draggable().get_position();
+
+//    glPushMatrix();
+//    glTranslatef(increment_pos[0], increment_pos[1], increment_pos[2]);
+//    glScalef(0.01f, 0.01f * camera()->aspectRatio(), 1.0f); // draw a square
+//    glRotatef(180.0f, 0.0f, 0.0f, 1.0f);
+//    glColor4f(1.0f, 0.0f, 1.0f, s.get_alpha() * alpha);
+
+//    if (for_picking)
+//    {
+//        draw_quad_with_tex_coords();
+//    }
+//    else
+//    {
+//        draw_quad_with_tex_coords();
+////        draw_textured_quad(s.get_slider_marker_texture());
+//    }
+
+//    glPopMatrix();
+
+
+//    glPopMatrix();
+//}
+
 void My_viewer::draw_statistic(const Draggable_statistics &b)
 {
     std::vector<float> const& values = b.get_values();
@@ -594,7 +663,7 @@ void My_viewer::mousePressEvent(QMouseEvent *event)
 
     if (!handled)
     {
-        std::cout << __PRETTY_FUNCTION__ << std::endl;
+//        std::cout << __PRETTY_FUNCTION__ << std::endl;
         Base::mousePressEvent(event);
     }
 }
@@ -617,7 +686,7 @@ void My_viewer::mouseMoveEvent(QMouseEvent *event)
 
     if (!handled)
     {
-        std::cout << __PRETTY_FUNCTION__ << std::endl;
+//        std::cout << __PRETTY_FUNCTION__ << std::endl;
         Base::mouseMoveEvent(event);
     }
 }
@@ -653,7 +722,7 @@ void My_viewer::mouseReleaseEvent(QMouseEvent *event)
 
     if (!handled)
     {
-        std::cout << __PRETTY_FUNCTION__ << std::endl;
+//        std::cout << __PRETTY_FUNCTION__ << std::endl;
         Base::mouseReleaseEvent(event);
     }
 }
@@ -691,9 +760,13 @@ void My_viewer::keyPressEvent(QKeyEvent *event)
     }
     else if (event->key() == Qt::Key_O)
     {
-        Main_options_window * w = Main_options_window::create();
-        w->add_parameter_list("Viewer", _parameters);
-        w->show();
+        if (event->modifiers() & Qt::ControlModifier && event->modifiers() & Qt::ShiftModifier)
+        {
+            Main_options_window::get_instance()->show();
+        }
+//        Main_options_window * w = Main_options_window::create();
+//        w->add_parameter_list("Viewer", _parameters);
+//        w->show();
 
         handled = true;
     }
@@ -701,6 +774,29 @@ void My_viewer::keyPressEvent(QKeyEvent *event)
     if (!handled)
     {
         Base::keyPressEvent(event);
+    }
+}
+
+void My_viewer::wheelEvent(QWheelEvent * event)
+{
+    bool handled = false;
+
+    for (std::unique_ptr<Screen> const& s : _screen_stack)
+    {
+        if (s->get_state() == Screen::State::Killing || s->get_state() == Screen::State::Killed) continue;
+
+        handled = s->wheelEvent(event);
+
+        if (handled || int(s->get_type()) & int(Screen::Type::Modal))
+        {
+            break;
+        }
+    }
+
+    if (!handled)
+    {
+//        std::cout << __PRETTY_FUNCTION__ << std::endl;
+        Base::wheelEvent(event);
     }
 }
 
@@ -764,205 +860,16 @@ void My_viewer::resizeEvent(QResizeEvent *ev)
     Base::resizeEvent(ev);
 }
 
-void My_viewer::generate_button_texture(Draggable_button *b)
-{
-    std::cout << __PRETTY_FUNCTION__ << " constructing button texture" << std::endl;
-
-    QSize const pixel_size(width() * b->get_extent()[0], height() * b->get_extent()[1]);
-
-    QImage img(pixel_size, QImage::Format_ARGB32);
-    img.fill(QColor(0, 0, 0, 0));
-
-    QPainter p;
-    p.begin(&img);
-    p.setRenderHint(QPainter::Antialiasing);
-    p.setCompositionMode(QPainter::CompositionMode_SourceOver);
-
-    QPen pen;
-    pen.setWidth(5);
-    pen.setColor(QColor(20, 133, 204));
-    p.setPen(pen);
-
-    p.setBrush(QBrush(QColor(76, 153, 204, 120)));
-
-//    p.drawRoundedRect(QRect(5, 5, pixel_size.width() - 10, pixel_size.height() - 10), pixel_size.width() * 0.1f, pixel_size.width() * 0.1f);
-    float const radius = std::min((pixel_size.width() - 10) * 0.5f, (pixel_size.height() - 10) * 0.5f);
-    p.drawRoundedRect(QRect(5, 5, pixel_size.width() - 10, pixel_size.height() - 10), radius, radius);
-
-    QFont font = _main_font;
-    //        font.setWeight(QFont::Bold);
-    font.setPointSizeF(10.0f);
-    p.setFont(font);
-
-    p.setPen(QColor(255, 255, 255));
-
-    QSize text_size(pixel_size.width() * 0.8f, pixel_size.height() * 0.5f);
-
-    QSize b_size = p.boundingRect(QRect(QPoint(0, 0), text_size), Qt::AlignCenter, QString::fromStdString(b->get_text())).size();
-
-    font.setPointSizeF(10.0f * get_scale(b_size, text_size));
-    p.setFont(font);
-
-    p.drawText(img.rect(), Qt::AlignCenter, QString::fromStdString(b->get_text()));
-
-    p.end();
-
-    deleteTexture(b->get_texture());
-    b->set_texture(bindTexture(img));
-}
-
-void My_viewer::generate_label_texture(Draggable_label *b)
-{
-    std::cout << __PRETTY_FUNCTION__ << " constructing label texture" << std::endl;
-
-    QSize const pixel_size(width() * b->get_extent()[0], height() * b->get_extent()[1]);
-
-    QImage img(pixel_size, QImage::Format_ARGB32);
-    img.fill(QColor(0, 0, 0, 0));
-
-    QPainter p;
-    p.begin(&img);
-    p.setRenderHint(QPainter::Antialiasing);
-    p.setCompositionMode(QPainter::CompositionMode_SourceOver);
-
-    QFont font = _main_font;
-    //        font.setWeight(QFont::Bold);
-    font.setPointSizeF(10.0f);
-    p.setFont(font);
-
-    p.setPen(QColor(255, 255, 255));
-
-    QSize text_size(pixel_size.width() * 0.8f, pixel_size.height() * 0.8f);
-
-    QSize b_size = p.boundingRect(QRect(QPoint(0, 0), text_size), Qt::AlignCenter, QString::fromStdString(b->get_text())).size();
-
-    //        font.setPointSizeF(10.0f * text_size.height() / float(b_size.height())); // always use height ratio to ensure same size text for buttons of same height
-    font.setPointSizeF(10.0f * get_scale(b_size, text_size));
-    p.setFont(font);
-
-    p.drawText(img.rect(), Qt::AlignCenter, QString::fromStdString(b->get_text()));
-
-    p.end();
-
-    deleteTexture(b->get_texture());
-    b->set_texture(bindTexture(img));
-}
-
-void My_viewer::generate_statistics_texture(Draggable_statistics &b)
-{
-    std::cout << __PRETTY_FUNCTION__ << " constructing statistic texture" << std::endl;
-
-    QSize const pixel_size(width() * b.get_extent()[0], height() * b.get_extent()[1]);
-
-    QImage img(pixel_size, QImage::Format_ARGB32);
-    img.fill(QColor(0, 0, 0, 0));
-
-    QPainter p;
-    p.begin(&img);
-    p.setRenderHint(QPainter::Antialiasing);
-    p.setCompositionMode(QPainter::CompositionMode_SourceOver);
-
-    QPen pen;
-    pen.setWidth(2);
-    pen.setColor(QColor(20, 133, 204));
-    p.setPen(pen);
-
-    p.setBrush(QBrush(QColor(76, 153, 204, 120)));
-
-    p.drawRoundedRect(QRect(2, 2, pixel_size.width() - 4, pixel_size.height() - 4), pixel_size.width() * 0.02f, pixel_size.width() * 0.02f);
-
-
-    QFont font = _main_font;
-    //        font.setWeight(QFont::Bold);
-    font.setPixelSize(0.1f * pixel_size.height());
-    p.setFont(font);
-
-    p.setPen(QColor(255, 255, 255));
-
-    //        QSize text_size(pixel_size.width() * 0.8f, pixel_size.height() * 0.8f);
-
-    //        QSize b_size = p.boundingRect(QRect(QPoint(0, 0), text_size), Qt::AlignCenter, QString::fromStdString(b->get_text())).size();
-
-    //        font.setPointSizeF(10.0f * get_scale(b_size, text_size));
-    //        p.setFont(font);
-
-    p.drawText(0.2f * pixel_size.width(), 0.15f * pixel_size.height(), QString::fromStdString(b.get_text()));
-
-    pen.setWidthF(0.5f);
-    pen.setColor(QColor(255, 255, 255, 100));
-    p.setPen(pen);
-
-    p.drawLine(0.2f * pixel_size.width(), 0.8f * pixel_size.height(), 0.9f * pixel_size.width(), 0.8f * pixel_size.height());
-
-    for (int i = 1; i < 5; ++i)
-    {
-        float const height = 0.8f - 0.6f * i / 4.0f;
-        p.drawLine(0.2f * pixel_size.width(), height * pixel_size.height(), 0.9f * pixel_size.width(), height * pixel_size.height());
-    }
-
-    p.end();
-
-    deleteTexture(b.get_texture());
-    b.set_texture(bindTexture(img));
-}
-
-Draggable_tooltip * My_viewer::generate_tooltip(Eigen::Vector3f const& screen_pos, Eigen::Vector3f const& element_extent, std::string const& text)
-{
-    std::cout << __PRETTY_FUNCTION__ << std::endl;
-
-    QSize const pixel_size(camera()->screenWidth() * 0.3f, camera()->screenHeight() * 0.5f);
-
-    QImage text_image(pixel_size, QImage::Format_ARGB32);
-    text_image.fill(QColor(0, 0, 0, 0));
-
-    QPainter p(&text_image);
-    p.setRenderHint(QPainter::Antialiasing);
-    p.setCompositionMode(QPainter::CompositionMode_SourceOver);
-
-    QFont font = _main_font;
-    font.setPointSizeF(20000.0f / float(camera()->screenWidth())); // TODO: scale by screensize
-    p.setFont(font);
-
-    p.setPen(QColor(255, 255, 255));
-
-    // TODO: adaptive placement
-
-    QRect final_text_bb;
-    p.drawText(text_image.rect(), Qt::AlignLeft | Qt::TextWordWrap, QString::fromStdString(text), &final_text_bb);
-    p.end();
-
-    text_image = text_image.copy(final_text_bb);
-
-    Eigen::Vector2f const uniform_bb(final_text_bb.width() / float(camera()->screenWidth()),
-                                     final_text_bb.height() / float(camera()->screenHeight()));
-
-    Eigen::Vector3f final_screen_pos = screen_pos;
-
-    float const min_y_distance = 0.5f * uniform_bb[1] + 0.5f * element_extent[1] + 0.01f;
-
-    if (screen_pos[1] - min_y_distance - 0.5f * uniform_bb[1] >= 0.0f) // tooltip fits below the object
-    {
-        final_screen_pos[1] = screen_pos[1] - min_y_distance;
-    }
-    else
-    {
-        final_screen_pos[1] = screen_pos[1] + min_y_distance;
-    }
-
-    final_screen_pos[0] = std::max(uniform_bb[0] * 0.5f + 0.05f, final_screen_pos[0]);
-    final_screen_pos[0] = std::min(1.0f - (uniform_bb[0] * 0.5f + 0.05f), final_screen_pos[0]);
-
-    Draggable_tooltip * tooltip = new Draggable_tooltip(final_screen_pos, Eigen::Vector2f(0.3f, final_text_bb.height() / float(camera()->screenHeight())), "");
-
-    tooltip->set_texture(bindTexture(text_image));
-
-    return tooltip;
-}
 
 void My_viewer::quit_game()
 {
     _core.quit();
     close();
+}
+
+const Ui_renderer &My_viewer::get_renderer() const
+{
+    return _renderer;
 }
 
 Eigen::Vector2f My_viewer::qpixel_to_uniform_screen_pos(const QPoint & p)

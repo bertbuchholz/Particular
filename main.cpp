@@ -26,6 +26,7 @@ BOOST_CLASS_EXPORT_GUID(Molecule_capture_condition, "Molecule_capture_condition"
 int main(int argc, char** argv)
 {
     QApplication application(argc,argv);
+//    application.setDoubleClickInterval(0);
 
 //    QGLFormat f;
 //    f.setVersion(3, 2);
@@ -37,7 +38,7 @@ int main(int argc, char** argv)
 //    glFormat.setProfile(QGLFormat::CoreProfile); // Requires >=Qt-4.8.0
 //    glFormat.setSampleBuffers(true);
 
-    spatial_hash_test();
+//    spatial_hash_test();
 
     Core core;
 

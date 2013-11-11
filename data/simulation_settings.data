@@ -24,7 +24,7 @@
 					</item>
 					<item>
 						<which>1</which>
-						<value>10</value>
+						<value>1</value>
 					</item>
 				</_value_list>
 				<_special_type>0</_special_type>
@@ -118,7 +118,7 @@
 				<_description></_description>
 				<_value>
 					<which>1</which>
-					<value>10</value>
+					<value>100</value>
 				</_value>
 				<_index>32661</_index>
 				<_value_list>
@@ -228,7 +228,7 @@
 											</item>
 											<item>
 												<which>1</which>
-												<value>1000</value>
+												<value>200</value>
 											</item>
 										</_value_list>
 										<_special_type>0</_special_type>
@@ -286,7 +286,7 @@
 											</item>
 											<item>
 												<which>1</which>
-												<value>10</value>
+												<value>2</value>
 											</item>
 										</_value_list>
 										<_special_type>0</_special_type>
@@ -300,7 +300,7 @@
 										<_description></_description>
 										<_value>
 											<which>1</which>
-											<value>0.1</value>
+											<value>1</value>
 										</_value>
 										<_index>1868963941</_index>
 										<_value_list>
@@ -312,7 +312,7 @@
 											</item>
 											<item>
 												<which>1</which>
-												<value>10</value>
+												<value>1</value>
 											</item>
 										</_value_list>
 										<_special_type>0</_special_type>

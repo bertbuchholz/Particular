@@ -78,6 +78,7 @@ protected:
     Parameter_list _parameters;
 
     std::unique_ptr<World_renderer> _renderer;
+    Ui_renderer const& _ui_renderer;
 
     Picking _picking;
 
@@ -100,6 +101,7 @@ protected:
 
     std::vector< boost::shared_ptr<Draggable_button> > _buttons;
     std::vector< boost::shared_ptr<Draggable_slider> > _sliders;
+    std::vector< boost::shared_ptr<Draggable_spinbox> > _spinboxes;
     std::vector< boost::shared_ptr<Draggable_label> > _labels;
     std::unordered_map<Draggable*, boost::shared_ptr<Draggable_tooltip> > _tooltips_map;
 

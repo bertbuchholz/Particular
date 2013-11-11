@@ -36,6 +36,8 @@ public:
     virtual bool mouseMoveEvent(QMouseEvent *) { return false; }
     virtual bool mouseReleaseEvent(QMouseEvent * ) { return false; }
     virtual bool keyPressEvent(QKeyEvent *) { return false; }
+    virtual bool wheelEvent(QWheelEvent *) { return false; }
+
 
     virtual void resize(QSize const& /* size */) { }
 

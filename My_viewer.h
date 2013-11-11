@@ -12,18 +12,18 @@
 #include <Options_viewer.h>
 #include <Draw_functions.h>
 
-#include <Picking.h>
+//#include <Picking.h>
 #include <Registry_parameters.h>
 #include <Geometry_utils.h>
 //#include <FloatSlider.h>
 
 #include "Core.h"
-#include "Atom.h"
+//#include "Atom.h"
 //#include "Spatial_hash.h"
-//#include "Renderer.h"
+#include "Renderer.h"
 
-#include "Draggable.h"
-#include "Level_element_draw_visitor.h"
+//#include "Draggable.h"
+//#include "Level_element_draw_visitor.h"
 #include "Screen.h"
 #include "Main_game_screen.h"
 #include "Main_menu_screen.h"
@@ -77,6 +77,8 @@ public:
     void mouseMoveEvent(QMouseEvent * event) override;
     void mouseReleaseEvent(QMouseEvent * event);
     void keyPressEvent(QKeyEvent *event) override;
+    void wheelEvent(QWheelEvent * event) override;
+    void mouseDoubleClickEvent(QMouseEvent * /* event */) override {} // ignore doubleclicks
 
     void animate() override;
 
@@ -95,20 +97,13 @@ public:
     void draw_label(Draggable_label const* b, const float alpha = 1.0f);
     void draw_statistic(Draggable_statistics const& b);
     void draw_slider(Draggable_slider const& s, const bool for_picking, const float alpha = 1.0f);
-
-    void generate_button_texture(Draggable_button * b);
-    void generate_label_texture(Draggable_label * b);
-    void generate_statistics_texture(Draggable_statistics & b);
-
-    Draggable_tooltip * generate_tooltip(Eigen::Vector3f const& screen_pos, const Eigen::Vector3f &element_extent, std::string const& text);
-
+//    void draw_spinbox(const Draggable_spinbox &s, const bool for_picking, const float alpha = 1.0f);
 
     void quit_game();
 
+    Ui_renderer const& get_renderer() const;
 
     QFont const& get_particle_font() const { return _particle_font; }
-
-    QFont const& get_main_font() const { return _main_font; }
 
     Eigen::Vector2f qpixel_to_uniform_screen_pos(QPoint const& p);
 
@@ -120,10 +115,11 @@ private:
 
     StandardCamera * _my_camera;
 
-    QFont _main_font;
     QFont _particle_font;
 
     std::deque< std::unique_ptr<Screen> > _screen_stack;
+
+    Ui_renderer _renderer;
 };
 
 

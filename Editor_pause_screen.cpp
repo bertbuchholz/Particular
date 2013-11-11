@@ -1,8 +1,10 @@
 #include "Editor_pause_screen.h"
 
 #include "Editor_screen.h"
+#include "My_viewer.h"
+#include "Main_menu_screen.h"
 
-Editor_pause_screen::Editor_pause_screen(My_viewer &viewer, Core &core, Screen *calling_state) : Screen(viewer), _core(core), _calling_screen(calling_state)
+Editor_pause_screen::Editor_pause_screen(My_viewer &viewer, Core &core, Screen *calling_state) : Menu_screen(viewer, core), _calling_screen(calling_state)
 {
     _type = Screen::Type::Modal;
 
@@ -11,23 +13,6 @@ Editor_pause_screen::Editor_pause_screen(My_viewer &viewer, Core &core, Screen *
     _picking.init(_viewer.context());
 }
 
-bool Editor_pause_screen::mousePressEvent(QMouseEvent *event)
-{
-    if (event->buttons() & Qt::LeftButton)
-    {
-        int picked_index = _picking.do_pick(
-                    event->pos().x() / float(_viewer.camera()->screenWidth()),
-                    (_viewer.camera()->screenHeight() - event->pos().y()) / float(_viewer.camera()->screenHeight()),
-                    std::bind(&Editor_pause_screen::draw_draggables_for_picking, this));
-
-        if (picked_index > -1)
-        {
-            _buttons[picked_index]->clicked();
-        }
-    }
-
-    return true;
-}
 
 bool Editor_pause_screen::keyPressEvent(QKeyEvent *event)
 {
@@ -56,55 +41,6 @@ bool Editor_pause_screen::keyPressEvent(QKeyEvent *event)
     }
 
     return handled;
-}
-
-void Editor_pause_screen::draw()
-{
-    //        std::cout << "Pause screen" << std::endl;
-
-    float alpha = 1.0f;
-
-    if (get_state() == State::Killing || get_state() == State::Resuming)
-    {
-        if (get_state() == State::Killing)
-        {
-            alpha = 1.0f - _transition_progress;
-        }
-        else if (get_state() == State::Resuming)
-        {
-            alpha = _transition_progress;
-        }
-    }
-
-    glColor4f(1.0f, 1.0f, 1.0f, alpha);
-
-    _viewer.start_normalized_screen_coordinates();
-
-    for (boost::shared_ptr<Draggable_button> const& button : _buttons)
-    {
-        //            if (button->is_visible())
-        {
-            _viewer.draw_button(button.get(), false, alpha);
-        }
-    }
-
-    _viewer.stop_normalized_screen_coordinates();
-}
-
-void Editor_pause_screen::draw_draggables_for_picking()
-{
-    _viewer.start_normalized_screen_coordinates();
-
-    for (size_t i = 0; i < _buttons.size(); ++i)
-    {
-        //            if (button->is_visible())
-        {
-            _picking.set_index(i);
-            _viewer.draw_button(_buttons[i].get(), true);
-        }
-    }
-
-    _viewer.stop_normalized_screen_coordinates();
 }
 
 void Editor_pause_screen::init()
@@ -147,7 +83,7 @@ void Editor_pause_screen::init()
 
     for (boost::shared_ptr<Draggable_button> const& button : _buttons)
     {
-        _viewer.generate_button_texture(button.get());
+        _renderer.generate_button_texture(button.get());
     }
 }
 
@@ -164,7 +100,9 @@ void Editor_pause_screen::return_to_main_menu()
 
     if (button == QMessageBox::Yes)
     {
-        _viewer.replace_screens(new Main_game_screen(_viewer, _core, Main_game_screen::Ui_state::Playing));
+        Screen * s = new Main_game_screen(_viewer, _core, Main_game_screen::Ui_state::Playing);
+        s->pause();
+        _viewer.replace_screens(s);
         _viewer.add_screen(new Main_menu_screen(_viewer, _core));
     }
 }

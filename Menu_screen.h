@@ -1,0 +1,35 @@
+#ifndef MENU_SCREEN_H
+#define MENU_SCREEN_H
+
+#include "Screen.h"
+
+#include <Picking.h>
+
+#include "Renderer.h"
+#include "Draggable.h"
+#include "Core.h"
+
+class Menu_screen : public Screen
+{
+public:
+    Menu_screen(My_viewer & viewer, Core & core);
+
+    void draw() override;
+
+    bool mousePressEvent(QMouseEvent * event) override;
+    bool wheelEvent(QWheelEvent *) override { return true; } // eat all wheel events in menus to avoid them being used in underlying screens
+
+
+    void draw_draggables_for_picking();
+
+protected:
+    Core & _core;
+
+    Ui_renderer const& _renderer;
+    Picking _picking;
+
+    std::vector< boost::shared_ptr<Draggable_button> > _buttons;
+    std::vector< boost::shared_ptr<Draggable_label> > _labels;
+};
+
+#endif // MENU_SCREEN_H

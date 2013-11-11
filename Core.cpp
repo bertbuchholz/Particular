@@ -74,7 +74,7 @@ Core::Core() :
     _parameters.add_parameter(new Parameter("levels", std::string(""), update_variables));
 
     _parameters.add_parameter(new Parameter("Toggle simulation", false, std::bind(&Core::toggle_simulation, this)));
-    _parameters.add_parameter(new Parameter("Mass Factor", 1.0f, 0.01f, 10.0f, update_variables));
+    _parameters.add_parameter(new Parameter("Mass Factor", 0.1f, 0.01f, 1.0f, update_variables));
     _parameters.add_parameter(new Parameter("do_constrain_forces", true, update_variables));
     _parameters.add_parameter(new Parameter("max_force", 10.0f, 0.1f, 500.0f, update_variables));
     _parameters.add_parameter(new Parameter("max_force_distance", 10.0f, 1.0f, 1000.0f, update_variables));
@@ -305,6 +305,7 @@ Eigen::Vector3f Core::force_on_atom(const Atom &receiver_atom) const
 
 void Core::compute_force_and_torque(Molecule &receiver)
 {
+//    float const translation_to_rotation_ratio = 1.0f;
     float const translation_to_rotation_ratio = 0.05f;
 
     receiver._force.setZero();
@@ -382,9 +383,13 @@ void Core::compute_force_and_torque(Molecule &receiver)
         }
     }
 
-    receiver._force += -_level_data._translation_damping * receiver._v;
+    std::cout << "rcv.torque: " << receiver._torque << std::endl << "rcv.omega: " << receiver._omega << std::endl;
+
+    receiver._force -= _level_data._translation_damping * receiver._v;
 //    receiver._torque += -_level_data._rotation_damping * translation_to_rotation_ratio * receiver._omega;
-    receiver._torque += -_level_data._rotation_damping * receiver._omega;
+    receiver._torque -= _level_data._rotation_damping * receiver._omega;
+
+    std::cout << "after subtr. rcv.torque: " << receiver._torque << std::endl;
 }
 
 
@@ -559,9 +564,23 @@ void Core::update(const float time_step)
         molecule._x += molecule._v * time_step;
 
 //        feenableexcept(FE_INVALID | FE_OVERFLOW);
+        assert(!std::isnan(molecule._q.w()) && !std::isinf(molecule._q.w()));
+        assert(!std::isnan(molecule._q.x()) && !std::isinf(molecule._q.x()));
+        assert(!std::isnan(molecule._q.y()) && !std::isinf(molecule._q.y()));
+        assert(!std::isnan(molecule._q.z()) && !std::isinf(molecule._q.z()));
+
+
+        assert(!std::isnan(molecule._omega[0]) && !std::isinf(molecule._omega[0]));
+        assert(!std::isnan(molecule._omega[1]) && !std::isinf(molecule._omega[1]));
+        assert(!std::isnan(molecule._omega[2]) && !std::isinf(molecule._omega[2]));
+
 
         Eigen::Quaternion<float> omega_quaternion(0.0f, molecule._omega[0], molecule._omega[1], molecule._omega[2]);
+
+        std::cout << "omega: " << omega_quaternion.coeffs() << std::endl << "_q:" << molecule._q.coeffs() << std::endl;
+
         Eigen::Quaternion<float> q_dot = scale(omega_quaternion * molecule._q, 0.5f);
+        assert(!std::isnan(q_dot.w()) && !std::isinf(q_dot.w()));
         molecule._q = add(molecule._q, scale(q_dot, time_step));
 
         assert(!std::isnan(molecule._q.w()) && !std::isinf(molecule._q.w()));
@@ -569,6 +588,8 @@ void Core::update(const float time_step)
         molecule._P += molecule._force * time_step;
 
         molecule._L += molecule._torque * time_step;
+
+        std::cout << "L: " << molecule._L << std::endl;
 
         molecule.from_state(Body_state(), _mass_factor);
 

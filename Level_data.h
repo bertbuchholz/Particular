@@ -64,8 +64,68 @@ public:
         return "Level_data";
     }
 
+//    template<class Archive>
+//    void serialize(Archive & ar, const unsigned int version)
+//    {
+//        ar & BOOST_SERIALIZATION_NVP(_game_field_borders);
+//        ar & BOOST_SERIALIZATION_NVP(_barriers);
+//        ar & BOOST_SERIALIZATION_NVP(_portals);
+//        ar & BOOST_SERIALIZATION_NVP(_molecule_releasers);
+//        ar & BOOST_SERIALIZATION_NVP(_brownian_elements);
+//        ar & BOOST_SERIALIZATION_NVP(_level_elements);
+
+//        ar & BOOST_SERIALIZATION_NVP(_available_elements);
+//        ar & BOOST_SERIALIZATION_NVP(_score_time_factor);
+
+//        if (version > 0)
+//        {
+//            ar & BOOST_SERIALIZATION_NVP(_background_name);
+//        }
+
+//        if (version > 1)
+//        {
+//            ar & BOOST_SERIALIZATION_NVP(_translation_damping);
+//            ar & BOOST_SERIALIZATION_NVP(_rotation_damping);
+
+//            ar & BOOST_SERIALIZATION_NVP(_rotation_fluctuation);
+//            ar & BOOST_SERIALIZATION_NVP(_translation_fluctuation);
+//        }
+
+//        if (version == 3)
+//        {
+//            ar & BOOST_SERIALIZATION_NVP(_gravity);
+//        }
+
+//        if (version > 3)
+//        {
+//            ar & BOOST_SERIALIZATION_NVP(_external_forces);
+//        }
+//    }
+
+
     template<class Archive>
-    void serialize(Archive & ar, const unsigned int version)
+    void save(Archive & ar, const unsigned int version) const
+    {
+        ar & BOOST_SERIALIZATION_NVP(_game_field_borders);
+        ar & BOOST_SERIALIZATION_NVP(_barriers);
+        ar & BOOST_SERIALIZATION_NVP(_portals);
+        ar & BOOST_SERIALIZATION_NVP(_molecule_releasers);
+        ar & BOOST_SERIALIZATION_NVP(_brownian_elements);
+        ar & BOOST_SERIALIZATION_NVP(_level_elements);
+
+        ar & BOOST_SERIALIZATION_NVP(_available_elements);
+        ar & BOOST_SERIALIZATION_NVP(_score_time_factor);
+
+        ar & BOOST_SERIALIZATION_NVP(_translation_damping);
+        ar & BOOST_SERIALIZATION_NVP(_rotation_damping);
+
+        ar & BOOST_SERIALIZATION_NVP(_rotation_fluctuation);
+        ar & BOOST_SERIALIZATION_NVP(_translation_fluctuation);
+        ar & BOOST_SERIALIZATION_NVP(_external_forces);
+    }
+
+    template<class Archive>
+    void load(Archive & ar, const unsigned int version)
     {
         ar & BOOST_SERIALIZATION_NVP(_game_field_borders);
         ar & BOOST_SERIALIZATION_NVP(_barriers);
@@ -94,6 +154,7 @@ public:
         if (version == 3)
         {
             ar & BOOST_SERIALIZATION_NVP(_gravity);
+            _external_forces["gravity"]._force[2] = -_parameters["gravity"]->get_value<float>();
         }
 
         if (version > 3)
@@ -101,6 +162,7 @@ public:
             ar & BOOST_SERIALIZATION_NVP(_external_forces);
         }
     }
+    BOOST_SERIALIZATION_SPLIT_MEMBER()
 
     std::list<Molecule> _molecules;
 

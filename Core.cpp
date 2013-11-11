@@ -293,7 +293,7 @@ Eigen::Vector3f Core::force_on_atom(const Atom &receiver_atom) const
 
     if (std::isnan(force_i[0]))
     {
-        std::cout << __PRETTY_FUNCTION__ << " isnan, atom: " << &receiver_atom << std::endl;
+        std::cout << __FUNCTION__ << " isnan, atom: " << &receiver_atom << std::endl;
         force_i = Eigen::Vector3f::Zero();
     }
 
@@ -429,7 +429,7 @@ void Core::check_molecules_in_portals()
                     has_been_removed = true;
                 }
 
-//                std::cout << __PRETTY_FUNCTION__ << " molecule in portal" << std::endl;
+//                std::cout << __FUNCTION__ << " molecule in portal" << std::endl;
             }
         }
 
@@ -761,7 +761,7 @@ boost::optional<const Molecule &> Core::get_molecule(const int id) const
 
 void Core::start_level()
 {
-    std::cout << __PRETTY_FUNCTION__ << std::endl;
+    std::cout << __FUNCTION__ << std::endl;
 
     set_new_game_state(Game_state::Running);
 
@@ -1056,7 +1056,7 @@ void Core::update_physics()
 
     if (elapsed_milliseconds > 1)
     {
-        std::cout << __PRETTY_FUNCTION__ << " time elapsed: " << elapsed_milliseconds << std::endl;
+        std::cout << __FUNCTION__ << " time elapsed: " << elapsed_milliseconds << std::endl;
     }
 }
 
@@ -1128,7 +1128,7 @@ void Core::load_level_defaults()
 
 void Core::load_level(std::string const& file_name)
 {
-    std::cout << __PRETTY_FUNCTION__ << " " << file_name << std::endl;
+    std::cout << __FUNCTION__ << " " << file_name << std::endl;
 
     clear();
     set_simulation_state(false);
@@ -1180,7 +1180,7 @@ void Core::change_level_state(const Main_game_screen::Level_state new_level_stat
 
 void Core::load_next_level()
 {
-    std::cout << __PRETTY_FUNCTION__ << " next level: " << get_progress().last_level << std::endl;
+    std::cout << __FUNCTION__ << " next level: " << get_progress().last_level << std::endl;
 
     if (_level_names.size() <= get_progress().last_level)
     {

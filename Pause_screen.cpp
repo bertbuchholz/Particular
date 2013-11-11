@@ -18,7 +18,7 @@ bool Pause_screen::keyPressEvent(QKeyEvent *event)
 {
     bool handled = false;
 
-    std::cout << __PRETTY_FUNCTION__ << " " << event->key() << " state: " << int(get_state()) << std::endl;
+    std::cout << __FUNCTION__ << " " << event->key() << " state: " << int(get_state()) << std::endl;
 
     if (event->key() == Qt::Key_Escape)
     {

@@ -423,7 +423,7 @@ public:
         std::vector<Regular_bsp_tree*> nodeQueue;
         getPostOrderQueue(nodeQueue, root);
 
-//        std::cout << __PRETTY_FUNCTION__ << " postorder.size: " << nodeQueue.size() << std::endl;
+//        std::cout << __FUNCTION__ << " postorder.size: " << nodeQueue.size() << std::endl;
 
         for (unsigned int i = 0; i < nodeQueue.size(); ++i)
         {

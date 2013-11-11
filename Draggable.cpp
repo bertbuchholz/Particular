@@ -103,7 +103,7 @@ Draggable_slider::~Draggable_slider()
 
 Draggable_tooltip::~Draggable_tooltip()
 {
-    std::cout << __PRETTY_FUNCTION__ << std::endl;
+    std::cout << __FUNCTION__ << std::endl;
 }
 
 void Draggable_tooltip::start_fade_in()
@@ -893,7 +893,7 @@ void Draggable_box::init()
 
 void Draggable_box::visit(Molecule_releaser *b) const
 {
-    std::cout << __PRETTY_FUNCTION__ << std::endl;
+    std::cout << __FUNCTION__ << std::endl;
     b->set_transform(_transform);
     b->set_position(get_position());
     b->set_size(_extent_2 * 2.0f);
@@ -902,7 +902,7 @@ void Draggable_box::visit(Molecule_releaser *b) const
 
 void Draggable_box::visit(Plane_barrier *b) const
 {
-    std::cout << __PRETTY_FUNCTION__ << std::endl;
+    std::cout << __FUNCTION__ << std::endl;
     b->set_transform(_transform);
     b->set_position(get_position());
     b->set_extent(Eigen::Vector2f(_extent_2[0] * 2.0f, _extent_2[1] * 2.0f));
@@ -911,7 +911,7 @@ void Draggable_box::visit(Plane_barrier *b) const
 
 void Draggable_box::visit(Sphere_portal *b) const
 {
-    std::cout << __PRETTY_FUNCTION__ << std::endl;
+    std::cout << __FUNCTION__ << std::endl;
     b->set_transform(_transform);
     b->set_position(get_position());
     b->set_size(_extent_2 * 2.0f);
@@ -920,7 +920,7 @@ void Draggable_box::visit(Sphere_portal *b) const
 
 void Draggable_box::visit(Box_portal *b) const
 {
-    std::cout << __PRETTY_FUNCTION__ << std::endl;
+    std::cout << __FUNCTION__ << std::endl;
     b->set_transform(_transform);
     b->set_position(get_position());
     b->set_size(_extent_2 * 2.0f);
@@ -929,7 +929,7 @@ void Draggable_box::visit(Box_portal *b) const
 
 void Draggable_box::visit(Blow_barrier *b) const
 {
-    std::cout << __PRETTY_FUNCTION__ << std::endl;
+    std::cout << __FUNCTION__ << std::endl;
     b->set_transform(_transform);
     b->set_position(get_position());
     b->set_size(_extent_2 * 2.0f);
@@ -938,7 +938,7 @@ void Draggable_box::visit(Blow_barrier *b) const
 
 void Draggable_box::visit(Charged_barrier *b) const
 {
-    std::cout << __PRETTY_FUNCTION__ << std::endl;
+    std::cout << __FUNCTION__ << std::endl;
     b->set_transform(_transform);
     b->set_position(get_position());
     b->set_size(_extent_2 * 2.0f);
@@ -947,7 +947,7 @@ void Draggable_box::visit(Charged_barrier *b) const
 
 void Draggable_box::visit(Box_barrier *b) const
 {
-    std::cout << __PRETTY_FUNCTION__ << std::endl;
+    std::cout << __FUNCTION__ << std::endl;
     b->set_transform(_transform);
     b->set_position(get_position());
     b->set_size(_extent_2 * 2.0f);
@@ -956,7 +956,7 @@ void Draggable_box::visit(Box_barrier *b) const
 
 void Draggable_box::visit(Moving_box_barrier *b) const
 {
-    std::cout << __PRETTY_FUNCTION__ << std::endl;
+    std::cout << __FUNCTION__ << std::endl;
     b->set_transform(_transform);
     b->set_position(get_position());
     b->set_size(_extent_2 * 2.0f);
@@ -965,7 +965,7 @@ void Draggable_box::visit(Moving_box_barrier *b) const
 
 void Draggable_box::visit(Brownian_box *b) const
 {
-    std::cout << __PRETTY_FUNCTION__ << std::endl;
+    std::cout << __FUNCTION__ << std::endl;
     b->set_transform(_transform);
     b->set_position(get_position());
     b->set_size(_extent_2 * 2.0f);
@@ -995,7 +995,7 @@ void Draggable_spinbox::init()
 
 void Draggable_spinbox::update()
 {
-    std::cout << __PRETTY_FUNCTION__ << " implement!" << std::endl;
+    std::cout << __FUNCTION__ << " implement!" << std::endl;
 
     int new_value = _parameter->get_value<int>();
 

@@ -5,11 +5,11 @@
 
 QWidget *Main_options_window::add_parameter_list(const std::string &name, const Parameter_list &parameters)
 {
-    std::cout << __PRETTY_FUNCTION__ << std::endl;
+    std::cout << __FUNCTION__ << std::endl;
 
     if (_param_group_to_widget_map.find(name) != _param_group_to_widget_map.end())
     {
-        std::cout << __PRETTY_FUNCTION__ << " widget already existed: " << name << std::endl;
+        std::cout << __FUNCTION__ << " widget already existed: " << name << std::endl;
         remove_parameter_list(name);
     }
 
@@ -75,7 +75,7 @@ void Main_options_window::remove_parameter_list(const std::string &name)
 
 //    for (QObject * q : w->children())
 //    {
-//        std::cout << __PRETTY_FUNCTION__ << " " << q << std::endl;
+//        std::cout << __FUNCTION__ << " " << q << std::endl;
 //    }
 
     delete w;

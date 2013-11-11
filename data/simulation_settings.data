@@ -20,7 +20,7 @@
 					<item_version>0</item_version>
 					<item>
 						<which>1</which>
-						<value>0.0099999998</value>
+						<value>0.01</value>
 					</item>
 					<item>
 						<which>1</which>
@@ -216,7 +216,7 @@
 										<_description></_description>
 										<_value>
 											<which>1</which>
-											<value>160.00101</value>
+											<value>160.001</value>
 										</_value>
 										<_index>1952542066</_index>
 										<_value_list>

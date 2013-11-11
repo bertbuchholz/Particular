@@ -16,7 +16,7 @@ Editor_screen::Editor_screen(My_viewer &viewer, Core &core) : Main_game_screen(v
 
 Editor_screen::~Editor_screen()
 {
-    std::cout << __PRETTY_FUNCTION__ << std::endl;
+    std::cout << __FUNCTION__ << std::endl;
     Main_options_window::get_instance()->remove_parameter_list("Editor_screen");
 }
 
@@ -40,7 +40,7 @@ bool Editor_screen::mousePressEvent(QMouseEvent * event)
     _picked_index = _picking.do_pick(event->pos().x() / float(_viewer.camera()->screenWidth()), (_viewer.camera()->screenHeight() - event->pos().y())  / float(_viewer.camera()->screenHeight()),
                                      std::bind(&Main_game_screen::draw_draggables_for_picking, this));
 
-    std::cout << __PRETTY_FUNCTION__ << " picked_index: " << _picked_index << std::endl;
+    std::cout << __FUNCTION__ << " picked_index: " << _picked_index << std::endl;
 
     if (_picked_index != -1)
     {
@@ -57,7 +57,7 @@ bool Editor_screen::mousePressEvent(QMouseEvent * event)
         qglviewer::Vec const world_pos = _viewer.camera()->pointUnderPixel(event->pos(), found);
 
         _mouse_state = Mouse_state::Init_drag_handle;
-        std::cout << __PRETTY_FUNCTION__ << " Init_drag_handle" << std::endl;
+        std::cout << __FUNCTION__ << " Init_drag_handle" << std::endl;
 
         if (found)
         {
@@ -131,7 +131,7 @@ bool Editor_screen::mouseMoveEvent(QMouseEvent * event)
                 {
 
 
-                    std::cout << __PRETTY_FUNCTION__ << ": " << parent << std::endl;
+                    std::cout << __FUNCTION__ << ": " << parent << std::endl;
 
                     level_element->accept(parent);
 
@@ -152,7 +152,7 @@ bool Editor_screen::mouseMoveEvent(QMouseEvent * event)
             if (_picked_index != -1)
             {
                 // stopped hovering over item
-                std::cout << __PRETTY_FUNCTION__ << " stopped hovering" << std::endl;
+                std::cout << __FUNCTION__ << " stopped hovering" << std::endl;
 
                 Draggable * parent = _active_draggables[_picked_index]->get_parent();
                 _labels.erase(std::remove(_labels.begin(), _labels.end(), _tooltips_map[parent]), _labels.end());
@@ -166,7 +166,7 @@ bool Editor_screen::mouseMoveEvent(QMouseEvent * event)
                 // entered new picked item
 
                 _picked_index = new_picking_index;
-                std::cout << __PRETTY_FUNCTION__ << " started hovering" << std::endl;
+                std::cout << __FUNCTION__ << " started hovering" << std::endl;
 
                 Draggable * parent = _active_draggables[_picked_index]->get_parent();
 
@@ -201,7 +201,7 @@ bool Editor_screen::mouseReleaseEvent(QMouseEvent * event)
 
     if (_mouse_state == Mouse_state::Init_drag_handle)
     {
-        std::cout << __PRETTY_FUNCTION__ << " click on handle" << std::endl;
+        std::cout << __FUNCTION__ << " click on handle" << std::endl;
 
         _mouse_state = Mouse_state::None;
 
@@ -266,7 +266,7 @@ bool Editor_screen::keyPressEvent(QKeyEvent * event)
 {
     bool handled = false;
 
-    std::cout << __PRETTY_FUNCTION__ << " " << event->key() << std::endl;
+    std::cout << __FUNCTION__ << " " << event->key() << std::endl;
 
     if (event->key() == Qt::Key_Escape)
     {
@@ -300,7 +300,7 @@ bool Editor_screen::keyPressEvent(QKeyEvent * event)
 
 void Editor_screen::init_level_element_buttons()
 {
-    std::cout << __PRETTY_FUNCTION__ << std::endl;
+    std::cout << __FUNCTION__ << std::endl;
 
     int i = 0;
 
@@ -577,7 +577,7 @@ void Editor_screen::add_selected_level_element(const QPoint &mouse_pos)
 
 //    if (std::find(_placeable_molecules.begin(), _placeable_molecules.end(), _selected_level_element_button_type) == _placeable_molecules.end())
 //    {
-        _core.get_level_data()._available_elements[_selected_level_element_button_type] -= 1;
+//        _core.get_level_data()._available_elements[_selected_level_element_button_type] -= 1;
 //    }
 
     add_element(placement_position, _selected_level_element_button_type);
@@ -590,12 +590,12 @@ void Editor_screen::toggle_simulation()
 
 void Editor_screen::slider_changed()
 {
-    std::cout << __PRETTY_FUNCTION__ << std::endl;
+    std::cout << __FUNCTION__ << std::endl;
 }
 
 void Editor_screen::hide_controls()
 {
-    std::cout << __PRETTY_FUNCTION__ << std::endl;
+    std::cout << __FUNCTION__ << std::endl;
 
     for (boost::shared_ptr<Draggable> const& d : _normal_controls)
     {
@@ -615,7 +615,7 @@ void Editor_screen::hide_controls()
 
 void Editor_screen::show_controls()
 {
-    std::cout << __PRETTY_FUNCTION__ << std::endl;
+    std::cout << __FUNCTION__ << std::endl;
 
 //    for (boost::shared_ptr<Draggable_button> const& b : _buttons)
 //    {

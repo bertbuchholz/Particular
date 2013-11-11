@@ -92,14 +92,14 @@ private:
 
         if (_data_paths.empty())
         {
-            std::cout << __PRETTY_FUNCTION__ << " no data paths found" << std::endl;
+            std::cout << __FUNCTION__ << " no data paths found" << std::endl;
             assert(false);
         }
         else
         {
             for (QString const p : _data_paths)
             {
-                std::cout << __PRETTY_FUNCTION__ << " data path found: " << p.toStdString() << std::endl;
+                std::cout << __FUNCTION__ << " data path found: " << p.toStdString() << std::endl;
             }
         }
     }

@@ -1,5 +1,6 @@
 #include <Renderer.h>
 
+#include <GL/glext.h>
 
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>
@@ -67,7 +68,11 @@ void draw_cube()
 
 void World_renderer::init(QGLContext const* context, QSize const& size)
 {
-    initializeGLFunctions(context);
+    _context = context;
+
+    initializeGLFunctions(_context);
+
+    _gl_functions.init(_context);
 
     _screen_size = size;
 
@@ -79,7 +84,7 @@ void World_renderer::setup_gl_points(bool const distance_dependent) const
     if (distance_dependent)
     {
         float quadratic[] =  { 0.0f, 0.0f, 0.001f };
-        glPointParameterfv(GL_POINT_DISTANCE_ATTENUATION, quadratic);
+//        glPointParameterfv(GL_POINT_DISTANCE_ATTENUATION, quadratic);
 
         //        glTexEnvi(GL_POINT_SPRITE, GL_COORD_REPLACE, GL_TRUE);
 
@@ -88,7 +93,7 @@ void World_renderer::setup_gl_points(bool const distance_dependent) const
     else
     {
         float quadratic[] =  { 1.0f, 0.0f, 0.0f };
-        glPointParameterfv(GL_POINT_DISTANCE_ATTENUATION, quadratic);
+//        glPointParameterfv(GL_POINT_DISTANCE_ATTENUATION, quadratic);
         //        glPointParameterf(GL_POINT_SIZE_MIN, 1.0f);
         //        glPointParameterf(GL_POINT_SIZE_MAX, 32.0f);
         //        glPointParameterfARB(GL_POINT_FADE_THRESHOLD_SIZE, 1.0f);
@@ -96,10 +101,10 @@ void World_renderer::setup_gl_points(bool const distance_dependent) const
 
     }
 
-    glDisable(GL_POINT_SPRITE);
-    glPointParameterf(GL_POINT_FADE_THRESHOLD_SIZE, 1.0f);
-    glPointParameterf(GL_POINT_SIZE_MIN, 2.0f);
-    glPointParameterf(GL_POINT_SIZE_MAX, 32.0f);
+//    glDisable(GL_POINT_SPRITE);
+//    glPointParameterf(GL_POINT_FADE_THRESHOLD_SIZE, 1.0f);
+//    glPointParameterf(GL_POINT_SIZE_MIN, 2.0f);
+//    glPointParameterf(GL_POINT_SIZE_MAX, 32.0f);
 
     glEnable(GL_POINT_SMOOTH);
 }
@@ -170,6 +175,9 @@ void Ui_renderer::init(const QGLContext *context, const QSize &size)
 
     setup_fonts();
 
+    GL_functions f;
+    f.init(_context);
+
     for (int i = 0; i < 10; ++i)
     {
         QImage text_image(100, 100, QImage::Format_ARGB32);
@@ -204,16 +212,16 @@ void Ui_renderer::init(const QGLContext *context, const QSize &size)
         p.end();
 
         Frame_buffer<Color4> number_tex_fb = convert<QRgb_to_Color4_converter, Color4>(final_text_image);
-        _number_textures.push_back(create_texture(number_tex_fb));
+        _number_textures.push_back(f.create_texture(number_tex_fb));
 
 //        final_text_image.save(QString("/tmp/number%1.png"));
     }
 
     Frame_buffer<Color4> arrowup_tex_fb = convert<QRgb_to_Color4_converter, Color4>(QImage(Data_config::get_instance()->get_absolute_qfilename("textures/spinbox_arrowup.png")));
-    _spinbox_arrowup_texture = create_texture(arrowup_tex_fb);
+    _spinbox_arrowup_texture = f.create_texture(arrowup_tex_fb);
 
     Frame_buffer<Color4> arrowdown_tex_fb = convert<QRgb_to_Color4_converter, Color4>(QImage(Data_config::get_instance()->get_absolute_qfilename("textures/spinbox_arrowdown.png")));
-    _spinbox_arrowdown_texture = create_texture(arrowdown_tex_fb);
+    _spinbox_arrowdown_texture = f.create_texture(arrowdown_tex_fb);
 }
 
 void Ui_renderer::draw_spinbox(const Draggable_spinbox &s, const bool for_picking, const float alpha) const
@@ -279,7 +287,7 @@ void Ui_renderer::draw_spinbox(const Draggable_spinbox &s, const bool for_pickin
 
 void Ui_renderer::generate_button_texture(Draggable_button *b) const
 {
-    std::cout << __PRETTY_FUNCTION__ << " constructing button texture" << std::endl;
+    std::cout << __FUNCTION__ << " constructing button texture" << std::endl;
 
     QSize const pixel_size(_screen_size.width() * b->get_extent()[0], _screen_size.height() * b->get_extent()[1]);
 
@@ -320,9 +328,11 @@ void Ui_renderer::generate_button_texture(Draggable_button *b) const
 
     p.end();
 
-    delete_texture(b->get_texture());
+    GL_functions f;
+    f.init(_context);
+    f.delete_texture(b->get_texture());
     Frame_buffer<Color4> texture_fb = convert<QRgb_to_Color4_converter, Color4>(img);
-    b->set_texture(create_texture(texture_fb));
+    b->set_texture(f.create_texture(texture_fb));
 
 //    deleteTexture(b->get_texture());
 //    b->set_texture(bindTexture(img));
@@ -330,7 +340,7 @@ void Ui_renderer::generate_button_texture(Draggable_button *b) const
 
 void Ui_renderer::generate_label_texture(Draggable_label *b) const
 {
-    std::cout << __PRETTY_FUNCTION__ << " constructing label texture" << std::endl;
+    std::cout << __FUNCTION__ << " constructing label texture" << std::endl;
 
     QSize const pixel_size(_screen_size.width() * b->get_extent()[0], _screen_size.height() * b->get_extent()[1]);
 
@@ -361,9 +371,11 @@ void Ui_renderer::generate_label_texture(Draggable_label *b) const
 
     p.end();
 
-    delete_texture(b->get_texture());
+    GL_functions f;
+    f.init(_context);
+    f.delete_texture(b->get_texture());
     Frame_buffer<Color4> texture_fb = convert<QRgb_to_Color4_converter, Color4>(img);
-    b->set_texture(create_texture(texture_fb));
+    b->set_texture(f.create_texture(texture_fb));
 
 //    deleteTexture(b->get_texture());
 //    b->set_texture(bindTexture(img));
@@ -371,7 +383,7 @@ void Ui_renderer::generate_label_texture(Draggable_label *b) const
 
 void Ui_renderer::generate_statistics_texture(Draggable_statistics &b) const
 {
-    std::cout << __PRETTY_FUNCTION__ << " constructing statistic texture" << std::endl;
+    std::cout << __FUNCTION__ << " constructing statistic texture" << std::endl;
 
     QSize const pixel_size(_screen_size.width() * b.get_extent()[0], _screen_size.height() * b.get_extent()[1]);
 
@@ -423,9 +435,11 @@ void Ui_renderer::generate_statistics_texture(Draggable_statistics &b) const
 
     p.end();
 
-    delete_texture(b.get_texture());
+    GL_functions f;
+    f.init(_context);
+    f.delete_texture(b.get_texture());
     Frame_buffer<Color4> texture_fb = convert<QRgb_to_Color4_converter, Color4>(img);
-    b.set_texture(create_texture(texture_fb));
+    b.set_texture(f.create_texture(texture_fb));
 
 //    deleteTexture(b.get_texture());
 //    b.set_texture(bindTexture(img));
@@ -433,7 +447,7 @@ void Ui_renderer::generate_statistics_texture(Draggable_statistics &b) const
 
 Draggable_tooltip *Ui_renderer::generate_tooltip(const Eigen::Vector3f &screen_pos, const Eigen::Vector3f &element_extent, const std::string &text) const
 {
-    std::cout << __PRETTY_FUNCTION__ << std::endl;
+    std::cout << __FUNCTION__ << std::endl;
 
     QSize const pixel_size(_screen_size.width() * 0.3f, _screen_size.height() * 0.5f);
 
@@ -488,8 +502,10 @@ Draggable_tooltip *Ui_renderer::generate_tooltip(const Eigen::Vector3f &screen_p
 
 //    tooltip->set_texture(bindTexture(text_image));
 
+    GL_functions f;
+    f.init(_context);
     Frame_buffer<Color4> texture_fb = convert<QRgb_to_Color4_converter, Color4>(text_image);
-    tooltip->set_texture(create_texture(texture_fb));
+    tooltip->set_texture(f.create_texture(texture_fb));
 
     return tooltip;
 }
@@ -497,17 +513,23 @@ Draggable_tooltip *Ui_renderer::generate_tooltip(const Eigen::Vector3f &screen_p
 
 Shader_renderer::~Shader_renderer()
 {
-    glDeleteBuffers(1, &_ice_texture);
-    glDeleteBuffers(1, &_backdrop_texture);
-    glDeleteBuffers(1, &_blurred_backdrop_texture);
-    glDeleteBuffers(1, &_background_grid_texture);
-    glDeleteBuffers(2, _tmp_screen_texture);
-    glDeleteBuffers(1, &_depth_texture);
+    GL_functions f;
+    f.init(_context);
+    f.delete_texture(_ice_texture);
+    f.delete_texture(_backdrop_texture);
+    f.delete_texture(_blurred_backdrop_texture);
+    f.delete_texture(_background_grid_texture);
+    f.delete_texture(_tmp_screen_texture[0]);
+    f.delete_texture(_tmp_screen_texture[1]);
+    f.delete_texture(_depth_texture);
 }
 
 void Shader_renderer::init(const QGLContext *context, const QSize &size)
 {
     World_renderer::init(context, size);
+
+    GL_functions f;
+    f.init(context);
 
     _molecule_program = std::unique_ptr<QGLShaderProgram>(init_program(context,
                                                                        Data_config::get_instance()->get_absolute_qfilename("shaders/simple.vert"),
@@ -529,7 +551,7 @@ void Shader_renderer::init(const QGLContext *context, const QSize &size)
     _grid_mesh = load_mesh<MyMesh>(Data_config::get_instance()->get_absolute_filename("meshes/grid_10x10.obj"));
     _bg_hemisphere_mesh = load_mesh<MyMesh>(Data_config::get_instance()->get_absolute_filename("meshes/bg_hemisphere.obj"));
 
-    typename MyMesh::ConstVertexIter vIt(_grid_mesh.vertices_begin()), vEnd(_grid_mesh.vertices_end());
+    MyMesh::ConstVertexIter vIt(_grid_mesh.vertices_begin()), vEnd(_grid_mesh.vertices_end());
 
     for (; vIt!=vEnd; ++vIt)
     {
@@ -540,16 +562,16 @@ void Shader_renderer::init(const QGLContext *context, const QSize &size)
     }
 
     Frame_buffer<Color> ice_tex_fb = convert<QColor_to_Color_converter, Color>(QImage(Data_config::get_instance()->get_absolute_qfilename("textures/ice_texture.png")));
-    _ice_texture = create_texture(ice_tex_fb);
+    _ice_texture = f.create_texture(ice_tex_fb);
 
     Frame_buffer<Color> backdrop_tex_fb = convert<QColor_to_Color_converter, Color>(QImage(Data_config::get_instance()->get_absolute_qfilename("/textures/iss_interior_1.png")));
-    _backdrop_texture = create_texture(backdrop_tex_fb);
+    _backdrop_texture = f.create_texture(backdrop_tex_fb);
 
     Frame_buffer<Color> blurred_backdrop_tex_fb = convert<QColor_to_Color_converter, Color>(QImage(Data_config::get_instance()->get_absolute_qfilename("/textures/iss_interior_1_blurred.png")));
-    _blurred_backdrop_texture = create_texture(blurred_backdrop_tex_fb);
+    _blurred_backdrop_texture = f.create_texture(blurred_backdrop_tex_fb);
 
     Frame_buffer<Color> backdrop_grid_tex_fb = convert<QColor_to_Color_converter, Color>(QImage(Data_config::get_instance()->get_absolute_qfilename("/textures/background_grid.png")));
-    _background_grid_texture = create_texture(backdrop_grid_tex_fb);
+    _background_grid_texture = f.create_texture(backdrop_grid_tex_fb);
 
     resize(size);
 
@@ -572,9 +594,12 @@ void Shader_renderer::resize(const QSize &size)
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     glBindTexture(GL_TEXTURE_2D, 0);
 
+    GL_functions f;
+    f.init(_context);
+
     // FIXME: need to delete first
-    _tmp_screen_texture[0] = create_texture(size.width(), size.height());
-    _tmp_screen_texture[1] = create_texture(size.width(), size.height());
+    _tmp_screen_texture[0] = f.create_texture(size.width(), size.height());
+    _tmp_screen_texture[1] = f.create_texture(size.width(), size.height());
 
     _scene_fbo->bind();
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, _depth_texture, 0);
@@ -588,14 +613,17 @@ void Shader_renderer::resize(const QSize &size)
 
 void Shader_renderer::update(const Level_data &level_data)
 {
+    GL_functions f;
+    f.init(_context);
+
     glDeleteTextures(1, &_backdrop_texture);
     QImage background(Data_config::get_instance()->get_absolute_qfilename("textures/" + QString::fromStdString(level_data._background_name)));
     Frame_buffer<Color> backdrop_tex_fb = convert<QColor_to_Color_converter, Color>(background);
-    _backdrop_texture = create_texture(backdrop_tex_fb);
+    _backdrop_texture = f.create_texture(backdrop_tex_fb);
 
     QImage blurred_background = background.scaled(background.size() * 0.05f);
     Frame_buffer<Color> blurred_backdrop_tex_fb = convert<QColor_to_Color_converter, Color>(blurred_background);
-    _blurred_backdrop_texture = create_texture(blurred_backdrop_tex_fb);
+    _blurred_backdrop_texture = f.create_texture(blurred_backdrop_tex_fb);
 }
 
 void Shader_renderer::draw_atom(const Atom &atom, const float scale, const float alpha)
@@ -648,7 +676,7 @@ void Shader_renderer::draw_temperature_mesh(const MyMesh &mesh, const Level_data
 {
     if (level_data._game_field_borders.size() != 6)
     {
-        std::cout << __PRETTY_FUNCTION__ << " no game field borders or too many/few, not drawing temperature mesh" << std::endl;
+        std::cout << __FUNCTION__ << " no game field borders or too many/few, not drawing temperature mesh" << std::endl;
         return;
     }
 
@@ -681,12 +709,12 @@ void Shader_renderer::draw_temperature_mesh(const MyMesh &mesh, const Level_data
     Plane_barrier const* front_face = front_face_iter->second;
     Eigen::Vector3f extent(front_face->get_extent().get()[0] * 0.5f, 0.0f, front_face->get_extent().get()[1] * 0.5f);
 
-    typename MyMesh::ConstFaceIter fIt(mesh.faces_begin()), fEnd(mesh.faces_end());
+    MyMesh::ConstFaceIter fIt(mesh.faces_begin()), fEnd(mesh.faces_end());
 
     glBegin(GL_TRIANGLES);
     for (; fIt!=fEnd; ++fIt)
     {
-        typename MyMesh::ConstFaceVertexIter fvIt = mesh.cfv_iter(fIt.handle());
+        MyMesh::ConstFaceVertexIter fvIt = mesh.cfv_iter(fIt.handle());
 
         Eigen::Vector3f p = OM2Eigen(mesh.point(fvIt.handle()));
         p = p.cwiseProduct(extent) + front_face->get_position();
@@ -735,7 +763,7 @@ void Shader_renderer::draw_temperature(const Level_data &level_data) const
 
     float resolution = 1.0f;
 
-    std::cout << __PRETTY_FUNCTION__ << " " << grid_start << " " << grid_end << std::endl;
+    std::cout << __FUNCTION__ << " " << grid_start << " " << grid_end << std::endl;
 
     for (float x = grid_start[0]; x < grid_end[0]; x += resolution)
     {
@@ -973,6 +1001,9 @@ void Editor_renderer::init(const QGLContext *context, const QSize &size)
 {
     World_renderer::init(context, size);
 
+    GL_functions f;
+    f.init(_context);
+
     _molecule_program = std::unique_ptr<QGLShaderProgram>(init_program(context,
                                                                        Data_config::get_instance()->get_absolute_qfilename("shaders/simple.vert"),
                                                                        Data_config::get_instance()->get_absolute_qfilename("shaders/molecule.frag")));
@@ -992,7 +1023,7 @@ void Editor_renderer::init(const QGLContext *context, const QSize &size)
     _sphere_mesh = load_mesh<MyMesh>(Data_config::get_instance()->get_absolute_filename("meshes/icosphere_3.obj"));
     _grid_mesh = load_mesh<MyMesh>(Data_config::get_instance()->get_absolute_filename("meshes/grid_10x10.obj"));
 
-    typename MyMesh::ConstVertexIter vIt(_grid_mesh.vertices_begin()), vEnd(_grid_mesh.vertices_end());
+    MyMesh::ConstVertexIter vIt(_grid_mesh.vertices_begin()), vEnd(_grid_mesh.vertices_end());
 
     for (; vIt!=vEnd; ++vIt)
     {
@@ -1003,10 +1034,10 @@ void Editor_renderer::init(const QGLContext *context, const QSize &size)
     }
 
     Frame_buffer<Color> ice_tex_fb = convert<QColor_to_Color_converter, Color>(QImage(Data_config::get_instance()->get_absolute_qfilename("textures/ice_texture.png")));
-    _ice_texture = create_texture(ice_tex_fb);
+    _ice_texture = f.create_texture(ice_tex_fb);
 
     Frame_buffer<Color> backdrop_tex_fb = convert<QColor_to_Color_converter, Color>(QImage(Data_config::get_instance()->get_absolute_qfilename("textures/iss_interior_1.png")));
-    _backdrop_texture = create_texture(backdrop_tex_fb);
+    _backdrop_texture = f.create_texture(backdrop_tex_fb);
 
     resize(size);
 
@@ -1016,6 +1047,9 @@ void Editor_renderer::init(const QGLContext *context, const QSize &size)
 
 void Editor_renderer::resize(const QSize &size)
 {
+    GL_functions f;
+    f.init(_context);
+
     //        _scene_fbo = std::unique_ptr<QGLFramebufferObject>(new QGLFramebufferObject(size, QGLFramebufferObject::Depth));
     _scene_fbo = std::unique_ptr<QGLFramebufferObject>(new QGLFramebufferObject(size));
 
@@ -1031,8 +1065,8 @@ void Editor_renderer::resize(const QSize &size)
     glBindTexture(GL_TEXTURE_2D, 0);
 
     // FIXME: need to delete first
-    _tmp_screen_texture[0] = create_texture(size.width(), size.height());
-    _tmp_screen_texture[1] = create_texture(size.width(), size.height());
+    _tmp_screen_texture[0] = f.create_texture(size.width(), size.height());
+    _tmp_screen_texture[1] = f.create_texture(size.width(), size.height());
 
     _scene_fbo->bind();
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, _depth_texture, 0);
@@ -1094,7 +1128,7 @@ void Editor_renderer::draw_temperature_mesh(const MyMesh &mesh, const Level_data
 {
     if (level_data._game_field_borders.size() != 6)
     {
-        std::cout << __PRETTY_FUNCTION__ << " no game field borders or too many/few, not drawing temperature mesh: " << level_data._game_field_borders.size() << std::endl;
+        std::cout << __FUNCTION__ << " no game field borders or too many/few, not drawing temperature mesh: " << level_data._game_field_borders.size() << std::endl;
         return;
     }
 
@@ -1124,12 +1158,12 @@ void Editor_renderer::draw_temperature_mesh(const MyMesh &mesh, const Level_data
     Plane_barrier const* front_face = front_face_iter->second;
     Eigen::Vector3f extent(front_face->get_extent().get()[0] * 0.5f, 0.0f, front_face->get_extent().get()[1] * 0.5f);
 
-    typename MyMesh::ConstFaceIter fIt(mesh.faces_begin()), fEnd(mesh.faces_end());
+    MyMesh::ConstFaceIter fIt(mesh.faces_begin()), fEnd(mesh.faces_end());
 
     glBegin(GL_TRIANGLES);
     for (; fIt!=fEnd; ++fIt)
     {
-        typename MyMesh::ConstFaceVertexIter fvIt = mesh.cfv_iter(fIt.handle());
+        MyMesh::ConstFaceVertexIter fvIt = mesh.cfv_iter(fIt.handle());
 
         Eigen::Vector3f p = OM2Eigen(mesh.point(fvIt.handle()));
         p = p.cwiseProduct(extent) + front_face->get_position();
@@ -1178,7 +1212,7 @@ void Editor_renderer::draw_temperature(const Level_data &level_data) const
 
     float resolution = 1.0f;
 
-    std::cout << __PRETTY_FUNCTION__ << " " << grid_start << " " << grid_end << std::endl;
+    std::cout << __FUNCTION__ << " " << grid_start << " " << grid_end << std::endl;
 
     for (float x = grid_start[0]; x < grid_end[0]; x += resolution)
     {

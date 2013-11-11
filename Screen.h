@@ -11,7 +11,7 @@ class Screen : public QObject
     Q_OBJECT
 
 public:
-    enum class Type { Modal = 0b01, Fullscreen = 0b10 };
+    enum class Type { Modal = 0x01, Fullscreen = 0x02 };
     enum class State { Paused = 0, Resuming, Pausing, Running, Fading_out, Fading_in, Faded_out, Killing, Killed };
 
     Screen(My_viewer & viewer) :

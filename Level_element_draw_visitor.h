@@ -593,11 +593,14 @@ public:
 
     void init(QGLContext const* context, QSize const& size)
     {
+        GL_functions f;
+        f.init(context);
+
         Frame_buffer<Color> molecule_releaser_tex_fb = convert<QColor_to_Color_converter, Color>(QImage(Data_config::get_instance()->get_absolute_qfilename("textures/molecule_releaser.png")));
-        _molecule_releaser_tex = create_texture(molecule_releaser_tex_fb);
+        _molecule_releaser_tex = f.create_texture(molecule_releaser_tex_fb);
 
         Frame_buffer<Color4> brownian_panel_tex_fb = convert<QRgb_to_Color4_converter, Color4>(QImage(Data_config::get_instance()->get_absolute_qfilename("textures/brownian_panel.png")));
-        _brownian_panel_tex = create_texture(brownian_panel_tex_fb);
+        _brownian_panel_tex = f.create_texture(brownian_panel_tex_fb);
 
         _molecule_releaser_mesh = load_mesh<MyMesh>(Data_config::get_instance()->get_absolute_filename("meshes/molecule_releaser.obj"));
 
@@ -618,7 +621,7 @@ public:
         _texture_program = std::unique_ptr<QGLShaderProgram>(init_program(context, Data_config::get_instance()->get_absolute_qfilename("shaders/temperature.vert"), Data_config::get_instance()->get_absolute_qfilename("shaders/test.frag")));
 
         Frame_buffer<Color4> particle_tex_fb = convert<QRgb_to_Color4_converter, Color4>(QImage(Data_config::get_instance()->get_absolute_qfilename("textures/particle.png")));
-        _particle_tex = create_texture(particle_tex_fb);
+        _particle_tex = f.create_texture(particle_tex_fb);
 
         resize(size);
     }
@@ -694,13 +697,16 @@ public:
         glPopMatrix();
     }
 
-    void init(QGLContext const* /* context */)
+    void init(QGLContext const* context)
     {
+        GL_functions f;
+        f.init(context);
+
         Frame_buffer<Color4> brownian_panel_tex_fb = convert<QRgb_to_Color4_converter, Color4>(QImage(Data_config::get_instance()->get_absolute_qfilename("textures/brownian_panel.png")));
-        _brownian_panel_tex = create_texture(brownian_panel_tex_fb);
+        _brownian_panel_tex = f.create_texture(brownian_panel_tex_fb);
 
         Frame_buffer<Color4> tractor_panel_tex_fb = convert<QRgb_to_Color4_converter, Color4>(QImage(Data_config::get_instance()->get_absolute_qfilename("textures/tractor_panel.png")));
-        _tractor_panel_tex = create_texture(tractor_panel_tex_fb);
+        _tractor_panel_tex = f.create_texture(tractor_panel_tex_fb);
     }
 
 

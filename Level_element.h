@@ -135,7 +135,7 @@ class Level_element
 public:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-    enum class Edit_type { None = 0, Rotate = 0b1, Translate = 0b10, Scale = 0b100, Property = 0b1000, All = 0b1111  };
+    enum class Edit_type { None = 0, Rotate = 0x01, Translate = 0x02, Scale = 0x04, Property = 0x08, All = 0x0F  };
 
     virtual ~Level_element() {}
 

@@ -16,6 +16,7 @@ CONFIG += qt \
     OpenMesh \
     eigen3 \
     BertSharedLib \
+    boost \
     ANN  #\
 #    MacOSg++
 
@@ -28,6 +29,10 @@ CONFIG += qt \
 # see: http://eigen.tuxfamily.org/index.php?title=FAQ#Vectorization
 #DEFINES += EIGEN_DONT_VECTORIZE
 DEFINES += EIGEN_DISABLE_UNALIGNED_ARRAY_ASSERT
+
+win32 {
+    DEFINES += NOMINMAX
+}
 
 EXT_DIR = ../extern
 BERT_SHARED_DIR = ../shared
@@ -43,12 +48,18 @@ INCLUDEPATH += . \
 MOC_DIR = ./moc
 OBJECTS_DIR = ./obj
 
+!win32 {
 QMAKE_CXXFLAGS += -Wall \
     -Wextra \
     -fPIC \
     -std=c++11 \
     -ftemplate-depth=1024 # \
-#    -ferror-limit=1
+    -ferror-limit=1
+}
+
+win32 {
+    QMAKE_CXXFLAGS += /bigobj
+}
 
 macx {
     QMAKE_CXX = /opt/local/bin/clang++-mp-3.3
@@ -58,7 +69,7 @@ macx {
     QMAKE_LFLAGS_X86_64 = $$QMAKE_CXXFLAGS
 }
 
-LIBS += -lGLU
+#LIBS += -lGLU
 #    -lpthread \
 #    -lGLEW
 

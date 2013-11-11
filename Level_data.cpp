@@ -6,7 +6,7 @@
 
 Level_data::Level_data()
 {
-    std::cout << __PRETTY_FUNCTION__ << std::endl;
+    std::cout << __FUNCTION__ << std::endl;
 
     std::function<void(void)> update_variables = std::bind(&Level_data::update_variables, this);
 
@@ -38,7 +38,7 @@ Level_data::Level_data()
 
 bool Level_data::validate_elements()
 {
-    std::cout << __PRETTY_FUNCTION__ << " "
+    std::cout << __FUNCTION__ << " "
               << _level_elements.size() << " "
               << _barriers.size() << " "
               << _portals.size() << " "

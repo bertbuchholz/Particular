@@ -72,7 +72,7 @@ void Targeted_particle_system::generate(const QImage &image)
         }
     }
 
-    std::cout << __PRETTY_FUNCTION__ << " created " << _particles.size() << " particles" << std::endl;
+    std::cout << __FUNCTION__ << " created " << _particles.size() << " particles" << std::endl;
 }
 
 void Targeted_particle_system::init(const std::vector<Targeted_particle> &particles)

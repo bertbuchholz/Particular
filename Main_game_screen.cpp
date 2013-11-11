@@ -32,7 +32,10 @@ Main_game_screen::Main_game_screen(My_viewer &viewer, Core &core, Ui_state ui_st
     _ui_state(ui_state),
     _level_state(Level_state::Running)
 {
-    std::cout << __PRETTY_FUNCTION__ << std::endl;
+    std::cout << __FUNCTION__ << std::endl;
+
+    GL_functions f;
+    f.init(_viewer.context());
 
     _type = Screen::Type::Fullscreen;
 //    _state = State::Running;
@@ -58,8 +61,8 @@ Main_game_screen::Main_game_screen(My_viewer &viewer, Core &core, Ui_state ui_st
                                                                    Data_config::get_instance()->get_absolute_qfilename("shaders/fullscreen_square.vert"),
                                                                    Data_config::get_instance()->get_absolute_qfilename("shaders/blur_1D.frag")));
 
-    _tmp_screen_texture[0] = create_texture(_viewer.camera()->screenWidth(), _viewer.camera()->screenHeight());
-    _tmp_screen_texture[1] = create_texture(_viewer.camera()->screenWidth(), _viewer.camera()->screenHeight());
+    _tmp_screen_texture[0] = f.create_texture(_viewer.camera()->screenWidth(), _viewer.camera()->screenHeight());
+    _tmp_screen_texture[1] = f.create_texture(_viewer.camera()->screenWidth(), _viewer.camera()->screenHeight());
 
     std::vector<std::string> object_types { "O2", "H2O", "SDS", "Na", "Cl", "Dipole",
 //                                                  "Plane_barrier",
@@ -88,7 +91,7 @@ Main_game_screen::Main_game_screen(My_viewer &viewer, Core &core, Ui_state ui_st
 
 Main_game_screen::~Main_game_screen()
 {
-    std::cout << __PRETTY_FUNCTION__ << std::endl;
+    std::cout << __FUNCTION__ << std::endl;
     Main_options_window::get_instance()->remove_parameter_list("Main_game_screen");
 }
 
@@ -109,7 +112,7 @@ bool Main_game_screen::mousePressEvent(QMouseEvent * event)
         _picked_index = _picking.do_pick(event->pos().x() / float(_viewer.camera()->screenWidth()), (_viewer.camera()->screenHeight() - event->pos().y())  / float(_viewer.camera()->screenHeight()),
                                          std::bind(&Main_game_screen::draw_draggables_for_picking, this));
 
-        std::cout << __PRETTY_FUNCTION__ << " picked_index: " << _picked_index << std::endl;
+        std::cout << __FUNCTION__ << " picked_index: " << _picked_index << std::endl;
 
         if (_picked_index != -1)
         {
@@ -119,7 +122,7 @@ bool Main_game_screen::mousePressEvent(QMouseEvent * event)
             qglviewer::Vec world_pos = _viewer.camera()->pointUnderPixel(event->pos(), found);
 
             _mouse_state = Mouse_state::Init_drag_handle;
-            std::cout << __PRETTY_FUNCTION__ << " Init_drag_handle" << std::endl;
+            std::cout << __FUNCTION__ << " Init_drag_handle" << std::endl;
 
             if (found)
             {
@@ -174,7 +177,7 @@ bool Main_game_screen::mouseMoveEvent(QMouseEvent * event)
             _active_draggables[_picked_index]->set_position_from_world(new_position);
             _active_draggables[_picked_index]->update();
 
-            std::cout << __PRETTY_FUNCTION__ << ": " << parent << std::endl;
+            std::cout << __FUNCTION__ << ": " << parent << std::endl;
 
             level_element->accept(parent);
 
@@ -191,7 +194,7 @@ bool Main_game_screen::mouseReleaseEvent(QMouseEvent * event)
 
     if (_mouse_state == Mouse_state::Init_drag_handle)
     {
-        std::cout << __PRETTY_FUNCTION__ << " click on handle" << std::endl;
+        std::cout << __FUNCTION__ << " click on handle" << std::endl;
 
         _mouse_state = Mouse_state::None;
 
@@ -245,7 +248,7 @@ bool Main_game_screen::keyPressEvent(QKeyEvent * event)
 {
     bool handled = false;
 
-    std::cout << __PRETTY_FUNCTION__ << " " << event->key() << std::endl;
+    std::cout << __FUNCTION__ << " " << event->key() << std::endl;
 
     if (event->key() == Qt::Key_Escape)
     {
@@ -378,7 +381,7 @@ void Main_game_screen::draw()
 
 void Main_game_screen::state_changed_event(const Screen::State new_state, const Screen::State previous_state)
 {
-    std::cout << __PRETTY_FUNCTION__ << " " << int(new_state) << " " << int(previous_state) << std::endl;
+    std::cout << __FUNCTION__ << " " << int(new_state) << " " << int(previous_state) << std::endl;
 
     if (new_state == State::Running)
     {
@@ -448,7 +451,7 @@ void Main_game_screen::show_context_menu_for_element()
 
     assert(_draggable_to_level_element.find(parent) != _draggable_to_level_element.end());
 
-    std::cout << __PRETTY_FUNCTION__ << ": " << parent << std::endl;
+    std::cout << __FUNCTION__ << ": " << parent << std::endl;
 
     Level_element * element = _draggable_to_level_element[parent];
 
@@ -1123,7 +1126,7 @@ void Main_game_screen::add_element(const Eigen::Vector3f &position, const std::s
     }
     else
     {
-        std::cout << __PRETTY_FUNCTION__ << " element does not exist: " << element_type << std::endl;
+        std::cout << __FUNCTION__ << " element does not exist: " << element_type << std::endl;
     }
 
     update_draggable_to_level_element();
@@ -1246,7 +1249,7 @@ void Main_game_screen::resize(QSize const& size)
 
 void Main_game_screen::handle_level_change(Main_game_screen::Level_state const level_state)
 {
-    std::cout << __PRETTY_FUNCTION__ << std::endl;
+    std::cout << __FUNCTION__ << std::endl;
 
     _level_state = level_state;
 
@@ -1268,7 +1271,7 @@ void Main_game_screen::handle_level_change(Main_game_screen::Level_state const l
 
 void Main_game_screen::handle_game_state_change()
 {
-    std::cout << __PRETTY_FUNCTION__ << std::endl;
+    std::cout << __FUNCTION__ << std::endl;
 
     // check for killing when this state is started from the editor, don't want to revive the dying editor
     if (_core.get_game_state() == Core::Game_state::Running && get_state() != State::Killing)

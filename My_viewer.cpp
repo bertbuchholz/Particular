@@ -41,7 +41,7 @@ public:
     {
         qglviewer::Vec rotation_axis = frame->inverseTransformOf(rotation.axis());
 
-        std::cout << __PRETTY_FUNCTION__ << " " << rotation_axis.x << " " << rotation_axis.y << " " << rotation_axis.z << std::endl;
+        std::cout << __FUNCTION__ << " " << rotation_axis.x << " " << rotation_axis.y << " " << rotation_axis.z << std::endl;
 
         rotation_axis.y = 0.0f;
 
@@ -152,7 +152,7 @@ public:
 //        {
 //            qglviewer::Vec rotation_axis = frame->inverseTransformOf(rotation.axis());
 
-//            std::cout << __PRETTY_FUNCTION__ << " " << rotation_axis.x << " " << rotation_axis.y << " " << rotation_axis.z << std::endl;
+//            std::cout << __FUNCTION__ << " " << rotation_axis.x << " " << rotation_axis.y << " " << rotation_axis.z << std::endl;
 
 //            rotation_axis.y = 0.0f;
 
@@ -313,7 +313,7 @@ void My_viewer::change_clipping()
 
 void My_viewer::init()
 {
-    std::cout << __PRETTY_FUNCTION__ << std::endl;
+    std::cout << __FUNCTION__ << std::endl;
 
     //        initializeGLFunctions();
 
@@ -327,8 +327,6 @@ void My_viewer::init()
     _my_camera->setFrame(frame);
     setCamera(_my_camera);
 
-    _renderer.init(context(), size());
-
     glEnable(GL_NORMALIZE);
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -338,8 +336,8 @@ void My_viewer::init()
     const GLubyte* opengl_version = glGetString(GL_VERSION);
     const GLubyte* shader_version = glGetString(GL_SHADING_LANGUAGE_VERSION);
 
-    std::cout << __PRETTY_FUNCTION__ << " opengl version: " << opengl_version << std::endl;
-    std::cout << __PRETTY_FUNCTION__ << " shader version: " << shader_version << std::endl;
+    std::cout << __FUNCTION__ << " opengl version: " << opengl_version << std::endl;
+    std::cout << __FUNCTION__ << " shader version: " << shader_version << std::endl;
 
     //        GPU_force * gpu_force = new GPU_force(context());
     //        gpu_force->calc_forces(_core.get_molecules());
@@ -354,6 +352,8 @@ void My_viewer::start()
     restore_parameters();
 
     startAnimation();
+
+    _renderer.init(context(), size());
 
 //    _parameters["Interface"]->set_value(std::string("Playing"));
 
@@ -663,7 +663,7 @@ void My_viewer::mousePressEvent(QMouseEvent *event)
 
     if (!handled)
     {
-//        std::cout << __PRETTY_FUNCTION__ << std::endl;
+//        std::cout << __FUNCTION__ << std::endl;
         Base::mousePressEvent(event);
     }
 }
@@ -686,7 +686,7 @@ void My_viewer::mouseMoveEvent(QMouseEvent *event)
 
     if (!handled)
     {
-//        std::cout << __PRETTY_FUNCTION__ << std::endl;
+//        std::cout << __FUNCTION__ << std::endl;
         Base::mouseMoveEvent(event);
     }
 }
@@ -722,7 +722,7 @@ void My_viewer::mouseReleaseEvent(QMouseEvent *event)
 
     if (!handled)
     {
-//        std::cout << __PRETTY_FUNCTION__ << std::endl;
+//        std::cout << __FUNCTION__ << std::endl;
         Base::mouseReleaseEvent(event);
     }
 }
@@ -749,7 +749,7 @@ void My_viewer::keyPressEvent(QKeyEvent *event)
 
     if (event->key() == Qt::Key_S)
     {
-        std::cout << __PRETTY_FUNCTION__ << " Screen Stack" << std::endl;
+        std::cout << __FUNCTION__ << " Screen Stack" << std::endl;
 
         for (std::unique_ptr<Screen> const& s : _screen_stack)
         {
@@ -795,7 +795,7 @@ void My_viewer::wheelEvent(QWheelEvent * event)
 
     if (!handled)
     {
-//        std::cout << __PRETTY_FUNCTION__ << std::endl;
+//        std::cout << __FUNCTION__ << std::endl;
         Base::wheelEvent(event);
     }
 }

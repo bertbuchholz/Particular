@@ -68,7 +68,7 @@ public:
 
         _bins[bin_index].push_back(point);
 
-//        std::cout << __PRETTY_FUNCTION__ << " Added " << data << " " << position << " to bin " << bin_index << std::endl;
+//        std::cout << __FUNCTION__ << " Added " << data << " " << position << " to bin " << bin_index << std::endl;
     }
 
     struct Null_condition

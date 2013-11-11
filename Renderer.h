@@ -47,6 +47,10 @@ public:
 
 
 protected:
+    QGLContext const* _context;
+
+    GL_functions _gl_functions;
+
     float _aspect_ratio;
 
     QSize _screen_size;

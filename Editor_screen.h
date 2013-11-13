@@ -30,6 +30,7 @@ private:
     void clear_level();
     void show_advanced_options();
     void hide_advanced_options();
+    void load_defaults();
 
     std::vector<std::string> _placeable_molecules;
 

@@ -12,18 +12,12 @@
 #include <Options_viewer.h>
 #include <Draw_functions.h>
 
-//#include <Picking.h>
 #include <Registry_parameters.h>
 #include <Geometry_utils.h>
-//#include <FloatSlider.h>
 
 #include "Core.h"
-//#include "Atom.h"
-//#include "Spatial_hash.h"
 #include "Renderer.h"
 
-//#include "Draggable.h"
-//#include "Level_element_draw_visitor.h"
 #include "Screen.h"
 #include "Main_game_screen.h"
 #include "Main_menu_screen.h"

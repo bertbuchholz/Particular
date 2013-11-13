@@ -62,6 +62,8 @@ void Main_menu_screen::start_new_game()
 
     _core.clear();
 
+    _core.load_default_simulation_settings();
+
     for (Targeted_particle & p : _game_name_system.get_particles())
     {
         p.target = Eigen::Vector3f::Random().normalized();
@@ -78,6 +80,8 @@ void Main_menu_screen::continue_game()
 {
     // load current progress and start game
     _core.load_next_level();
+
+    _core.load_default_simulation_settings();
 
     for (Targeted_particle & p : _game_name_system.get_particles())
     {
@@ -104,6 +108,8 @@ void Main_menu_screen::start_editor()
 
     _core.load_level_defaults();
     _core.set_simulation_state(false);
+
+    _core.load_simulation_settings();
 
     _viewer.replace_screens(new Editor_screen(_viewer, _core));
 }

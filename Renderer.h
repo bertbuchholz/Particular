@@ -22,7 +22,7 @@ public:
 
     virtual void init(QGLContext const* context, QSize const& size);
 
-    virtual void resize(QSize const& /* size */) {}
+    virtual void resize(QSize const& /* size */);
 
 //    virtual void render(std::vector<Molecule> const& molecules, StandardCamera const* = nullptr) const = 0;
     virtual void render(QGLFramebufferObject * /* main_fbo */, Level_data const& /* level_data */,

@@ -10,8 +10,8 @@ Level_data::Level_data()
 
     std::function<void(void)> update_variables = std::bind(&Level_data::update_variables, this);
 
-    _parameters.add_parameter(new Parameter("Game Field Width",  80.0f, 5.0f, 1000.0f, std::bind(&Level_data::change_game_field_borders, this)));
-    _parameters.add_parameter(new Parameter("Game Field Height", 40.0f, 5.0f, 1000.0f, std::bind(&Level_data::change_game_field_borders, this)));
+    _parameters.add_parameter(new Parameter("Game Field Width",  80.0f, 40.0f, 200.0f, std::bind(&Level_data::change_game_field_borders, this)));
+    _parameters.add_parameter(new Parameter("Game Field Height", 40.0f, 20.0f, 200.0f, std::bind(&Level_data::change_game_field_borders, this)));
     _parameters.add_parameter(new Parameter("Game Field Depth",  40.0f, 5.0f, 1000.0f, std::bind(&Level_data::change_game_field_borders, this)));
 
     _parameters.add_parameter(new Parameter("score_time_factor", 60.0f, 1.0f, 3000.0f, update_variables));
@@ -21,19 +21,19 @@ Level_data::Level_data()
     _parameters.add_parameter(new Parameter("rotation_fluctuation", 0.0f, -50.0f, 50.0f, update_variables));
     _parameters.add_parameter(new Parameter("translation_fluctuation", 0.0f, -50.0f, 50.0f, update_variables));
     _parameters.add_parameter(new Parameter("Temperature", 0.0f, -50.0f, 50.0f, update_variables));
-    _parameters.add_parameter(new Parameter("Damping", 0.3f, 0.01f, 1.0f, update_variables));
+    _parameters.add_parameter(new Parameter("Damping", 0.3f, 0.1f, 1.0f, update_variables));
 
     _parameters.add_parameter(new Parameter("gravity", 0.0f, 0.0f, 10.0f, update_variables));
 
     _parameters.add_parameter(new Parameter("background_name", std::string("iss_interior_1.png")));
 
     Parameter_list * available_list = _parameters.add_child("Available elements");
-    available_list->add_parameter(new Parameter("Box_barrier", 0, 0, 10, update_variables));
-    available_list->add_parameter(new Parameter("Brownian_box", 0, 0, 10, update_variables));
-    available_list->add_parameter(new Parameter("Box_portal", 0, 0, 10, update_variables));
-    available_list->add_parameter(new Parameter("Molecule_releaser", 0, 0, 10, update_variables));
-    available_list->add_parameter(new Parameter("Charged_barrier", 0, 0, 10, update_variables));
-    available_list->add_parameter(new Parameter("Tractor_barrier", 0, 0, 10, update_variables));
+    available_list->add_parameter(new Parameter("Box_barrier", 0, 0, 9, update_variables));
+    available_list->add_parameter(new Parameter("Brownian_box", 0, 0, 9, update_variables));
+    available_list->add_parameter(new Parameter("Box_portal", 0, 0, 9, update_variables));
+    available_list->add_parameter(new Parameter("Molecule_releaser", 0, 0, 9, update_variables));
+    available_list->add_parameter(new Parameter("Charged_barrier", 0, 0, 9, update_variables));
+    available_list->add_parameter(new Parameter("Tractor_barrier", 0, 0, 9, update_variables));
 }
 
 bool Level_data::validate_elements()
@@ -98,6 +98,11 @@ void Level_data::load_defaults()
     _parameters["Game Field Width"]->set_value(80.0f);
     _parameters["Game Field Height"]->set_value(40.0f);
     _parameters["Game Field Depth"]->set_value(40.0f);
+
+    _parameters["Temperature"]->set_value(0.0f);
+    _parameters["Damping"]->set_value(0.3f);
+    _parameters["gravity"]->set_value(0.0f);
+
 
     //        _core.add_barrier(new Box_barrier(Eigen::Vector3f(-10.0f, -20.0f, 0.0f), Eigen::Vector3f(10.0f, 20.0f, 20.0f), strength, radius));
 

@@ -87,15 +87,18 @@ void Molecule::from_state(const Body_state &, const float mass_factor)
     //    _R = _q.normalized().toRotationMatrix();
     _R = _q.toRotationMatrix();
     _I_inv = _R * _I_body_inv * _R.transpose();
+
+//    std::cout << "_I_inv * _L: " << (_I_inv * _L) << std::endl;
+
     _omega = (1.0f / mass_factor) * _I_inv * _L;
     //    if (_omega.squaredNorm() > 1.0f)
     //    {
     //        _omega = std::min(_omega.norm(), 1.0f) * _omega.normalized();
     //    }
 
-    assert(!std::isnan(_omega.x()) && !std::isinf(_omega.x()));
-    assert(!std::isnan(_omega.y()) && !std::isinf(_omega.y()));
-    assert(!std::isnan(_omega.z()) && !std::isinf(_omega.z()));
+//    assert(!std::isnan(_omega.x()) && !std::isinf(_omega.x()));
+//    assert(!std::isnan(_omega.y()) && !std::isinf(_omega.y()));
+//    assert(!std::isnan(_omega.z()) && !std::isinf(_omega.z()));
 
 
     for (Atom & a : _atoms)

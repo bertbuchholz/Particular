@@ -116,6 +116,8 @@ public:
         ar & BOOST_SERIALIZATION_NVP(_available_elements);
         ar & BOOST_SERIALIZATION_NVP(_score_time_factor);
 
+        ar & BOOST_SERIALIZATION_NVP(_background_name);
+
         ar & BOOST_SERIALIZATION_NVP(_translation_damping);
         ar & BOOST_SERIALIZATION_NVP(_rotation_damping);
 
@@ -153,8 +155,9 @@ public:
 
         if (version == 3)
         {
+            float _gravity;
             ar & BOOST_SERIALIZATION_NVP(_gravity);
-            _external_forces["gravity"]._force[2] = -_parameters["gravity"]->get_value<float>();
+            _external_forces["gravity"]._force[2] = -_gravity;
         }
 
         if (version > 3)
@@ -188,7 +191,7 @@ public:
     float _rotation_fluctuation;
     float _translation_fluctuation;
 
-    float _gravity;
+//    float _gravity;
 
     std::map<std::string, External_force> _external_forces;
 

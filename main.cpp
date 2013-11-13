@@ -45,6 +45,12 @@ int main(int argc, char** argv)
     My_viewer * viewer = new My_viewer(core);
     viewer->show();
 
+//    QDesktopWidget widget;
+//    QRect mainScreenSize = widget.availableGeometry(widget.primaryScreen());
+
+//    viewer->setFullScreen();
+//    viewer->setFixedSize(mainScreenSize.size());
+
     viewer->start();
 
     return application.exec();

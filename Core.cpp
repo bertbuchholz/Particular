@@ -92,7 +92,7 @@ Core::Core() :
 
     connect(&_physics_timer, SIGNAL(timeout()), this, SLOT(update_physics()));
 
-    load_simulation_settings();
+    load_default_simulation_settings();
 }
 
 Core::~Core()
@@ -383,13 +383,13 @@ void Core::compute_force_and_torque(Molecule &receiver)
         }
     }
 
-    std::cout << "rcv.torque: " << receiver._torque << std::endl << "rcv.omega: " << receiver._omega << std::endl;
+//    std::cout << "rcv.torque: " << receiver._torque << std::endl << "rcv.omega: " << receiver._omega << std::endl;
 
     receiver._force -= _level_data._translation_damping * receiver._v;
 //    receiver._torque += -_level_data._rotation_damping * translation_to_rotation_ratio * receiver._omega;
     receiver._torque -= _level_data._rotation_damping * receiver._omega;
 
-    std::cout << "after subtr. rcv.torque: " << receiver._torque << std::endl;
+//    std::cout << "after subtr. rcv.torque: " << receiver._torque << std::endl;
 }
 
 
@@ -563,37 +563,36 @@ void Core::update(const float time_step)
     {
         molecule._x += molecule._v * time_step;
 
-//        feenableexcept(FE_INVALID | FE_OVERFLOW);
-        assert(!std::isnan(molecule._q.w()) && !std::isinf(molecule._q.w()));
-        assert(!std::isnan(molecule._q.x()) && !std::isinf(molecule._q.x()));
-        assert(!std::isnan(molecule._q.y()) && !std::isinf(molecule._q.y()));
-        assert(!std::isnan(molecule._q.z()) && !std::isinf(molecule._q.z()));
+//        assert(!std::isnan(molecule._q.w()) && !std::isinf(molecule._q.w()));
+//        assert(!std::isnan(molecule._q.x()) && !std::isinf(molecule._q.x()));
+//        assert(!std::isnan(molecule._q.y()) && !std::isinf(molecule._q.y()));
+//        assert(!std::isnan(molecule._q.z()) && !std::isinf(molecule._q.z()));
 
 
-        assert(!std::isnan(molecule._omega[0]) && !std::isinf(molecule._omega[0]));
-        assert(!std::isnan(molecule._omega[1]) && !std::isinf(molecule._omega[1]));
-        assert(!std::isnan(molecule._omega[2]) && !std::isinf(molecule._omega[2]));
+//        assert(!std::isnan(molecule._omega[0]) && !std::isinf(molecule._omega[0]));
+//        assert(!std::isnan(molecule._omega[1]) && !std::isinf(molecule._omega[1]));
+//        assert(!std::isnan(molecule._omega[2]) && !std::isinf(molecule._omega[2]));
 
 
         Eigen::Quaternion<float> omega_quaternion(0.0f, molecule._omega[0], molecule._omega[1], molecule._omega[2]);
 
-        std::cout << "omega: " << omega_quaternion.coeffs() << std::endl << "_q:" << molecule._q.coeffs() << std::endl;
+//        std::cout << "omega: " << omega_quaternion.coeffs() << std::endl << "_q:" << molecule._q.coeffs() << std::endl;
 
         Eigen::Quaternion<float> q_dot = scale(omega_quaternion * molecule._q, 0.5f);
-        assert(!std::isnan(q_dot.w()) && !std::isinf(q_dot.w()));
+
+//        assert(!std::isnan(q_dot.w()) && !std::isinf(q_dot.w()));
+
         molecule._q = add(molecule._q, scale(q_dot, time_step));
 
-        assert(!std::isnan(molecule._q.w()) && !std::isinf(molecule._q.w()));
+//        assert(!std::isnan(molecule._q.w()) && !std::isinf(molecule._q.w()));
 
         molecule._P += molecule._force * time_step;
 
         molecule._L += molecule._torque * time_step;
 
-        std::cout << "L: " << molecule._L << std::endl;
+//        std::cout << "L: " << molecule._L << std::endl;
 
         molecule.from_state(Body_state(), _mass_factor);
-
-//        fedisableexcept(FE_INVALID | FE_OVERFLOW);
     }
 
     if (time_debug)
@@ -903,6 +902,20 @@ void Core::load_simulation_settings()
     }
 }
 
+void Core::load_default_simulation_settings()
+{
+    try
+    {
+        std::string file_name = Data_config::get_instance()->get_absolute_filename("default_simulation_settings.data");
+        _parameters.load(file_name);
+        update_variables();
+    }
+    catch (std::runtime_error const& e)
+    {
+        std::cout << "Couldn't load simulation settings file: default_simulation_settings.data, " << e.what() << std::endl;
+    }
+}
+
 void Core::save_level(const std::string &file_name) const
 {
     //        std::ofstream out_file(file_name.c_str(), std::ios_base::binary);
@@ -1022,7 +1035,7 @@ void Core::update_parameters()
 
 void Core::quit()
 {
-    save_simulation_settings();
+//    save_simulation_settings();
 }
 
 std::string const& Core::get_current_level_name() const
@@ -1139,6 +1152,7 @@ void Core::load_level(std::string const& file_name)
     try
     {
         ia >> BOOST_SERIALIZATION_NVP(_level_data);
+        std::cout << __FUNCTION__ << " A " << _level_data._parameters["gravity"]->get_value<float>() << std::endl;
     }
     catch (boost::archive::archive_exception & e)
     {
@@ -1167,6 +1181,8 @@ void Core::load_level(std::string const& file_name)
     assert(_level_data.validate_elements());
 
     reset_level();
+
+    std::cout << __FUNCTION__ << " B " << _level_data._parameters["gravity"]->get_value<float>() << std::endl;
 
     _current_level_name = file_name;
 

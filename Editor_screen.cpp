@@ -446,6 +446,18 @@ void Editor_screen::init_level_element_buttons()
     _normal_controls.push_back(_button_hide_advanced_options);
 
 
+    boost::shared_ptr<Draggable_button> button_load_defaults = boost::shared_ptr<Draggable_button>(
+                new Draggable_button(Eigen::Vector3f(0.78f, 0.05f, 0.0f),
+                                     Eigen::Vector2f(0.15f, 0.05f * _viewer.camera()->aspectRatio()),
+                                     "Load Defaults", std::bind(&Editor_screen::load_defaults, this)));
+    _ui_renderer.generate_button_texture(button_load_defaults.get());
+    button_load_defaults->set_tooltip_text("Load default settings");
+    button_load_defaults->set_visible(true);
+
+    _buttons.push_back(button_load_defaults);
+    _normal_controls.push_back(button_load_defaults);
+
+
     boost::shared_ptr<Draggable_slider> translation_fluctuation_slider(
                 new Draggable_slider(Eigen::Vector3f(0.93f, 0.88f, 0.0f),
                                      Eigen::Vector2f(0.1f, 0.05f),
@@ -507,7 +519,6 @@ void Editor_screen::init_level_element_buttons()
     boost::shared_ptr<Draggable_slider> coulomb_slider(
                 new Draggable_slider(Eigen::Vector3f(0.93f, 0.62f, 0.0f),
                                      Eigen::Vector2f(0.1f, 0.05f),
-//                                     _core.get_parameters().get_child("Atomic Force Type"), std::bind(&Editor_screen::slider_changed, this)));
                                      _core.get_parameters()["Atomic Force Type/Coulomb Force/Strength"]));
     coulomb_slider->set_slider_marker_texture(_slider_tex);
     coulomb_slider->set_texture(_viewer.bindTexture(QImage(Data_config::get_instance()->get_absolute_qfilename("textures/slider_coulomb.png"))));
@@ -527,6 +538,30 @@ void Editor_screen::init_level_element_buttons()
 
     _sliders.push_back(waals_slider);
     _advanced_controls.push_back(waals_slider);
+
+
+    boost::shared_ptr<Draggable_slider> width_slider(
+                new Draggable_slider(Eigen::Vector3f(0.93f, 0.52f, 0.0f),
+                                     Eigen::Vector2f(0.1f, 0.05f),
+                                     _core.get_level_data()._parameters["Game Field Width"]));
+    width_slider->set_slider_marker_texture(_slider_tex);
+    width_slider->set_texture(_viewer.bindTexture(QImage(Data_config::get_instance()->get_absolute_qfilename("textures/slider_width.png"))));
+    width_slider->set_tooltip_text("Width of the containing box");
+
+    _sliders.push_back(width_slider);
+    _advanced_controls.push_back(width_slider);
+
+
+    boost::shared_ptr<Draggable_slider> height_slider(
+                new Draggable_slider(Eigen::Vector3f(0.93f, 0.47f, 0.0f),
+                                     Eigen::Vector2f(0.1f, 0.05f),
+                                     _core.get_level_data()._parameters["Game Field Height"]));
+    height_slider->set_slider_marker_texture(_slider_tex);
+    height_slider->set_texture(_viewer.bindTexture(QImage(Data_config::get_instance()->get_absolute_qfilename("textures/slider_height.png"))));
+    height_slider->set_tooltip_text("Height of the containing box");
+
+    _sliders.push_back(height_slider);
+    _advanced_controls.push_back(height_slider);
 
 
     hide_advanced_options();
@@ -697,4 +732,12 @@ void Editor_screen::hide_advanced_options()
 
     update_draggable_to_level_element();
     update_active_draggables();
+}
+
+void Editor_screen::load_defaults()
+{
+    bool const b = _core.get_parameters()["Toggle simulation"]->get_value<bool>();
+    _core.load_default_simulation_settings();
+    _core.get_level_data().load_defaults();
+    _core.get_parameters()["Toggle simulation"]->set_value(b);
 }

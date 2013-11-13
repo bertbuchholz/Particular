@@ -62,6 +62,14 @@ bool Menu_screen::mousePressEvent(QMouseEvent *event)
     return true;
 }
 
+void Menu_screen::resize(QSize const& /* size */)
+{
+    for (boost::shared_ptr<Draggable_button> const& button : _buttons)
+    {
+        _renderer.generate_button_texture(button.get());
+    }
+}
+
 void Menu_screen::draw_draggables_for_picking()
 {
     _viewer.start_normalized_screen_coordinates();

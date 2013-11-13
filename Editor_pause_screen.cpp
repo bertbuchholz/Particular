@@ -100,6 +100,8 @@ void Editor_pause_screen::return_to_main_menu()
 
     if (button == QMessageBox::Yes)
     {
+        _core.save_simulation_settings();
+
         Screen * s = new Main_game_screen(_viewer, _core, Main_game_screen::Ui_state::Playing);
         s->pause();
         _viewer.replace_screens(s);
@@ -109,9 +111,16 @@ void Editor_pause_screen::return_to_main_menu()
 
 void Editor_pause_screen::play_level()
 {
-    _viewer.replace_screens(new Main_game_screen(_viewer, _core, Main_game_screen::Ui_state::Level_editor));
+    if (_core.get_level_data()._portals.size() == 0)
+    {
+        QMessageBox::critical(&_viewer, "Portal Missing", "At least one portal is needed to have a playable level.");
+    }
+    else
+    {
+        _viewer.replace_screens(new Main_game_screen(_viewer, _core, Main_game_screen::Ui_state::Level_editor));
 
-    _core.start_level();
+        _core.start_level();
+    }
 }
 
 void Editor_pause_screen::return_to_editor()

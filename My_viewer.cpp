@@ -838,13 +838,6 @@ void My_viewer::replace_screens(Screen *s)
     add_screen(s);
 }
 
-//void My_viewer::clear()
-//{
-//    _core.clear();
-
-//    load_defaults();
-//}
-
 void My_viewer::load_defaults()
 {
     _core.load_level_defaults();
@@ -852,6 +845,22 @@ void My_viewer::load_defaults()
 
 void My_viewer::resizeEvent(QResizeEvent *ev)
 {
+//    float const aspect_ratio = 16.0f / 9.0f;
+
+//    float const actual_ratio = ev->size().width() / float(ev->size().height());
+
+//    if (aspect_ratio / actual_ratio < 1.0f)
+//    {
+//        resize(ev->size().width(), ev->oldSize().height());
+//    }
+//    else if (aspect_ratio / actual_ratio > 1.0f)
+//    {
+//        resize(ev->oldSize().width(), ev->size().height());
+////        resize(actual_ratio / aspect_ratio * ev->size());
+//    }
+
+    _renderer.resize(ev->size());
+
     for (std::unique_ptr<Screen> const& screen : _screen_stack)
     {
         screen->resize(ev->size());
@@ -859,7 +868,6 @@ void My_viewer::resizeEvent(QResizeEvent *ev)
 
     Base::resizeEvent(ev);
 }
-
 
 void My_viewer::quit_game()
 {

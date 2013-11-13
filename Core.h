@@ -177,6 +177,7 @@ public:
 
     void save_simulation_settings();
     void load_simulation_settings();
+    void load_default_simulation_settings();
 
     void save_level(std::string const& file_name) const;
     void load_level(std::string const& file_name);

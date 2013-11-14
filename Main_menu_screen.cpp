@@ -116,5 +116,7 @@ void Main_menu_screen::start_editor()
 
 void Main_menu_screen::update_event(const float time_step)
 {
+    Menu_screen::update_event(time_step);
+
     _game_name_system.animate(time_step);
 }

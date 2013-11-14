@@ -53,6 +53,8 @@ public:
 
     void visit(Box_barrier * b) const override
     {
+        glEnable(GL_LIGHTING);
+
         glPushMatrix();
 
         glTranslatef(b->get_position()[0], b->get_position()[1], b->get_position()[2]);
@@ -73,6 +75,8 @@ public:
 
     void visit(Charged_barrier * b) const override
     {
+        glEnable(GL_LIGHTING);
+
         glPushMatrix();
 
         glTranslatef(b->get_position()[0], b->get_position()[1], b->get_position()[2]);
@@ -454,11 +458,11 @@ public:
         {
             if (i < num_capped_molecules)
             {
-                glColor4f(0.4f, 1.0f, 0.6f, 0.6f);
+                glColor4f(0.1f, 0.7f, 0.2f, 0.8f);
             }
             else
             {
-                glColor4f(0.4f, 0.5f, 0.4f, 0.4f);
+                glColor4f(0.4f, 0.5f, 0.4f, 0.6f);
             }
 
             draw_rect_z_plane(Eigen::Vector3f(0.0f, 0.0f, 0.0f), Eigen::Vector3f(rect_size_x, rect_size_y * 0.9f, 0.0f));
@@ -520,12 +524,12 @@ public:
         {
             if (i < num_capped_molecules)
             {
-                glColor4f(0.4f, 1.0f, 0.6f, 0.6f);
+                glColor4f(0.1f, 0.7f, 0.2f, 0.8f);
 
             }
             else
             {
-                glColor4f(0.4f, 0.5f, 0.4f, 0.4f);
+                glColor4f(0.4f, 0.5f, 0.4f, 0.6f);
             }
 
             draw_arc<Eigen::Vector3f>(1.1f, 1.0f, arc_fraction * 0.9f, std::max(64, min_capped_molecules * 6));
@@ -697,6 +701,29 @@ public:
         glPopMatrix();
     }
 
+    void visit(Charged_barrier * b) const override
+    {
+        if (!(int(b->is_user_editable()) & int(Level_element::Edit_type::Property))) return;
+
+        glEnable(GL_TEXTURE_2D);
+
+        glPushMatrix();
+
+        glTranslatef(b->get_position()[0], b->get_position()[1], b->get_position()[2]);
+        glMultMatrixf(b->get_transform().data());
+
+        glTranslatef(0.0f, -b->get_extent()[1] * 0.5f - 0.01f, -5.0f);
+        glScalef(8.24f, 1.0f, 3.47f);
+
+        glRotatef(90, 1.0, 0.0, 0.0);
+        glBindTexture(GL_TEXTURE_2D, _panel_charged_barrier_tex);
+        glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+        draw_quad_with_tex_coords();
+        glBindTexture(GL_TEXTURE_2D, 0);
+
+        glPopMatrix();
+    }
+
     void init(QGLContext const* context)
     {
         GL_functions f;
@@ -707,12 +734,16 @@ public:
 
         Frame_buffer<Color4> tractor_panel_tex_fb = convert<QRgb_to_Color4_converter, Color4>(QImage(Data_config::get_instance()->get_absolute_qfilename("textures/tractor_panel.png")));
         _tractor_panel_tex = f.create_texture(tractor_panel_tex_fb);
+
+        Frame_buffer<Color4> panel_charged_barrier_tex_fb = convert<QRgb_to_Color4_converter, Color4>(QImage(Data_config::get_instance()->get_absolute_qfilename("textures/panel_charged_barrier.png")));
+        _panel_charged_barrier_tex = f.create_texture(panel_charged_barrier_tex_fb);
     }
 
 
 private:
     GLuint _brownian_panel_tex;
     GLuint _tractor_panel_tex;
+    GLuint _panel_charged_barrier_tex;
 };
 
 

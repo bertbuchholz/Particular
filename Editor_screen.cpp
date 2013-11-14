@@ -4,12 +4,59 @@
 #include "My_viewer.h"
 
 
+std::string get_element_description(std::string const& element_type)
+{
+    if (element_type == std::string("H2O"))
+    {
+        return std::string("Water molecule");
+    }
+    else if (element_type == std::string("Na"))
+    {
+        return std::string("Positively charged sodium atom (Na+)");
+    }
+    else if (element_type == std::string("Cl"))
+    {
+        return std::string("Negatively charged chlorine atom (Cl-)");
+    }
+    else if (element_type == std::string("Box_barrier"))
+    {
+        return std::string("Blocking box which repels molecules");
+    }
+    else if (element_type == std::string("Brownian_box"))
+    {
+        return std::string("Heating/cooling element allowing to add or remove heat locally");
+    }
+    else if (element_type == std::string("Box_portal"))
+    {
+        return std::string("Box portal to capture molecules");
+    }
+    else if (element_type == std::string("Sphere_portal"))
+    {
+        return std::string("Sphere portal to capture molecules");
+    }
+    else if (element_type == std::string("Molecule_releaser"))
+    {
+        return std::string("Element that releases molecules");
+    }
+    else if (element_type == std::string("Charged_barrier"))
+    {
+        return std::string("Charged box to attract/repel charged molecules (like Na+ and Cl-)");
+    }
+    else if (element_type == std::string("Tractor_barrier"))
+    {
+        return std::string("Pushing/pulling element to move molecules along a direction");
+    }
+
+    return std::string();
+}
+
+
 Editor_screen::Editor_screen(My_viewer &viewer, Core &core) : Main_game_screen(viewer, core, Ui_state::Level_editor)
 {
 //    _placeable_molecules = std::vector<std::string>{ "H2O", "Na", "Cl" };
     _placeable_molecules = { "H2O", "Na", "Cl" };
 
-    init_level_element_buttons();
+    init_controls();
 
     Main_options_window::get_instance()->add_parameter_list("Editor_screen", _parameters);
 }
@@ -170,12 +217,6 @@ bool Editor_screen::mouseMoveEvent(QMouseEvent * event)
 
                 Draggable * parent = _active_draggables[_picked_index]->get_parent();
 
-//                auto iter = _draggable_to_level_element.find(parent);
-
-//                assert(iter != _draggable_to_level_element.end());
-
-//                Level_element * level_element = iter->second;
-
                 // TODO: change to real extent, needs to be known in base Draggable
                 if (!parent->get_tooltip_text().empty())
                 {
@@ -298,7 +339,7 @@ bool Editor_screen::keyPressEvent(QKeyEvent * event)
     return handled;
 }
 
-void Editor_screen::init_level_element_buttons()
+void Editor_screen::init_controls()
 {
     std::cout << __FUNCTION__ << std::endl;
 
@@ -322,7 +363,7 @@ void Editor_screen::init_level_element_buttons()
 
         boost::shared_ptr<Draggable_button> button(new Draggable_button(pos, size, "", std::bind(&Editor_screen::level_element_button_pressed, this, std::placeholders::_1), iter.first));
         button->set_pressable(true);
-
+        button->set_tooltip_text(get_element_description(iter.first));
         button->set_texture(_viewer.bindTexture(button_img));
 
         _buttons.push_back(button);
@@ -356,7 +397,7 @@ void Editor_screen::init_level_element_buttons()
         QImage button_img(Data_config::get_instance()->get_absolute_qfilename("textures/button_" + QString::fromStdString(molecule) + ".png"));
 
         button->set_texture(_viewer.bindTexture(button_img));
-        button->set_tooltip_text("Molecule: " + molecule);
+        button->set_tooltip_text(get_element_description(molecule));
 
         _buttons.push_back(button);
         _level_element_buttons[molecule] = button;
@@ -378,6 +419,17 @@ void Editor_screen::init_level_element_buttons()
 
     _buttons.push_back(_toggle_simulation_button);
     _normal_controls.push_back(_toggle_simulation_button);
+
+
+    boost::shared_ptr<Draggable_button> button_reset_camera = boost::shared_ptr<Draggable_button>(
+                new Draggable_button(Eigen::Vector3f(0.89f, 0.95f, 0.0f),
+                                     Eigen::Vector2f(0.04f, 0.04f * _viewer.camera()->aspectRatio()),
+                                     "", std::bind(&My_viewer::update_game_camera, &_viewer)));
+    button_reset_camera->set_texture(_viewer.bindTexture(QImage(Data_config::get_instance()->get_absolute_qfilename("textures/button_reset_camera.png"))));
+    button_reset_camera->set_tooltip_text("Reset the camera");
+
+    _buttons.push_back(button_reset_camera);
+    _normal_controls.push_back(button_reset_camera);
 
 
     _hide_controls_button = boost::shared_ptr<Draggable_button>(
@@ -594,8 +646,20 @@ void Editor_screen::level_element_button_pressed(const std::string &type)
 
 void Editor_screen::add_selected_level_element(const QPoint &mouse_pos)
 {
-    Eigen::Hyperplane<float, 3> xz_plane(Eigen::Vector3f::UnitY(),
-                                         Eigen::Vector3f(0.0f, _core.get_level_data()._game_field_borders[Level_data::Plane::Neg_Y]->get_position()[1], 0.0f));
+    bool const is_molecule_added = std::find(_placeable_molecules.begin(), _placeable_molecules.end(), _selected_level_element_button_type) != _placeable_molecules.end();
+
+    Eigen::Hyperplane<float, 3> intersection_plane;
+
+    if (is_molecule_added)
+    {
+        intersection_plane = Eigen::Hyperplane<float, 3>(Eigen::Vector3f::UnitY(), Eigen::Vector3f::Zero());
+    }
+    else
+    {
+        intersection_plane = Eigen::Hyperplane<float, 3>(Eigen::Vector3f::UnitY(),
+                                             Eigen::Vector3f(0.0f, _core.get_level_data()._game_field_borders[Level_data::Plane::Neg_Y]->get_position()[1], 0.0f));
+    }
+
 
     qglviewer::Vec qglv_origin; // camera pos
     qglviewer::Vec qglv_dir;    // origin - camera_pos
@@ -607,7 +671,7 @@ void Editor_screen::add_selected_level_element(const QPoint &mouse_pos)
 
     Eigen::ParametrizedLine<float, 3> line(origin, dir);
 
-    Eigen::Vector3f placement_position = line.intersectionPoint(xz_plane);
+    Eigen::Vector3f placement_position = line.intersectionPoint(intersection_plane);
     placement_position[1] = 0.0f;
 
 //    if (std::find(_placeable_molecules.begin(), _placeable_molecules.end(), _selected_level_element_button_type) == _placeable_molecules.end())

@@ -93,6 +93,7 @@ Core::Core() :
     connect(&_physics_timer, SIGNAL(timeout()), this, SLOT(update_physics()));
 
     load_default_simulation_settings();
+    init_game();
 }
 
 Core::~Core()

@@ -267,6 +267,8 @@ private:
 class Portal : public Level_element
 {
 public:
+    Portal() : _score_factor(60.0f), _destroy_on_entering(false) {}
+
     virtual ~Portal() {}
 
     virtual bool contains(Eigen::Vector3f const& pos) const = 0;

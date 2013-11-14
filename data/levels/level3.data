@@ -1508,7 +1508,7 @@
 	<_background_name>iss_interior_1.png</_background_name>
 	<_translation_damping>0.5</_translation_damping>
 	<_rotation_damping>0.17</_rotation_damping>
-	<_rotation_fluctuation>15</_rotation_fluctuation>
-	<_translation_fluctuation>15</_translation_fluctuation>
+	<_rotation_fluctuation>30</_rotation_fluctuation>
+	<_translation_fluctuation>30</_translation_fluctuation>
 	<_gravity>0</_gravity>
 </_level_data>

@@ -17,11 +17,15 @@ public:
     void draw() override;
 
     bool mousePressEvent(QMouseEvent * event) override;
+    bool mouseMoveEvent(QMouseEvent *event) override;
     bool wheelEvent(QWheelEvent *) override { return true; } // eat all wheel events in menus to avoid them being used in underlying screens
 
     void resize(QSize const&) override;
 
     void draw_draggables_for_picking();
+    void draw_hovered_button(Draggable_button const* b, const float time, const float alpha = 1.0f);
+
+    void update_event(float const timestep) override;
 
 protected:
     Core & _core;
@@ -31,6 +35,12 @@ protected:
 
     std::vector< boost::shared_ptr<Draggable_button> > _buttons;
     std::vector< boost::shared_ptr<Draggable_label> > _labels;
+
+    int _hover_index;
+
+    std::unique_ptr<QGLShaderProgram> _heat_program;
+
+    float _time;
 };
 
 #endif // MENU_SCREEN_H

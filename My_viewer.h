@@ -30,34 +30,19 @@ class My_viewer : public Options_viewer // , public QGLFunctions
 public:
     typedef Options_viewer Base;
 
-    enum class Level_state { /* Main_menu, Pause_menu, */ Intro, /* Before_start, */ Running /* , After_finish, Statistics */ };
-
     My_viewer(Core & core, QGLFormat const& format = QGLFormat());
 
     void print_cam_orientation();
-
-//    void save_level();
-//    void load_level();
-
-//    void restore_parameters() override
-//    {
-//        Base::restore_parameters();
-
-//        update();
-//    }
-
 
     Eigen::Vector3f calc_camera_starting_point_from_borders();
 
     void update_game_camera();
 
-//    void change_ui_state();
     void change_clipping();
 
     void init() override;
 
     void start();
-    void init_game();
 
     void draw() override;
 
@@ -67,9 +52,9 @@ public:
 
 //    bool check_for_collision(Level_element const* level_element);
 
-    void mousePressEvent(QMouseEvent *event);
+    void mousePressEvent(QMouseEvent *event) override;
     void mouseMoveEvent(QMouseEvent * event) override;
-    void mouseReleaseEvent(QMouseEvent * event);
+    void mouseReleaseEvent(QMouseEvent * event) override;
     void keyPressEvent(QKeyEvent *event) override;
     void wheelEvent(QWheelEvent * event) override;
     void mouseDoubleClickEvent(QMouseEvent * /* event */) override {} // ignore doubleclicks
@@ -83,7 +68,7 @@ public:
 //    void clear();
 
     void load_defaults() override;
-    void resizeEvent(QResizeEvent *ev);
+    void resizeEvent(QResizeEvent *ev) override;
 
     void setup_fonts();
 

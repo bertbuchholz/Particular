@@ -296,7 +296,7 @@ void Ui_renderer::generate_button_texture(Draggable_button *b) const
     p.setCompositionMode(QPainter::CompositionMode_SourceOver);
 
     QPen pen;
-    pen.setWidth(5);
+    pen.setWidth(5 * _screen_size.width() / 1000.0f);
     pen.setColor(QColor(20, 133, 204));
     p.setPen(pen);
 
@@ -392,7 +392,7 @@ void Ui_renderer::generate_statistics_texture(Draggable_statistics &b) const
     p.setCompositionMode(QPainter::CompositionMode_SourceOver);
 
     QPen pen;
-    pen.setWidth(2);
+    pen.setWidth(2 * _screen_size.width() / 1000.0f);
     pen.setColor(QColor(20, 133, 204));
     p.setPen(pen);
 

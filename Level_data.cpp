@@ -31,6 +31,7 @@ Level_data::Level_data()
     available_list->add_parameter(new Parameter("Box_barrier", 0, 0, 9, update_variables));
     available_list->add_parameter(new Parameter("Brownian_box", 0, 0, 9, update_variables));
     available_list->add_parameter(new Parameter("Box_portal", 0, 0, 9, update_variables));
+    available_list->add_parameter(new Parameter("Sphere_portal", 0, 0, 9, update_variables));
     available_list->add_parameter(new Parameter("Molecule_releaser", 0, 0, 9, update_variables));
     available_list->add_parameter(new Parameter("Charged_barrier", 0, 0, 9, update_variables));
     available_list->add_parameter(new Parameter("Tractor_barrier", 0, 0, 9, update_variables));

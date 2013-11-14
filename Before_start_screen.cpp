@@ -70,5 +70,7 @@ void Before_start_screen::start_level()
 
 void Before_start_screen::update_event(const float time_step)
 {
+    Menu_screen::update_event(time_step);
+
     _particle_system.animate(time_step);
 }

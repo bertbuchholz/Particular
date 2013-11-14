@@ -533,7 +533,7 @@ public:
 
 private:
     Molecule(Eigen::Vector3f const& position) :
-        _x(position)
+        _x(position), _accumulated_charge(0.0f)
     { }
 
     int _id;

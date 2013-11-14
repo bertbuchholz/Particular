@@ -95,6 +95,8 @@ void After_finish_editor_screen::return_to_editor()
 
 void After_finish_editor_screen::update_event(const float time_step)
 {
+    Menu_screen::update_event(time_step);
+
     _score_particle_system.animate(time_step);
 }
 

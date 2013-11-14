@@ -117,7 +117,9 @@ OTHER_FILES += TODO.txt \
     data/shaders/post.frag \
     data/shaders/test.frag \
     data/shaders/depth_blur_1D.frag \
-    data/shaders/blur_1D.frag
+    data/shaders/blur_1D.frag \
+    heat.frag \
+    data/shaders/heat.frag
 
 HEADERS += \
     My_viewer.h \

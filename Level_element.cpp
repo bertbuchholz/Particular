@@ -519,7 +519,7 @@ float Box_barrier::falloff_function(const float distance) const
 Charged_barrier::Charged_barrier(Eigen::Vector3f const& min, Eigen::Vector3f const& max, float const strength, float const radius, float const charge) :
     Box_barrier(min, max, strength, radius), _charge(charge)
 {
-    add_property(new Parameter("charge", charge, -50.0f, 50.0f));
+    add_property(new Parameter("charge", charge, -10.0f, 10.0f));
 
     set_property_values(_properties);
 }
@@ -775,8 +775,8 @@ Brownian_box::Brownian_box(const Eigen::Vector3f &min, const Eigen::Vector3f &ma
         _particles.push_back(p);
     }
 
-    add_property(new Parameter("radius", 10.0f, 5.0f, 100.0f));
-    add_property(new Parameter("strength", 0.0f, -50.0f, 50.0f));
+    add_property(new Parameter("radius", radius, 5.0f, 100.0f));
+    add_property(new Parameter("strength", strength, -50.0f, 50.0f));
 }
 
 float Brownian_box::get_brownian_motion_factor(const Eigen::Vector3f &point) const

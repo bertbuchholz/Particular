@@ -72,6 +72,8 @@ void Statistics_screen::draw()
 
 void Statistics_screen::update_event(const float time_step)
 {
+    Menu_screen::update_event(time_step);
+
     for (Draggable_statistics & stat : _statistics)
     {
         stat.animate(time_step);

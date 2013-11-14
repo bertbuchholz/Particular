@@ -246,29 +246,6 @@ Eigen::Vector3f My_viewer::calc_camera_starting_point_from_borders()
     return Eigen::Vector3f(0.0f, y_max, 0.0f);
 }
 
-//void My_viewer::change_ui_state()
-//{
-//    if (_parameters["Interface"]->get_value<std::string>() == "Level Editor")
-//    {
-//        _screen_stack.clear();
-//        add_screen(new Main_game_screen(*this, _core, Main_game_screen::Ui_state::Level_editor));
-
-//        camera()->frame()->setConstraint(nullptr);
-
-//        load_defaults();
-//    }
-//    else if (_parameters["Interface"]->get_value<std::string>() == "Playing")
-//    {
-//        _screen_stack.clear();
-//        add_screen(new Main_game_screen(*this, _core, Main_game_screen::Ui_state::Playing));
-
-//        //            update_game_camera();
-//        load_defaults();
-//        init_game();
-//    }
-
-//    update();
-//}
 
 void My_viewer::update_game_camera()
 {
@@ -355,8 +332,6 @@ void My_viewer::start()
 
     _renderer.init(context(), size());
 
-//    _parameters["Interface"]->set_value(std::string("Playing"));
-
     _screen_stack.clear();
     Screen * s = new Main_game_screen(*this, _core);
     s->pause();
@@ -364,22 +339,6 @@ void My_viewer::start()
     add_screen(new Main_menu_screen(*this, _core));
 }
 
-void My_viewer::init_game()
-{
-    _core.init_game();
-
-    float z = 0.0f;
-
-    if (_core.get_level_data()._game_field_borders.size() > 0)
-    {
-        z = 0.5f * (_core.get_level_data()._game_field_borders[Level_data::Plane::Pos_Z]->get_position()[2]
-                + _core.get_level_data()._game_field_borders[Level_data::Plane::Neg_Z]->get_position()[2]);
-    }
-
-    camera()->setUpVector(qglviewer::Vec(0.0f, 0.0f, 1.0f));
-    camera()->setViewDirection(qglviewer::Vec(0.0f, 1.0f, 0.0f));
-    camera()->setPosition(qglviewer::Vec(0.0f, -80.0f, z));
-}
 
 void My_viewer::draw()
 {

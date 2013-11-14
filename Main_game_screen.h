@@ -46,7 +46,7 @@ public:
     void update_draggable_to_level_element();
 
     void add_element_event(QPoint const& position);
-    void add_element(Eigen::Vector3f const& position, std::string const& element_type);
+    void add_element(Eigen::Vector3f const& position, std::string const& element_type, bool const make_fully_editable = false);
 
     void update_level_element_buttons();
     void level_element_button_pressed(std::string const& type);

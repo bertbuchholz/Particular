@@ -1037,7 +1037,7 @@ void Main_game_screen::add_element_event(const QPoint &position)
     }
 }
 
-void Main_game_screen::add_element(const Eigen::Vector3f &position, const std::string &element_type)
+void Main_game_screen::add_element(const Eigen::Vector3f &position, const std::string &element_type, bool const make_fully_editable)
 {
     float front_pos = _core.get_level_data()._game_field_borders[Level_data::Plane::Neg_Y]->get_position()[1];
     float back_pos  = _core.get_level_data()._game_field_borders[Level_data::Plane::Pos_Y]->get_position()[1];
@@ -1051,14 +1051,28 @@ void Main_game_screen::add_element(const Eigen::Vector3f &position, const std::s
         float const strength = 10000.0f;
         float const radius   = 2.0f;
 
-        _core.get_level_data().add_barrier(new Box_barrier(Eigen::Vector3f(-10.0f, front_pos, -10.0f) + position, Eigen::Vector3f(10.0f, back_pos, 10.0f) + position, strength, radius));
+        Box_barrier * barrier = new Box_barrier(Eigen::Vector3f(-10.0f, front_pos, -10.0f) + position, Eigen::Vector3f(10.0f, back_pos, 10.0f) + position, strength, radius);
+
+        if (make_fully_editable)
+        {
+            barrier->set_user_editable(Level_element::Edit_type::All);
+        }
+
+        _core.get_level_data().add_barrier(barrier);
     }
     else if (element_type == std::string("Moving_box_barrier"))
     {
         float const strength = 10000.0f;
         float const radius   = 2.0f;
 
-        _core.get_level_data().add_barrier(new Moving_box_barrier(Eigen::Vector3f(-10.0f, front_pos, -10.0f) + position, Eigen::Vector3f(10.0f, back_pos, 10.0f) + position, strength, radius));
+        Moving_box_barrier * b = new Moving_box_barrier(Eigen::Vector3f(-10.0f, front_pos, -10.0f) + position, Eigen::Vector3f(10.0f, back_pos, 10.0f) + position, strength, radius);
+
+        if (make_fully_editable)
+        {
+            b->set_user_editable(Level_element::Edit_type::All);
+        }
+
+        _core.get_level_data().add_barrier(b);
     }
     else if (element_type == std::string("Blow_barrier"))
     {
@@ -1076,11 +1090,18 @@ void Main_game_screen::add_element(const Eigen::Vector3f &position, const std::s
         float const strength = 10000.0f;
         float const radius   = 5.0f;
 
-        _core.get_level_data().add_barrier(new Plane_barrier(position, Eigen::Vector3f::UnitZ(), strength, radius, Eigen::Vector2f(10.0f, 20.0)));
+        Plane_barrier * b = new Plane_barrier(position, Eigen::Vector3f::UnitZ(), strength, radius, Eigen::Vector2f(10.0f, 20.0));
+
+        if (make_fully_editable)
+        {
+            b->set_user_editable(Level_element::Edit_type::All);
+        }
+
+        _core.get_level_data().add_barrier(b);
     }
     else if (element_type == std::string("Brownian_box"))
     {
-        float const strength = 10.0f;
+        float const strength = 0.0f;
         float const radius   = 25.0f;
 
         Brownian_box * e = new Brownian_box(Eigen::Vector3f(-10.0f, front_pos, -10.0f) + position, Eigen::Vector3f(10.0f, back_pos, 10.0f) + position, strength, radius);
@@ -1090,16 +1111,36 @@ void Main_game_screen::add_element(const Eigen::Vector3f &position, const std::s
     }
     else if (element_type == std::string("Box_portal"))
     {
-        _core.get_level_data().add_portal(new Box_portal(Eigen::Vector3f(-10.0f, front_pos, -10.0f) + position, Eigen::Vector3f(10.0f, back_pos, 10.0f) + position));
+        Box_portal * p = new Box_portal(Eigen::Vector3f(-10.0f, front_pos, -10.0f) + position, Eigen::Vector3f(10.0f, back_pos, 10.0f) + position);
+
+        if (make_fully_editable)
+        {
+            p->set_user_editable(Level_element::Edit_type::All);
+        }
+
+        _core.get_level_data().add_portal(p);
     }
     else if (element_type == std::string("Sphere_portal"))
     {
-        _core.get_level_data().add_portal(new Sphere_portal(Eigen::Vector3f(-10.0f, front_pos, -10.0f) + position, Eigen::Vector3f(10.0f, back_pos, 10.0f) + position));
+        Sphere_portal * p = new Sphere_portal(Eigen::Vector3f(-10.0f, front_pos, -10.0f) + position, Eigen::Vector3f(10.0f, back_pos, 10.0f) + position);
+
+        if (make_fully_editable)
+        {
+            p->set_user_editable(Level_element::Edit_type::All);
+        }
+
+        _core.get_level_data().add_portal(p);
     }
     else if (element_type == std::string("Molecule_releaser"))
     {
         Molecule_releaser * m = new Molecule_releaser(Eigen::Vector3f(-10.0f, front_pos, -10.0f) + position, Eigen::Vector3f(10.0f, back_pos, 10.0f) + position, 1.0f, 1.0f);
         m->set_molecule_type("H2O");
+
+        if (make_fully_editable)
+        {
+            m->set_user_editable(Level_element::Edit_type::All);
+        }
+
         _core.get_level_data().add_molecule_releaser(m);
     }
     else if (element_type == std::string("Atom_cannon"))
@@ -1112,7 +1153,10 @@ void Main_game_screen::add_element(const Eigen::Vector3f &position, const std::s
         float const strength = 10000.0f;
         float const radius   = 2.0f;
 
-        Charged_barrier * b = new Charged_barrier(Eigen::Vector3f(-10.0f, front_pos, -10.0f) + position, Eigen::Vector3f(10.0f, 20.0f, 10.0f) + position, strength, radius, 10.0f);
+        Charged_barrier * b = new Charged_barrier(Eigen::Vector3f(-10.0f, front_pos, -10.0f) + position, Eigen::Vector3f(10.0f, 20.0f, 10.0f) + position, strength, radius, 0.0f);
+
+        b->set_user_editable(Level_element::Edit_type::All);
+
         _core.get_level_data().add_barrier(b);
     }
     else if (element_type == std::string("Tractor_barrier"))
@@ -1187,6 +1231,16 @@ void Main_game_screen::update_level_element_buttons()
         }
     }
 
+    boost::shared_ptr<Draggable_button> button_reset_camera = boost::shared_ptr<Draggable_button>(
+                new Draggable_button(Eigen::Vector3f(0.95f, 0.95f, 0.0f),
+                                     Eigen::Vector2f(0.04f, 0.04f * _viewer.camera()->aspectRatio()),
+                                     "", std::bind(&My_viewer::update_game_camera, &_viewer)));
+    button_reset_camera->set_texture(_viewer.bindTexture(QImage(Data_config::get_instance()->get_absolute_qfilename("textures/button_reset_camera.png"))));
+    button_reset_camera->set_tooltip_text("Reset the camera");
+
+    _buttons.push_back(button_reset_camera);
+
+
     update_draggable_to_level_element();
     update_active_draggables();
 }
@@ -1226,7 +1280,7 @@ void Main_game_screen::add_selected_level_element(QPoint const& mouse_pos)
 
         _core.get_level_data()._available_elements[_selected_level_element_button_type] -= 1;
 
-        add_element(placement_position, _selected_level_element_button_type);
+        add_element(placement_position, _selected_level_element_button_type, true);
 
         update_level_element_buttons();
     }
@@ -1297,10 +1351,11 @@ void Main_game_screen::handle_game_state_change()
 
 void Main_game_screen::setup_intro()
 {
+    resume();
+
     _viewer.camera()->setUpVector(qglviewer::Vec(0.0f, 0.0f, 1.0f));
     _viewer.camera()->setViewDirection(qglviewer::Vec(0.0f, 1.0f, 0.0f));
     _viewer.camera()->setPosition(qglviewer::Vec(0.0f, -80.0f, 0.0f));
-
 
     Eigen::Vector3f grid_start(-20.0f, -20.0f, -20.0f);
     Eigen::Vector3f grid_end  ( 20.0f,  20.0f, 20.0f);

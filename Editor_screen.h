@@ -16,7 +16,7 @@ public:
     bool mouseReleaseEvent(QMouseEvent * event) override;
     bool keyPressEvent(QKeyEvent * event) override;
 
-    void init_level_element_buttons();
+    void init_controls();
     void level_element_button_pressed(const std::string &type);
 
     void add_selected_level_element(QPoint const& mouse_pos);

@@ -87,7 +87,7 @@ void World_renderer::resize(QSize const& size)
 
 void World_renderer::setup_gl_points(bool const distance_dependent) const
 {
-#ifdef WIN32
+#if defined WIN32 || defined __linux__
     typedef void (*_glPointParameterfv) (GLenum pname, const GLfloat *params);
     typedef void (*_glPointParameterf)  (GLenum pname, GLfloat param);
 

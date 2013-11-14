@@ -2,7 +2,7 @@
 
 #include "My_viewer.h"
 
-#include <GL/GL.h>
+#include <GL/gl.h>
 
 //#define GL_GLEXT_PROTOTYPES
 //#include <GL/glext.h>

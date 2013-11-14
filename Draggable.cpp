@@ -710,7 +710,7 @@ void Draggable_box::update()
 
             float angle = 0.0f;
 
-            Eigen::Vector3f rotation_axis;
+            Eigen::Vector3f rotation_axis = Eigen::Vector3f::Zero();
 
             Eigen::Vector3f local_pos = d.get_position();
 

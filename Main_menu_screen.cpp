@@ -111,6 +111,8 @@ void Main_menu_screen::start_editor()
 
     _core.load_simulation_settings();
 
+    _core.set_new_game_state(Core::Game_state::Unstarted);
+
     _viewer.replace_screens(new Editor_screen(_viewer, _core));
 }
 

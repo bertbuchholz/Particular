@@ -115,7 +115,7 @@ public:
             }
         }
 
-        Eigen::Vector3f constrained_world;
+        Eigen::Vector3f constrained_world = Eigen::Vector3f::Zero();
 
         if (front_planes.size() == 4)
         {

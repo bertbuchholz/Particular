@@ -71,7 +71,9 @@ macx {
     QMAKE_LFLAGS_X86_64 = $$QMAKE_CXXFLAGS
 }
 
-#LIBS += -lGLU
+unix {
+    LIBS += -lGLU
+}
 #    -lpthread \
 #    -lGLEW
 

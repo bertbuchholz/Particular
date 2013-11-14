@@ -278,7 +278,8 @@ bool Editor_screen::mouseReleaseEvent(QMouseEvent * event)
         {
             add_selected_level_element(event->pos());
         }
-        else
+
+        if (!(event->modifiers() & Qt::ShiftModifier))
         {
             _mouse_state = Mouse_state::None;
             QApplication::restoreOverrideCursor();

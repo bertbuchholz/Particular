@@ -16,11 +16,6 @@ float brightness(vec3 color)
     return (color.r + color.g + color.b) * 0.3333;
 }
 
-float sign(float x)
-{
-    return x < 0.0 ? -1.0 : 1.0;
-}
-
 void main(void)
 {
     vec2 tex_coord = gl_TexCoord[0].st;
@@ -41,9 +36,9 @@ void main(void)
 
     float f = 1.0;
 
-    float refraction_strength = 0.004;
-    float refraction = sin(50.0 * repetition_ratio * tex_coord.x + time * 5.0) * refraction_strength * f;
-    float refraction2 = sin(50.0 * tex_coord.y + time * 5.0) * refraction_strength * f;
+    float refraction_strength = 0.01;
+    float refraction = sin(10.0 * repetition_ratio * tex_coord.x + time * 5.0) * refraction_strength * f;
+    float refraction2 = sin(20.0 * tex_coord.y - time * 5.0) * refraction_strength * f;
 
     vec2 refracted_coord = vec2(tex_coord.x + refraction, tex_coord.y + refraction2);
 
@@ -56,7 +51,7 @@ void main(void)
 //    color.rgb = color.rgb * (1.0 - tint.a) + tint.rgb * tint.a;
 //    color.rgb = screen(color.rgb, tint.rgb) * 0.4 + color.rgb * 0.6;
 //    color.rgb = tint.rgb * 0.4 + color.rgb * 0.6;
-    color.rgb = tint.rgb * brightness(color.rgb) * 0.4 + color.rgb * 0.6;
+    color.rgb = tint.rgb * brightness(color.rgb) * 0.2 + color.rgb * 0.8;
 
 
 

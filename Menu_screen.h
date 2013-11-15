@@ -41,6 +41,8 @@ protected:
     std::unique_ptr<QGLShaderProgram> _heat_program;
 
     float _time;
+
+    GL_functions _gl_functions;
 };
 
 #endif // MENU_SCREEN_H

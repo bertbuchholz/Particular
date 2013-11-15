@@ -1,5 +1,6 @@
 #include <Renderer.h>
 
+#define GL_GLEXT_PROTOTYPES
 #include <GL/glext.h>
 
 #include <glm/glm.hpp>
@@ -86,6 +87,14 @@ void World_renderer::resize(QSize const& size)
 
 void World_renderer::setup_gl_points(bool const distance_dependent) const
 {
+#ifdef WIN32
+    typedef void (*_glPointParameterfv) (GLenum pname, const GLfloat *params);
+    typedef void (*_glPointParameterf)  (GLenum pname, GLfloat param);
+
+    _glPointParameterfv glPointParameterfv = (_glPointParameterfv) _context->getProcAddress("glPointParameterfv");
+    _glPointParameterf  glPointParameterf  = (_glPointParameterf)  _context->getProcAddress("glPointParameterf");
+#endif
+
     if (distance_dependent)
     {
         float quadratic[] =  { 0.0f, 0.0f, 0.001f };

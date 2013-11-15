@@ -59,6 +59,8 @@ QMAKE_CXXFLAGS += -Wall \
 
 win32 {
     QMAKE_CXXFLAGS += /bigobj
+# /O2 /Oi /GL
+#    QMAKE_LFLAGS += /LTCG
 }
 
 macx {

@@ -2,11 +2,19 @@
 
 #include "My_viewer.h"
 
+#include <GL/GL.h>
+
+//#define GL_GLEXT_PROTOTYPES
+//#include <GL/glext.h>
+
+
 Menu_screen::Menu_screen(My_viewer & viewer, Core & core) : Screen(viewer), _core(core), _renderer(_viewer.get_renderer()), _hover_index(-1), _time(0.0f)
 {
 //    _renderer.init(_viewer.context(), _viewer.size());
 
     _picking.init(_viewer.context());
+
+    _gl_functions.init(_viewer.context());
 
     _heat_program = std::unique_ptr<QGLShaderProgram>(init_program(_viewer.context(),
                                                                           Data_config::get_instance()->get_absolute_qfilename("shaders/temperature.vert"),
@@ -22,7 +30,7 @@ void Menu_screen::draw_hovered_button(Draggable_button const* b, float const tim
     _heat_program->setUniformValue("scene_texture", 0);
     _heat_program->setUniformValue("repetition_ratio", b->get_extent()[0] / b->get_extent()[1]);
     _heat_program->setUniformValue("alpha", alpha);
-    glActiveTexture(GL_TEXTURE0);
+    _gl_functions.glActiveTexture(GL_TEXTURE0);
 //    glBindTexture(GL_TEXTURE_2D, bg_texture);
 
     _heat_program->setUniformValue("screen_size", QSize(_viewer.width(), _viewer.height()));

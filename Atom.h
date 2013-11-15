@@ -583,6 +583,12 @@ inline float calc_lennard_jones_potential(Atom const& a_0, Atom const& a_1)
 
 struct External_force
 {
+    External_force()
+    {
+        _origin = Eigen::Vector3f::Zero();
+        _force  = Eigen::Vector3f::Zero();
+    }
+
     Eigen::Vector3f _origin;
     Eigen::Vector3f _force;
 
@@ -596,6 +602,17 @@ struct External_force
 
 struct Molecule_external_force
 {
+    Molecule_external_force()
+    {
+        _origin = Eigen::Vector3f::Zero();
+        _force  = Eigen::Vector3f::Zero();
+
+        _molecule_id = -1;
+        _local_origin = Eigen::Vector3f::Zero();
+        _plane_normal = Eigen::Vector3f::Zero();
+        _end_time = 0.0f;
+    }
+
     int _molecule_id;
     Eigen::Vector3f _origin;
     Eigen::Vector3f _local_origin; // force origin expressed in molecule's space

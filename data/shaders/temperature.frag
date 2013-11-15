@@ -32,6 +32,10 @@ void main(void)
 //    gl_FragColor = color;
 //    return;
 
+//    color = vec4(tex_coord.s, tex_coord.t, 0.0, 1.0);
+//    gl_FragColor = color;
+//    return;
+
     float mix_factor = gl_Color.x;
 
     // if < 0.5 -> ice, > 0.5 -> heat

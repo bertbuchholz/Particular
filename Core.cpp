@@ -74,7 +74,7 @@ Core::Core() :
     _parameters.add_parameter(new Parameter("levels", std::string(""), update_variables));
 
     _parameters.add_parameter(new Parameter("Toggle simulation", false, std::bind(&Core::toggle_simulation, this)));
-    _parameters.add_parameter(new Parameter("Mass Factor", 0.1f, 0.01f, 1.0f, update_variables));
+    _parameters.add_parameter(new Parameter("Mass Factor", 0.1f, 0.1f, 1.0f, update_variables));
     _parameters.add_parameter(new Parameter("do_constrain_forces", true, update_variables));
     _parameters.add_parameter(new Parameter("max_force", 10.0f, 0.1f, 500.0f, update_variables));
     _parameters.add_parameter(new Parameter("max_force_distance", 10.0f, 1.0f, 1000.0f, update_variables));

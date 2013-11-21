@@ -19,6 +19,7 @@ void main(void)
     vec2 tex_coord = gl_TexCoord[0].st;
 
     vec4 color;
+    color.a = 1.0;
 //    vec4 color = vec4(1.0, 0.0, 0.0, 1.0);
 
 //    color = vec4(gl_FragCoord.x / screen_size.x, gl_FragCoord.y / screen_size.y, 0.0, 1.0);
@@ -50,16 +51,24 @@ void main(void)
         float dx = length(texture2D(ice_texture, tex_coord + vec2(1.0 / ice_tex_size.x, 0.0)).rgb) - tex_value;
         float dy = length(texture2D(ice_texture, tex_coord + vec2(0.0, 1.0 / ice_tex_size.y)).rgb) - tex_value;
 
-        float refraction_strength = 0.02;
+        float refraction_strength = 0.035;
         vec2 refracted_coord = vec2(dx, dy) * f * refraction_strength;
 
         vec4 scene_color = texture2D(scene_texture, screen_coords + refracted_coord);
         scene_color.a = 1.0;
 
-        vec4 tint = vec4(1.0, 1.0, 1.0, 1.0) * (1.0 - f) + vec4(0.8, 0.84, 0.87, 1.0) * f * 1.0;
+        tex_value = tex_value / 1.71;
+        vec3 tint = vec3(1.0, 1.0, 1.0) * (1.0 - f) + vec3(0.8, 0.84, 0.87) * f * (tex_value * 0.2 + 0.8);
+
 
 //        color = ice_color * f + scene_color * (1.0 - f);
-        color = scene_color * tint;
+        color.rgb = scene_color.rgb * tint.rgb; // * tex_value;
+//        color = scene_color * tex_value;
+
+//        color = vec4(tex_value, tex_value, tex_value, 1.0);
+//        color = vec4(texture2D(ice_texture, tex_coord).rgb, 1.0);
+//        color = vec4(texture2D(scene_texture, screen_coords).rgb, 1.0) * 0.7;
+//        color = vec4(screen_coords.s, screen_coords.t, 0.0, 1.0);
     }
     else if (mix_factor > 0.5)
     {
@@ -67,12 +76,19 @@ void main(void)
 //        f = 1.0;
 //        color = vec4(1.0, 0.0, 0.0, 1.0) * f + color * (1.0 - f);
 
-//        float refraction = 0.5 + 0.5 * sin(tex_coord.x + 200.0 * f); // + time * 10.0 * f);
-        float refraction_strength = 0.002;
-        float refraction = sin(200.0 * tex_coord.x + time * 10.0) * refraction_strength * f;
-        float refraction2 = sin(200.0 * tex_coord.y + time * 10.0) * refraction_strength * f;
+        float refraction_strength = 0.002 * f;
 
-        vec2 refracted_coord = vec2(screen_coords.x + refraction, screen_coords.y + refraction2);
+//        float refraction = sin(75.0 * tex_coord.x + time * 15.0 * f) * refraction_strength;
+//        float refraction2 = sin(75.0 * tex_coord.y + time * 15.0 * f) * refraction_strength;
+
+        vec2 refraction = vec2(0.0,
+                               sin(20.0 * tex_coord.y - time * 5.0 - sin(tex_coord.x * 80.0)) * refraction_strength * f);
+
+//        float refraction_strength = 0.002;
+//        float refraction = sin(200.0 * tex_coord.x + time * 10.0) * refraction_strength * f;
+//        float refraction2 = sin(200.0 * tex_coord.y + time * 10.0) * refraction_strength * f;
+
+        vec2 refracted_coord = screen_coords + refraction; // vec2(screen_coords.x + refraction, screen_coords.y + refraction2);
 
         color = texture2D(scene_texture, refracted_coord); // + color * (1.0 - f);
         color.a = 1.0;

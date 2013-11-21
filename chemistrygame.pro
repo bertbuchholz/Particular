@@ -59,23 +59,19 @@ QMAKE_CXXFLAGS += -Wall \
 
 win32 {
     QMAKE_CXXFLAGS += /bigobj
-# /O2 /Oi /GL
-#    QMAKE_LFLAGS += /LTCG
 }
 
 macx {
-    QMAKE_CXX = /opt/local/bin/clang++-mp-3.3
-    QMAKE_LINK = /opt/local/bin/clang++-mp-3.3
+#    QMAKE_CXX = /opt/local/bin/clang++-mp-3.3
+#    QMAKE_LINK = /opt/local/bin/clang++-mp-3.3
 
-    QMAKE_CXXFLAGS += -stdlib=libc++
+    QMAKE_CXXFLAGS += -stdlib=libc++ -mmacosx-version-min=10.7
     QMAKE_LFLAGS_X86_64 = $$QMAKE_CXXFLAGS
 }
 
 unix {
     LIBS += -lGLU
 }
-#    -lpthread \
-#    -lGLEW
 
 # Input
 SOURCES += main.cpp \

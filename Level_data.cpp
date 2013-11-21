@@ -239,6 +239,16 @@ void Level_data::update_parameters()
     //        _parameters["gravity"]->set_value_no_update(_gravity);
     _parameters["gravity"]->set_value_no_update(-_external_forces["gravity"]._force[2]);
 
+    if (_game_field_borders.size() == 6)
+    {
+        _parameters["Game Field Width"]->set_value_no_update(_game_field_borders[Plane::Pos_X]->get_position()[0] -
+                _game_field_borders[Plane::Neg_X]->get_position()[0]);
+        _parameters["Game Field Depth"]->set_value_no_update(_game_field_borders[Plane::Pos_Y]->get_position()[1] -
+                _game_field_borders[Plane::Neg_Y]->get_position()[1]);
+        _parameters["Game Field Height"]->set_value_no_update(_game_field_borders[Plane::Pos_Z]->get_position()[2] -
+                _game_field_borders[Plane::Neg_Z]->get_position()[2]);
+    }
+
     Parameter_list * available_list = _parameters.get_child("Available elements");
 
     for (auto & iter : *available_list)

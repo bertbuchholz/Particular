@@ -487,7 +487,7 @@ void Core::update(const float time_step)
 
 //    update_tree();
 
-    _ann_wrapper = ANN_wrapper();
+//    _ann_wrapper = ANN_wrapper();
     _ann_wrapper.generate_tree_from_molecules(_level_data._molecules);
 
     if (time_debug)

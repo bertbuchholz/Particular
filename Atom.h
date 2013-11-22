@@ -39,8 +39,6 @@ inline Eigen::Matrix3f star_matrix(Eigen::Vector3f const& v)
 class Atom : public Level_element
 {
 public:
-    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-
     enum class Type { Charge = 0, H, O, C, S, N, Na, Cl };
 
     static std::vector<Color> atom_colors; // Type to Color mapping
@@ -180,8 +178,6 @@ BOOST_CLASS_VERSION(Atom, 1)
 class Molecule
 {
 public:
-    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-
     static std::unordered_map< std::string, std::function<Molecule(Eigen::Vector3f const& position)> > _molecule_factory_map;
 
     static bool molecule_exists(std::string const& name)

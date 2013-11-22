@@ -4,6 +4,12 @@ void ANN_wrapper::generate_tree_from_molecules(std::list<Molecule> const& molecu
 {
     if (molecules.size() == 0) return;
 
+    if (_tree)
+    {
+        annDeallocPts(_dataPts);
+        delete _tree;
+    }
+
     int const dim = 3; // dimension
     int num_atoms = 0;
 

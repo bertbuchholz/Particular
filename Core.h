@@ -9,10 +9,11 @@
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 
-//#include <boost/optional.hpp>
+#ifndef Q_MOC_RUN
 #include <boost/serialization/map.hpp>
 #include <boost/archive/xml_oarchive.hpp>
 #include <boost/archive/xml_iarchive.hpp>
+#endif
 
 #include <Registry_parameters.h>
 

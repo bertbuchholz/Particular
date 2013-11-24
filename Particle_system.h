@@ -7,7 +7,10 @@
 #include <Eigen/Core>
 #include <functional>
 #include <vector>
+
+#ifndef Q_MOC_RUN
 #include <boost/serialization/version.hpp>
+#endif
 
 #include <Utilities.h>
 #include <Color.h>

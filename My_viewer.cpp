@@ -810,11 +810,13 @@ void My_viewer::resizeEvent(QResizeEvent *ev)
 
 //    if (aspect_ratio / actual_ratio < 1.0f)
 //    {
-//        resize(ev->size().width(), ev->oldSize().height());
+////        resize(ev->size().width(), ev->oldSize().height());
+//        setGeometry(0, 0, ev->size().width(), ev->oldSize().height());
 //    }
 //    else if (aspect_ratio / actual_ratio > 1.0f)
 //    {
-//        resize(ev->oldSize().width(), ev->size().height());
+////        resize(ev->oldSize().width(), ev->size().height());
+//        setGeometry(0, 0, ev->oldSize().width(), ev->size().height());
 ////        resize(actual_ratio / aspect_ratio * ev->size());
 //    }
 

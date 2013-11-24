@@ -7,6 +7,8 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
+#include <QMatrix4x4>
+
 #include <Draw_functions.h>
 #include <MyOpenMesh.h>
 #include <GL_utilities.h>
@@ -957,11 +959,15 @@ void Shader_renderer::render(QGLFramebufferObject *main_fbo, const Level_data &l
 
     _molecule_program->bind();
     {
-        GLdouble m_projection[16];
-        glGetDoublev(GL_PROJECTION_MATRIX, m_projection);
+        GLfloat m_projection[16];
+        glGetFloatv(GL_PROJECTION_MATRIX, m_projection);
 
-        GLdouble m_view[16];
-        glGetDoublev(GL_MODELVIEW_MATRIX, m_view);
+        GLfloat m_view[16];
+        glGetFloatv(GL_MODELVIEW_MATRIX, m_view);
+
+//        GLfloat v[16];
+//        glGetFloatv(GL_MODELVIEW_MATRIX, v);
+//        _molecule_program->setUniformValue("m_projection", QMatrix4x4(v));
 
         _molecule_program->setUniformValue("m_projection", QMatrix4x4(m_projection).transposed());
         _molecule_program->setUniformValue("m_view", QMatrix4x4(m_view).transposed());
@@ -1400,11 +1406,11 @@ void Editor_renderer::render(QGLFramebufferObject *main_fbo, const Level_data &l
 
     _molecule_program->bind();
     {
-        GLdouble m_projection[16];
-        glGetDoublev(GL_PROJECTION_MATRIX, m_projection);
+        GLfloat m_projection[16];
+        glGetFloatv(GL_PROJECTION_MATRIX, m_projection);
 
-        GLdouble m_view[16];
-        glGetDoublev(GL_MODELVIEW_MATRIX, m_view);
+        GLfloat m_view[16];
+        glGetFloatv(GL_MODELVIEW_MATRIX, m_view);
 
         _molecule_program->setUniformValue("m_projection", QMatrix4x4(m_projection).transposed());
         _molecule_program->setUniformValue("m_view", QMatrix4x4(m_view).transposed());

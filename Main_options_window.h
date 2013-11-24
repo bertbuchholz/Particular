@@ -2,6 +2,7 @@
 #define MAIN_OPTIONS_WINDOW_H
 
 #include <QtGui>
+#include <QtWidgets>
 #include <memory>
 
 #include <Parameter.h>

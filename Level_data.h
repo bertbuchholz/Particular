@@ -1,7 +1,9 @@
 #ifndef LEVEL_DATA_H
 #define LEVEL_DATA_H
 
+#ifndef Q_MOC_RUN
 #include <boost/serialization/shared_ptr.hpp>
+#endif
 
 #include <Registry_parameters.h>
 

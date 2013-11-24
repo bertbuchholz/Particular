@@ -1,7 +1,9 @@
 #include <QObject>
 #include <QApplication>
 
+#ifndef Q_MOC_RUN
 #include <boost/serialization/nvp.hpp>
+#endif
 
 #include "My_viewer.h"
 #include "Spatial_hash.h"

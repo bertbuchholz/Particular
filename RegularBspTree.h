@@ -6,7 +6,9 @@
 #include <cmath>
 #include <queue>
 
+#ifndef Q_MOC_RUN
 #include <boost/optional.hpp>
+#endif
 
 // - Dimensions, size of each dimension
 // - Max depth or max amount of points per cell

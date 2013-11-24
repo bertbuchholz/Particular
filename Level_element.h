@@ -2,9 +2,12 @@
 #define LEVEL_ELEMENTS_H
 
 #include <QVariantAnimation>
+
+#ifndef Q_MOC_RUN
 #include <boost/serialization/vector.hpp>
 #include <boost/serialization/optional.hpp>
 #include <boost/serialization/list.hpp>
+#endif
 
 #include <Geometry_utils.h>
 #include <Low_discrepancy_sequences.h>

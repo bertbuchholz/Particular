@@ -2,7 +2,10 @@
 #define SPATIAL_HASH_H
 
 #include <vector>
+
+#ifndef Q_MOC_RUN
 #include <boost/optional.hpp>
+#endif
 
 #include <Eigen/Core>
 

@@ -706,7 +706,7 @@ void Draggable_box::update()
 
         if (d.is_changed())
         {
-            int const rotation_type_index = i / 2;
+            int const rotation_type_index = int(i) / 2;
 
             float angle = 0.0f;
 
@@ -730,7 +730,7 @@ void Draggable_box::update()
                 rotation_axis = Eigen::Vector3f::UnitZ();
             }
 
-            if ((i % 2) == 0) angle += M_PI;
+            if ((i % 2) == 0) angle += float(M_PI);
             new_transform = _transform * Eigen::AngleAxisf(angle, rotation_axis);
         }
     }

@@ -346,6 +346,9 @@ void Editor_screen::init_controls()
 
     int i = 0;
 
+    GL_functions f;
+    f.init(_viewer.context());
+
     for (auto const& iter : _core.get_level_data()._available_elements)
     {
         auto const& image_iter = _element_images.find(iter.first);
@@ -365,7 +368,10 @@ void Editor_screen::init_controls()
         boost::shared_ptr<Draggable_button> button(new Draggable_button(pos, size, "", std::bind(&Editor_screen::level_element_button_pressed, this, std::placeholders::_1), iter.first));
         button->set_pressable(true);
         button->set_tooltip_text(get_element_description(iter.first));
-        button->set_texture(_viewer.bindTexture(button_img));
+//        button->set_texture(_viewer.bindTexture(button_img));
+
+        Frame_buffer<Color4> texture_fb = convert<QRgb_to_Color4_converter, Color4>(button_img);
+        button->set_texture(f.create_texture(texture_fb));
 
         _buttons.push_back(button);
         _level_element_buttons[iter.first] = button;
@@ -395,10 +401,11 @@ void Editor_screen::init_controls()
         boost::shared_ptr<Draggable_button> button(new Draggable_button(pos, size, "", std::bind(&Editor_screen::level_element_button_pressed, this, std::placeholders::_1), molecule));
         button->set_pressable(true);
 
-        QImage button_img(Data_config::get_instance()->get_absolute_qfilename("textures/button_" + QString::fromStdString(molecule) + ".png"));
+//        QImage button_img(Data_config::get_instance()->get_absolute_qfilename("textures/button_" + QString::fromStdString(molecule) + ".png"));
 
-        button->set_texture(_viewer.bindTexture(button_img));
         button->set_tooltip_text(get_element_description(molecule));
+//        button->set_texture(_viewer.bindTexture(button_img));
+        button->set_texture(f.create_texture(Data_config::get_instance()->get_absolute_qfilename("textures/button_" + QString::fromStdString(molecule) + ".png"), true));
 
         _buttons.push_back(button);
         _level_element_buttons[molecule] = button;
@@ -412,7 +419,7 @@ void Editor_screen::init_controls()
                 new Draggable_button(Eigen::Vector3f(0.95f, 0.95f, 0.0f),
                                      Eigen::Vector2f(0.04f, 0.04f * _viewer.camera()->aspectRatio()),
                                      "", std::bind(&Editor_screen::toggle_simulation, this)));
-    _toggle_simulation_button->set_texture(_viewer.bindTexture(QImage(Data_config::get_instance()->get_absolute_qfilename("textures/button_play.png"))));
+    _toggle_simulation_button->set_texture(f.create_texture(Data_config::get_instance()->get_absolute_qfilename("textures/button_play.png")));
     _toggle_simulation_button->set_pressable(true);
 //    _toggle_simulation_button->set_pressed(true);
     _toggle_simulation_button->set_parameter(_core.get_parameters()["Toggle simulation"]);
@@ -426,7 +433,7 @@ void Editor_screen::init_controls()
                 new Draggable_button(Eigen::Vector3f(0.89f, 0.95f, 0.0f),
                                      Eigen::Vector2f(0.04f, 0.04f * _viewer.camera()->aspectRatio()),
                                      "", std::bind(&My_viewer::update_game_camera, &_viewer)));
-    button_reset_camera->set_texture(_viewer.bindTexture(QImage(Data_config::get_instance()->get_absolute_qfilename("textures/button_reset_camera.png"))));
+    button_reset_camera->set_texture(f.create_texture(Data_config::get_instance()->get_absolute_qfilename("textures/button_reset_camera.png")));
     button_reset_camera->set_tooltip_text("Reset the camera");
 
     _buttons.push_back(button_reset_camera);
@@ -516,7 +523,7 @@ void Editor_screen::init_controls()
                                      Eigen::Vector2f(0.1f, 0.05f),
                                      _core.get_level_data()._parameters["Temperature"]));
     translation_fluctuation_slider->set_slider_marker_texture(_slider_tex);
-    translation_fluctuation_slider->set_texture(_viewer.bindTexture(QImage(Data_config::get_instance()->get_absolute_qfilename("textures/slider_temperature.png"))));
+    translation_fluctuation_slider->set_texture(f.create_texture(Data_config::get_instance()->get_absolute_qfilename("textures/slider_temperature.png")));
     translation_fluctuation_slider->set_tooltip_text("Overall temperature control, things start moving fast and randomly when it is hot");
 
     _sliders.push_back(translation_fluctuation_slider);
@@ -528,7 +535,7 @@ void Editor_screen::init_controls()
                                      Eigen::Vector2f(0.1f, 0.05f),
                                      _core.get_level_data()._parameters["Damping"]));
     damping_slider->set_slider_marker_texture(_slider_tex);
-    damping_slider->set_texture(_viewer.bindTexture(QImage(Data_config::get_instance()->get_absolute_qfilename("textures/slider_damping.png"))));
+    damping_slider->set_texture(f.create_texture(Data_config::get_instance()->get_absolute_qfilename("textures/slider_damping.png")));
     damping_slider->set_tooltip_text("Damping, controls how quickly moving objects lose their speed");
 
     _sliders.push_back(damping_slider);
@@ -540,7 +547,7 @@ void Editor_screen::init_controls()
                                      Eigen::Vector2f(0.1f, 0.05f),
                                      _core.get_level_data()._parameters["gravity"]));
     gravity_slider->set_slider_marker_texture(_slider_tex);
-    gravity_slider->set_texture(_viewer.bindTexture(QImage(Data_config::get_instance()->get_absolute_qfilename("textures/slider_gravity.png"))));
+    gravity_slider->set_texture(f.create_texture(Data_config::get_instance()->get_absolute_qfilename("textures/slider_gravity.png")));
     gravity_slider->set_tooltip_text("Gravity, controls how fast the apple falls");
 
     _sliders.push_back(gravity_slider);
@@ -562,7 +569,7 @@ void Editor_screen::init_controls()
                                      Eigen::Vector2f(0.1f, 0.05f),
                                      _core.get_parameters()["Mass Factor"]));
     mass_slider->set_slider_marker_texture(_slider_tex);
-    mass_slider->set_texture(_viewer.bindTexture(QImage(Data_config::get_instance()->get_absolute_qfilename("textures/slider_mass.png"))));
+    mass_slider->set_texture(f.create_texture(Data_config::get_instance()->get_absolute_qfilename("textures/slider_mass.png")));
     mass_slider->set_tooltip_text("Mass, controls the relative mass of the atoms");
 
     _sliders.push_back(mass_slider);
@@ -574,7 +581,7 @@ void Editor_screen::init_controls()
                                      Eigen::Vector2f(0.1f, 0.05f),
                                      _core.get_parameters()["Atomic Force Type/Coulomb Force/Strength"]));
     coulomb_slider->set_slider_marker_texture(_slider_tex);
-    coulomb_slider->set_texture(_viewer.bindTexture(QImage(Data_config::get_instance()->get_absolute_qfilename("textures/slider_coulomb.png"))));
+    coulomb_slider->set_texture(f.create_texture(Data_config::get_instance()->get_absolute_qfilename("textures/slider_coulomb.png")));
     coulomb_slider->set_tooltip_text("Coulomb Force, controls the strength of electric attraction and repulsion between molecules");
 
     _sliders.push_back(coulomb_slider);
@@ -586,7 +593,7 @@ void Editor_screen::init_controls()
                                      Eigen::Vector2f(0.1f, 0.05f),
                                      _core.get_parameters()["Atomic Force Type/Van der Waals Force/Strength"]));
     waals_slider->set_slider_marker_texture(_slider_tex);
-    waals_slider->set_texture(_viewer.bindTexture(QImage(Data_config::get_instance()->get_absolute_qfilename("textures/slider_waals.png"))));
+    waals_slider->set_texture(f.create_texture(Data_config::get_instance()->get_absolute_qfilename("textures/slider_waals.png")));
     waals_slider->set_tooltip_text("Van der Waals Potential, controls the strength of attraction between chargeless molecules");
 
     _sliders.push_back(waals_slider);
@@ -598,7 +605,7 @@ void Editor_screen::init_controls()
                                      Eigen::Vector2f(0.1f, 0.05f),
                                      _core.get_level_data()._parameters["Game Field Width"]));
     width_slider->set_slider_marker_texture(_slider_tex);
-    width_slider->set_texture(_viewer.bindTexture(QImage(Data_config::get_instance()->get_absolute_qfilename("textures/slider_width.png"))));
+    width_slider->set_texture(f.create_texture(Data_config::get_instance()->get_absolute_qfilename("textures/slider_width.png")));
     width_slider->set_tooltip_text("Width of the containing box");
 
     _sliders.push_back(width_slider);
@@ -610,7 +617,7 @@ void Editor_screen::init_controls()
                                      Eigen::Vector2f(0.1f, 0.05f),
                                      _core.get_level_data()._parameters["Game Field Height"]));
     height_slider->set_slider_marker_texture(_slider_tex);
-    height_slider->set_texture(_viewer.bindTexture(QImage(Data_config::get_instance()->get_absolute_qfilename("textures/slider_height.png"))));
+    height_slider->set_texture(f.create_texture(Data_config::get_instance()->get_absolute_qfilename("textures/slider_height.png")));
     height_slider->set_tooltip_text("Height of the containing box");
 
     _sliders.push_back(height_slider);

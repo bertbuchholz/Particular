@@ -71,7 +71,7 @@ void Editor_pause_screen::init()
         }
 
         {
-            Draggable_button * button = new Draggable_button(Eigen::Vector3f(0.5f, 0.44, 0.0f), Eigen::Vector2f(0.5f, 0.1f), "Back to Main Menu",  std::bind(&Editor_pause_screen::return_to_main_menu, this));
+            Draggable_button * button = new Draggable_button(Eigen::Vector3f(0.5f, 0.44f, 0.0f), Eigen::Vector2f(0.5f, 0.1f), "Back to Main Menu",  std::bind(&Editor_pause_screen::return_to_main_menu, this));
             _buttons.push_back(boost::shared_ptr<Draggable_button>(button));
         }
 

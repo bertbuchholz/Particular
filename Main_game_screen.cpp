@@ -1448,8 +1448,8 @@ void Main_game_screen::update_intro(const float timestep)
 
             Molecule m = Molecule::create_water(Eigen::Vector3f(20.0f, -40.0f, 0.0f));
             Eigen::Transform<float, 3, Eigen::Affine> t = Eigen::Transform<float, 3, Eigen::Affine>::Identity();
-            t.rotate(Eigen::AngleAxisf(M_PI * 0.5f, Eigen::Vector3f(0.0f, 1.0f, 0.0f)));
-            t.rotate(Eigen::AngleAxisf(M_PI * 0.5f, Eigen::Vector3f(0.0f, 0.0f, 1.0f)));
+            t.rotate(Eigen::AngleAxisf(float(M_PI) * 0.5f, Eigen::Vector3f(0.0f, 1.0f, 0.0f)));
+            t.rotate(Eigen::AngleAxisf(float(M_PI) * 0.5f, Eigen::Vector3f(0.0f, 0.0f, 1.0f)));
             m.apply_orientation(Eigen::Quaternion<float>(t.rotation()));
 
             _core.add_molecule(m);
@@ -1474,8 +1474,8 @@ void Main_game_screen::update_intro(const float timestep)
             _core.add_molecule(Molecule::create_water(Eigen::Vector3f(20.0f, -30.0f, 0.0f)));
             Molecule & m = _core.get_molecules().back();
             Eigen::Transform<float, 3, Eigen::Affine> t = Eigen::Transform<float, 3, Eigen::Affine>::Identity();
-            t.rotate(Eigen::AngleAxisf(M_PI * 0.5f, Eigen::Vector3f(0.0f, 1.0f, 0.0f)));
-            t.rotate(Eigen::AngleAxisf(M_PI * 0.5f, Eigen::Vector3f(0.0f, 0.0f, 1.0f)));
+            t.rotate(Eigen::AngleAxisf(float(M_PI) * 0.5f, Eigen::Vector3f(0.0f, 1.0f, 0.0f)));
+            t.rotate(Eigen::AngleAxisf(float(M_PI) * 0.5f, Eigen::Vector3f(0.0f, 0.0f, 1.0f)));
             m.apply_orientation(Eigen::Quaternion<float>(t.rotation()));
 
             for (Atom & a : m._atoms)
@@ -1523,15 +1523,15 @@ void Main_game_screen::update_intro(const float timestep)
                 _core.add_molecule(Molecule::create_water(Eigen::Vector3f(-20.0f, -32.5f - i * 5.0f, 0.0f)));
                 Molecule & m = _core.get_molecules().back();
                 Eigen::Transform<float, 3, Eigen::Affine> t = Eigen::Transform<float, 3, Eigen::Affine>::Identity();
-                t.rotate(Eigen::AngleAxisf(M_PI * 0.5f, Eigen::Vector3f(0.0f, 1.0f, 0.0f)));
+                t.rotate(Eigen::AngleAxisf(float(M_PI) * 0.5f, Eigen::Vector3f(0.0f, 1.0f, 0.0f)));
 
                 if (i == 0)
                 {
-                    t.rotate(Eigen::AngleAxisf(M_PI * 0.5f, Eigen::Vector3f(0.0f, 0.0f, 1.0f)));
+                    t.rotate(Eigen::AngleAxisf(float(M_PI) * 0.5f, Eigen::Vector3f(0.0f, 0.0f, 1.0f)));
                 }
                 else
                 {
-                    t.rotate(Eigen::AngleAxisf(-M_PI * 0.5f, Eigen::Vector3f(0.0f, 0.0f, 1.0f)));
+                    t.rotate(Eigen::AngleAxisf(-float(M_PI) * 0.5f, Eigen::Vector3f(0.0f, 0.0f, 1.0f)));
                 }
 
                 m.apply_orientation(Eigen::Quaternion<float>(t.rotation()));

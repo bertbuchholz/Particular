@@ -98,7 +98,7 @@ private:
 
     std::deque< std::unique_ptr<Screen> > _screen_stack;
 
-    Ui_renderer _renderer;
+    Ui_renderer _ui_renderer;
 };
 
 

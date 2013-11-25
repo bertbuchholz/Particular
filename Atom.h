@@ -234,7 +234,7 @@ public:
 
         {
             float const radius = 0.96f;
-            float const angle_2 = 0.5f * 104.5f / 360.0f * 2.0f * M_PI;
+            float const angle_2 = 0.5f * 104.5f / 360.0f * 2.0f * float(M_PI);
 
             //        m._atoms.push_back(Atom::create_hydrogen(Eigen::Vector3f(radius, 0.0f, 0.0f)));
             m._atoms.push_back(Atom::create_hydrogen(Eigen::Vector3f(std::cos( angle_2) * radius, std::sin( angle_2) * radius, 0.0f)));
@@ -331,8 +331,8 @@ public:
             float const radius = 0.96f;
             Eigen::Vector3f const offset((i % 2 == 0) ? -0.2f : 0.2f, 0.0f, current_z_offset);
 
-            Eigen::AngleAxisf const rotation_pos(50.0f / 360.0f * 2.0f * M_PI, Eigen::Vector3f(0.0f, 0.0f,  1.0f));
-            Eigen::AngleAxisf const rotation_neg(50.0f / 360.0f * 2.0f * M_PI, Eigen::Vector3f(0.0f, 0.0f, -1.0f));
+            Eigen::AngleAxisf const rotation_pos(50.0f / 360.0f * 2.0f * float(M_PI), Eigen::Vector3f(0.0f, 0.0f,  1.0f));
+            Eigen::AngleAxisf const rotation_neg(50.0f / 360.0f * 2.0f * float(M_PI), Eigen::Vector3f(0.0f, 0.0f, -1.0f));
 
             m._atoms.push_back(Atom::create_carbon(offset));
             m.add_connection(current_connector);
@@ -398,7 +398,7 @@ public:
     // last added atom becomes new connector
     int set_new_connector()
     {
-       int const new_connector = _atoms.size() - 1;
+       int const new_connector = int(_atoms.size()) - 1;
        _connectivity.resize(new_connector + 1);
        return new_connector;
     }
@@ -406,7 +406,7 @@ public:
     void add_connection(int const connector)
     {
         assert(connector < int(_connectivity.size()));
-        _connectivity[connector].push_back(_atoms.size() - 1);
+        _connectivity[connector].push_back(int(_atoms.size()) - 1);
     }
 
     void reset()

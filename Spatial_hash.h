@@ -67,7 +67,7 @@ public:
     {
         Point_data const point(position, data);
 
-        int const bin_index = hash_function(position, _bins.size(), _cell_size);
+        int const bin_index = hash_function(position, int(_bins.size()), _cell_size);
 
         _bins[bin_index].push_back(point);
 
@@ -96,7 +96,7 @@ public:
             if (dist < closest_data.distance)
             {
                 closest_data.distance = dist;
-                closest_data.index = i;
+                closest_data.index = int(i);
             }
         }
 
@@ -118,7 +118,7 @@ public:
             {
                 for (int z = -1; z <= 1; ++z)
                 {
-                    int const bin_index = hash_function(point + Vec(offsets[x + 1], offsets[y + 1], offsets[z + 1]), _bins.size(), _cell_size);
+                    int const bin_index = hash_function(point + Vec(offsets[x + 1], offsets[y + 1], offsets[z + 1]), int(_bins.size()), _cell_size);
 
                     Index_distance const index_distance = get_closest_point_in_bin(_bins[bin_index], point, reject_condition);
 

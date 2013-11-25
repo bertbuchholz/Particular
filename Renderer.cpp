@@ -171,6 +171,7 @@ void World_renderer::draw_textured_quad(const GLuint tex_id) const
 
 void Ui_renderer::setup_fonts()
 {
+//    int id = QFontDatabase::addApplicationFont(Data_config::get_instance()->get_absolute_qfilename("fonts/LondrinaSolid-Regular.otf"));
     int id = QFontDatabase::addApplicationFont(Data_config::get_instance()->get_absolute_qfilename("fonts/Matiz.ttf"));
     QString family = QFontDatabase::applicationFontFamilies(id).at(0);
     _main_font = QFont(family);
@@ -459,14 +460,15 @@ Draggable_tooltip *Ui_renderer::generate_tooltip(const Eigen::Vector3f &screen_p
     QSize const pixel_size(_screen_size.width() * 0.3f, _screen_size.height() * 0.5f);
 
     QImage text_image(pixel_size, QImage::Format_ARGB32);
+//    text_image.fill(QColor(0, 0, 0, 255));
     text_image.fill(QColor(0, 0, 0, 0));
 
     QPainter p(&text_image);
-    p.setRenderHint(QPainter::Antialiasing);
+    p.setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing | QPainter::SmoothPixmapTransform);
     p.setCompositionMode(QPainter::CompositionMode_SourceOver);
 
     QFont font = _main_font;
-    font.setPointSizeF(0.02f * float(_screen_size.width()));
+    font.setPixelSize(0.02f * float(_screen_size.width()));
     p.setFont(font);
 
     p.setPen(QColor(255, 255, 255));
@@ -508,6 +510,7 @@ Draggable_tooltip *Ui_renderer::generate_tooltip(const Eigen::Vector3f &screen_p
     Draggable_tooltip * tooltip = new Draggable_tooltip(final_screen_pos, uniform_bb, "");
 
 //    tooltip->set_texture(bindTexture(text_image));
+    text_image.save(QDir::tempPath() + "/tooltip.png");
 
     GL_functions f;
     f.init(_context);

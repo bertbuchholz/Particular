@@ -150,7 +150,7 @@ void Menu_screen::draw_draggables_for_picking()
     {
         if (_buttons[i]->is_visible())
         {
-            _picking.set_index(i);
+            _picking.set_index(int(i));
             _viewer.draw_button(_buttons[i].get(), true);
         }
     }

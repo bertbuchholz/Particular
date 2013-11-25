@@ -71,7 +71,7 @@ public:
 
         float const aspect_ratio = 1.333f;
 
-        float const fov_horizontal = 90.0f / 360.0f * 2.0f * M_PI;
+        float const fov_horizontal = 90.0f / 360.0f * 2.0f * float(M_PI);
         float const fov_vertical = fov_horizontal / aspect_ratio;
 
         float const y_max = -std::max(full_width[0] * 0.5f / std::tan(fov_horizontal * 0.5f),
@@ -111,7 +111,7 @@ public:
         {
             if (planes[i].signedDistance(new_world) > 0.0f)
             {
-                front_planes.push_back(i);
+                front_planes.push_back(int(i));
             }
         }
 
@@ -237,7 +237,7 @@ Eigen::Vector3f My_viewer::calc_camera_starting_point_from_borders()
 
     float const aspect_ratio = camera()->aspectRatio();
 
-    float const fov_horizontal = 90.0f / 360.0f * 2.0f * M_PI;
+    float const fov_horizontal = 90.0f / 360.0f * 2.0f * float(M_PI);
     float const fov_vertical = fov_horizontal / aspect_ratio;
 
     float const y_max = -std::max(full_width[0] * 0.5f / std::tan(fov_horizontal * 0.5f),
@@ -330,7 +330,7 @@ void My_viewer::start()
 
     startAnimation();
 
-    _renderer.init(context(), size());
+    _ui_renderer.init(context(), size());
 
     _screen_stack.clear();
     Screen * s = new Main_game_screen(*this, _core);
@@ -706,7 +706,8 @@ void My_viewer::keyPressEvent(QKeyEvent *event)
         handled = true;
     }
 
-    if (event->key() == Qt::Key_S)
+    if (event->key() == Qt::Key_S && !(event->modifiers() & Qt::ControlModifier) &&
+            !(event->modifiers() & Qt::ShiftModifier))
     {
         std::cout << __FUNCTION__ << " Screen Stack" << std::endl;
 
@@ -820,7 +821,7 @@ void My_viewer::resizeEvent(QResizeEvent *ev)
 ////        resize(actual_ratio / aspect_ratio * ev->size());
 //    }
 
-    _renderer.resize(ev->size());
+    _ui_renderer.resize(ev->size());
 
     for (std::unique_ptr<Screen> const& screen : _screen_stack)
     {
@@ -838,7 +839,7 @@ void My_viewer::quit_game()
 
 const Ui_renderer &My_viewer::get_renderer() const
 {
-    return _renderer;
+    return _ui_renderer;
 }
 
 Eigen::Vector2f My_viewer::qpixel_to_uniform_screen_pos(const QPoint & p)

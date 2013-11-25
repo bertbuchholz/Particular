@@ -15,7 +15,7 @@ void ANN_wrapper::generate_tree_from_molecules(std::list<Molecule> const& molecu
 
     for (Molecule const& m : molecules)
     {
-        num_atoms += m._atoms.size();
+        num_atoms += int(m._atoms.size());
     }
 
     _index_to_atom.resize(num_atoms);

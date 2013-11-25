@@ -33,7 +33,7 @@ public:
 
     int get_num_data_types() const
     {
-        return _data.size();
+        return int(_data.size());
     }
 
     float get_check_interval()

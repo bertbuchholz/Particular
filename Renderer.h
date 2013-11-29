@@ -12,6 +12,7 @@
 #include "Draggable.h"
 #include "Level_data.h"
 #include "Level_element_draw_visitor.h"
+#include "GL_texture.h"
 
 //void setup_gl_points(bool const distance_dependent);
 
@@ -224,8 +225,8 @@ private:
     GLuint _backdrop_texture;
     GLuint _blurred_backdrop_texture;
     GLuint _background_grid_texture;
-    GLuint _tmp_screen_texture[2];
     GLuint _depth_texture;
+    GL_texture _tmp_screen_texture[2];
 
     std::unique_ptr<QGLShaderProgram> _molecule_program;
     std::unique_ptr<QGLShaderProgram> _temperature_program;

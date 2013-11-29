@@ -7,6 +7,7 @@
 #include "After_finish_screen.h"
 #include "After_finish_editor_screen.h"
 #include "FloatSlider.h"
+#include "GL_texture.h"
 
 class Widget_text_combination : public QWidget
 {
@@ -46,10 +47,10 @@ Main_game_screen::Main_game_screen(My_viewer &viewer, Core &core, Ui_state ui_st
 
     _icosphere = IcoSphere<OpenMesh::Vec3f, Color>(2);
 
-    _rotate_tex = _viewer.bindTexture(QImage(Data_config::get_instance()->get_absolute_qfilename("textures/rotate.png")));
-    _move_tex = _viewer.bindTexture(QImage(Data_config::get_instance()->get_absolute_qfilename("textures/move.png")));
-    _scale_tex = _viewer.bindTexture(QImage(Data_config::get_instance()->get_absolute_qfilename("textures/scale.png")));
-    _slider_tex = _viewer.bindTexture(QImage(Data_config::get_instance()->get_absolute_qfilename("textures/slider.png")));
+    _rotate_tex = f.create_texture(Data_config::get_instance()->get_absolute_qfilename("textures/rotate.png"));
+    _move_tex = f.create_texture(Data_config::get_instance()->get_absolute_qfilename("textures/move.png"));
+    _scale_tex = f.create_texture(Data_config::get_instance()->get_absolute_qfilename("textures/scale.png"));
+    _slider_tex = f.create_texture(Data_config::get_instance()->get_absolute_qfilename("textures/slider.png"));
 
     _main_fbo = std::unique_ptr<QGLFramebufferObject>(new QGLFramebufferObject(QSize(_viewer.camera()->screenWidth(), _viewer.camera()->screenHeight()), QGLFramebufferObject::Depth));
 
@@ -61,8 +62,15 @@ Main_game_screen::Main_game_screen(My_viewer &viewer, Core &core, Ui_state ui_st
                                                                    Data_config::get_instance()->get_absolute_qfilename("shaders/fullscreen_square.vert"),
                                                                    Data_config::get_instance()->get_absolute_qfilename("shaders/blur_1D.frag")));
 
-    _tmp_screen_texture[0] = f.create_texture(_viewer.camera()->screenWidth(), _viewer.camera()->screenHeight());
-    _tmp_screen_texture[1] = f.create_texture(_viewer.camera()->screenWidth(), _viewer.camera()->screenHeight());
+
+    _drop_shadow_program = std::unique_ptr<QGLShaderProgram>(init_program(_viewer.context(),
+                                                                          Data_config::get_instance()->get_absolute_qfilename("shaders/temperature.vert"),
+                                                                          Data_config::get_instance()->get_absolute_qfilename("shaders/drop_shadow.frag")));
+
+    _tmp_screen_texture[0].set_context(_viewer.context());
+    _tmp_screen_texture[1].set_context(_viewer.context());
+    _tmp_screen_texture[0].reset(f.create_texture(_viewer.camera()->screenWidth(), _viewer.camera()->screenHeight()));
+    _tmp_screen_texture[1].reset(f.create_texture(_viewer.camera()->screenWidth(), _viewer.camera()->screenHeight()));
 
     std::vector<std::string> object_types { "O2", "H2O", "SDS", "Na", "Cl", "Dipole",
 //                                                  "Plane_barrier",
@@ -302,7 +310,7 @@ void Main_game_screen::draw()
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
     _main_fbo->bind();
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, _tmp_screen_texture[0], 0);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, _tmp_screen_texture[0].get_id(), 0);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     _main_fbo->release();
 
@@ -328,7 +336,7 @@ void Main_game_screen::draw()
 
         _screen_quad_program->setUniformValue("texture", 0);
         glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, _tmp_screen_texture[0]);
+        glBindTexture(GL_TEXTURE_2D, _tmp_screen_texture[0].get_id());
 //        glBindTexture(GL_TEXTURE_2D, _main_fbo->texture());
 
     //        glBindTexture(GL_TEXTURE_2D, _tmp_screen_texture[1]);
@@ -350,13 +358,13 @@ void Main_game_screen::draw()
 
         _main_fbo->bind();
 
-        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, _tmp_screen_texture[1], 0);
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, _tmp_screen_texture[1].get_id(), 0);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         _blur_program->bind();
         _blur_program->setUniformValue("texture", 0);
         glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, _tmp_screen_texture[0]);
+        glBindTexture(GL_TEXTURE_2D, _tmp_screen_texture[0].get_id());
 
         _blur_program->setUniformValue("tex_size", QSize(_viewer.camera()->screenWidth(), _viewer.camera()->screenHeight()));
         _blur_program->setUniformValue("blur_strength", blur_strength);
@@ -371,7 +379,7 @@ void Main_game_screen::draw()
 
         _blur_program->setUniformValue("texture", 0);
         glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, _tmp_screen_texture[1]);
+        glBindTexture(GL_TEXTURE_2D, _tmp_screen_texture[1].get_id());
         _blur_program->setUniformValue("direction", QVector2D(0.0, 1.0));
         draw_quad_with_tex_coords();
 
@@ -1004,10 +1012,20 @@ void Main_game_screen::draw_draggables() // FIXME: use visitors or change it so 
 
     for (boost::shared_ptr<Draggable_label> const& label : _labels)
     {
+        _drop_shadow_program->bind();
+
+        _drop_shadow_program->setUniformValue("texture", 0);
+        _drop_shadow_program->setUniformValue("blur_size", 5);
+        _drop_shadow_program->setUniformValue("offset", 0.01f);
+        _drop_shadow_program->setUniformValue("tex_size", QVector2D(label->get_extent()[0] * _viewer.width(), label->get_extent()[1] * _viewer.height()));
+        glActiveTexture(GL_TEXTURE0);
+
         if (label->is_visible())
         {
             _viewer.draw_label(label.get());
         }
+
+        _drop_shadow_program->release();
     }
 
     _viewer.stop_normalized_screen_coordinates();
@@ -1181,6 +1199,9 @@ void Main_game_screen::update_level_element_buttons()
 {
     int i = 0;
 
+//    GL_functions f;
+//    f.init(_viewer.context());
+
     _buttons.clear();
 
     for (auto const& iter : _core.get_level_data()._available_elements)
@@ -1299,6 +1320,10 @@ void Main_game_screen::resize(QSize const& size)
 
     _main_fbo = std::unique_ptr<QGLFramebufferObject>(new QGLFramebufferObject(size, QGLFramebufferObject::Depth));
 
+    GL_functions f(_viewer.context());
+
+    _tmp_screen_texture[0].reset(f.create_texture(size.width(), size.height()));
+    _tmp_screen_texture[1].reset(f.create_texture(size.width(), size.height()));
 }
 
 void Main_game_screen::handle_level_change(Main_game_screen::Level_state const level_state)

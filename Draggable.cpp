@@ -309,6 +309,11 @@ std::vector<Draggable *> Draggable_label::get_draggables(const Level_element::Ed
     return elements;
 }
 
+Draggable_label::~Draggable_label()
+{
+    glDeleteTextures(1, &_texture);
+}
+
 GLuint Draggable_label::get_texture() const
 {
     return _texture;

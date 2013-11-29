@@ -170,20 +170,13 @@ bool Editor_screen::mouseMoveEvent(QMouseEvent * event)
 
             assert(iter != _draggable_to_level_element.end());
 
-//            if (iter != _draggable_to_level_element.end())
+            Level_element * level_element = iter->second;
+
+            //            if (!check_for_collision(level_element))
             {
-                Level_element * level_element = iter->second;
+                std::cout << __FUNCTION__ << ": " << parent << std::endl;
 
-                //            if (!check_for_collision(level_element))
-                {
-
-
-                    std::cout << __FUNCTION__ << ": " << parent << std::endl;
-
-                    level_element->accept(parent);
-
-                    //            update();
-                }
+                level_element->accept(parent);
             }
         }
 
@@ -231,7 +224,6 @@ bool Editor_screen::mouseMoveEvent(QMouseEvent * event)
             }
         }
     }
-
 
     return handled;
 }

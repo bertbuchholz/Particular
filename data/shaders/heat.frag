@@ -36,14 +36,16 @@ void main(void)
 
     float f = 1.0;
 
-    float refraction_strength = 0.02;
+    float refraction_strength = 0.01;
 
 //    float refraction = sin(10.0 * repetition_ratio * tex_coord.x + time * 5.0) * refraction_strength * f;
 //    float refraction2 = sin(20.0 * tex_coord.y - time * 5.0) * refraction_strength * f;
 
     float refraction = 0.0;
-    float refraction2 = sin(20.0 * tex_coord.y - time * 5.0 - sin(tex_coord.x * 80.0)) * refraction_strength * f;
-
+    refraction = sin(tex_coord.y * 25.0 - time * 5.0) * refraction_strength * 0.2 * f;
+//    float refraction2 = 0.0;
+//    float refraction2 = sin(20.0 * tex_coord.y - time * 5.0) * refraction_strength * f;
+    float refraction2 = sin(20.0 * tex_coord.y - time * 5.0 - sin(tex_coord.x * 40.0 - time * 2.0)) * refraction_strength * f;
 
     vec2 refracted_coord = vec2(tex_coord.x + refraction, tex_coord.y + refraction2);
 

@@ -30,21 +30,14 @@ int main(int argc, char** argv)
     QApplication application(argc,argv);
 //    application.setDoubleClickInterval(0);
 
-//    QGLFormat f;
-//    f.setVersion(3, 2);
-//    f.setProfile(QGLFormat::CoreProfile);
-//    QGLFormat::setDefaultFormat(f);
-
-//    QGLFormat glFormat;
-//    glFormat.setVersion(3, 2);
-//    glFormat.setProfile(QGLFormat::CoreProfile); // Requires >=Qt-4.8.0
+    QGLFormat glFormat;
+    glFormat.setVersion(3, 2);
+    glFormat.setProfile(QGLFormat::CompatibilityProfile); // Requires >=Qt-4.8.0
 //    glFormat.setSampleBuffers(true);
-
-//    spatial_hash_test();
 
     Core core;
 
-    My_viewer * viewer = new My_viewer(core);
+    My_viewer * viewer = new My_viewer(core, glFormat);
     viewer->show();
 
 //    QDesktopWidget widget;

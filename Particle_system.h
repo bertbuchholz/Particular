@@ -26,6 +26,8 @@ struct Particle
         size_factor(1.0f)
     { }
 
+    virtual ~Particle() {}
+
     Eigen::Vector3f position;
     Eigen::Vector3f speed;
     Color4 color;

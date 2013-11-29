@@ -171,9 +171,11 @@ class Draggable_disc : public Draggable
 class Draggable_label : public Draggable
 {
 public:
-    Draggable_label() {}
+    Draggable_label() : _texture(0) {}
 
     Draggable_label(Eigen::Vector3f const& position, Eigen::Vector2f const& size, std::string const& text);
+
+    ~Draggable_label();
 
     std::vector<Draggable *> get_draggables(Level_element::Edit_type const /* edit_type */) override;
 
@@ -385,7 +387,7 @@ private:
 
     Parameter * _parameter;
 
-    GLuint _slider_marker_texture;
+//    GLuint _slider_marker_texture;
 };
 
 

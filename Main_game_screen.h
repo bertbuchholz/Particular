@@ -6,6 +6,7 @@
 #include "Renderer.h"
 #include "Picking.h"
 #include "Draggable.h"
+#include "GL_texture.h"
 
 class Core;
 
@@ -115,8 +116,10 @@ protected:
     std::unique_ptr<QGLFramebufferObject> _main_fbo;
     std::unique_ptr<QGLShaderProgram> _screen_quad_program;
     std::unique_ptr<QGLShaderProgram> _blur_program;
+    std::unique_ptr<QGLShaderProgram> _drop_shadow_program;
 
-    GLuint _tmp_screen_texture[2];
+//    GLuint _tmp_screen_texture[2];
+    GL_texture _tmp_screen_texture[2];
 };
 
 #endif // MAIN_GAME_STATE_H

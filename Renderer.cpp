@@ -174,6 +174,10 @@ void Ui_renderer::setup_fonts()
 //    int id = QFontDatabase::addApplicationFont(Data_config::get_instance()->get_absolute_qfilename("fonts/LondrinaSolid-Regular.otf"));
     int id = QFontDatabase::addApplicationFont(Data_config::get_instance()->get_absolute_qfilename("fonts/Matiz.ttf"));
     QString family = QFontDatabase::applicationFontFamilies(id).at(0);
+    for (auto const& f : QFontDatabase::applicationFontFamilies(id))
+    {
+        std::cout << f.toStdString() << std::endl;
+    }
     _main_font = QFont(family);
 }
 
@@ -182,9 +186,6 @@ void Ui_renderer::init(const QGLContext *context, const QSize &size)
     World_renderer::init(context, size);
 
     setup_fonts();
-
-    GL_functions f;
-    f.init(_context);
 
     for (int i = 0; i < 10; ++i)
     {
@@ -220,16 +221,14 @@ void Ui_renderer::init(const QGLContext *context, const QSize &size)
         p.end();
 
         Frame_buffer<Color4> number_tex_fb = convert<QRgb_to_Color4_converter, Color4>(final_text_image);
-        _number_textures.push_back(f.create_texture(number_tex_fb));
+        _number_textures.push_back(_gl_functions.create_texture(number_tex_fb));
 
 //        final_text_image.save(QString("/tmp/number%1.png"));
     }
 
-    Frame_buffer<Color4> arrowup_tex_fb = convert<QRgb_to_Color4_converter, Color4>(QImage(Data_config::get_instance()->get_absolute_qfilename("textures/spinbox_arrowup.png")));
-    _spinbox_arrowup_texture = f.create_texture(arrowup_tex_fb);
+    _spinbox_arrowup_texture = _gl_functions.create_texture(Data_config::get_instance()->get_absolute_qfilename("textures/spinbox_arrowup.png"));
 
-    Frame_buffer<Color4> arrowdown_tex_fb = convert<QRgb_to_Color4_converter, Color4>(QImage(Data_config::get_instance()->get_absolute_qfilename("textures/spinbox_arrowdown.png")));
-    _spinbox_arrowdown_texture = f.create_texture(arrowdown_tex_fb);
+    _spinbox_arrowdown_texture = _gl_functions.create_texture(Data_config::get_instance()->get_absolute_qfilename("textures/spinbox_arrowdown.png"));
 }
 
 void Ui_renderer::draw_spinbox(const Draggable_spinbox &s, const bool for_picking, const float alpha) const
@@ -300,7 +299,7 @@ void Ui_renderer::generate_button_texture(Draggable_button *b) const
     QSize const pixel_size(_screen_size.width() * b->get_extent()[0], _screen_size.height() * b->get_extent()[1]);
 
     QImage img(pixel_size, QImage::Format_ARGB32);
-    img.fill(QColor(0, 0, 0, 0));
+    img.fill(QColor(255, 255, 255, 0));
 
     QPainter p;
     p.begin(&img);
@@ -336,8 +335,8 @@ void Ui_renderer::generate_button_texture(Draggable_button *b) const
 
     p.end();
 
-    GL_functions f;
-    f.init(_context);
+    GL_functions f(_context);
+
     f.delete_texture(b->get_texture());
     Frame_buffer<Color4> texture_fb = convert<QRgb_to_Color4_converter, Color4>(img);
     b->set_texture(f.create_texture(texture_fb));
@@ -379,8 +378,8 @@ void Ui_renderer::generate_label_texture(Draggable_label *b) const
 
     p.end();
 
-    GL_functions f;
-    f.init(_context);
+    GL_functions f(_context);
+
     f.delete_texture(b->get_texture());
     Frame_buffer<Color4> texture_fb = convert<QRgb_to_Color4_converter, Color4>(img);
     b->set_texture(f.create_texture(texture_fb));
@@ -443,8 +442,8 @@ void Ui_renderer::generate_statistics_texture(Draggable_statistics &b) const
 
     p.end();
 
-    GL_functions f;
-    f.init(_context);
+    GL_functions f(_context);
+
     f.delete_texture(b.get_texture());
     Frame_buffer<Color4> texture_fb = convert<QRgb_to_Color4_converter, Color4>(img);
     b.set_texture(f.create_texture(texture_fb));
@@ -461,7 +460,7 @@ Draggable_tooltip *Ui_renderer::generate_tooltip(const Eigen::Vector3f &screen_p
 
     QImage text_image(pixel_size, QImage::Format_ARGB32);
 //    text_image.fill(QColor(0, 0, 0, 255));
-    text_image.fill(QColor(0, 0, 0, 0));
+    text_image.fill(QColor(255, 255, 255, 0));
 
     QPainter p(&text_image);
     p.setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing | QPainter::SmoothPixmapTransform);
@@ -512,8 +511,8 @@ Draggable_tooltip *Ui_renderer::generate_tooltip(const Eigen::Vector3f &screen_p
 //    tooltip->set_texture(bindTexture(text_image));
     text_image.save(QDir::tempPath() + "/tooltip.png");
 
-    GL_functions f;
-    f.init(_context);
+    GL_functions f(_context);
+
     Frame_buffer<Color4> texture_fb = convert<QRgb_to_Color4_converter, Color4>(text_image);
     tooltip->set_texture(f.create_texture(texture_fb));
 
@@ -523,23 +522,20 @@ Draggable_tooltip *Ui_renderer::generate_tooltip(const Eigen::Vector3f &screen_p
 
 Shader_renderer::~Shader_renderer()
 {
-    GL_functions f;
-    f.init(_context);
-    f.delete_texture(_ice_texture);
-    f.delete_texture(_backdrop_texture);
-    f.delete_texture(_blurred_backdrop_texture);
-    f.delete_texture(_background_grid_texture);
-    f.delete_texture(_tmp_screen_texture[0]);
-    f.delete_texture(_tmp_screen_texture[1]);
-    f.delete_texture(_depth_texture);
+    std::cout << __FUNCTION__ << std::endl;
+
+    glBindTexture(GL_TEXTURE_2D, 0);
+    _gl_functions.delete_texture(_ice_texture);
+    _gl_functions.delete_texture(_backdrop_texture);
+    _gl_functions.delete_texture(_blurred_backdrop_texture);
+    _gl_functions.delete_texture(_background_grid_texture);
+    _gl_functions.delete_texture(_depth_texture);
+    glFinish();
 }
 
 void Shader_renderer::init(const QGLContext *context, const QSize &size)
 {
     World_renderer::init(context, size);
-
-    GL_functions f;
-    f.init(context);
 
     _molecule_program = std::unique_ptr<QGLShaderProgram>(init_program(context,
                                                                        Data_config::get_instance()->get_absolute_qfilename("shaders/simple.vert"),
@@ -573,16 +569,16 @@ void Shader_renderer::init(const QGLContext *context, const QSize &size)
     }
 
     Frame_buffer<Color> ice_tex_fb = convert<QColor_to_Color_converter, Color>(QImage(Data_config::get_instance()->get_absolute_qfilename("textures/ice_texture.png")));
-    _ice_texture = f.create_texture(ice_tex_fb);
+    _ice_texture = _gl_functions.create_texture(ice_tex_fb);
 
     Frame_buffer<Color> backdrop_tex_fb = convert<QColor_to_Color_converter, Color>(QImage(Data_config::get_instance()->get_absolute_qfilename("/textures/iss_interior_1.png")));
-    _backdrop_texture = f.create_texture(backdrop_tex_fb);
+    _backdrop_texture = _gl_functions.create_texture(backdrop_tex_fb);
 
     Frame_buffer<Color> blurred_backdrop_tex_fb = convert<QColor_to_Color_converter, Color>(QImage(Data_config::get_instance()->get_absolute_qfilename("/textures/iss_interior_1_blurred.png")));
-    _blurred_backdrop_texture = f.create_texture(blurred_backdrop_tex_fb);
+    _blurred_backdrop_texture = _gl_functions.create_texture(blurred_backdrop_tex_fb);
 
     Frame_buffer<Color> backdrop_grid_tex_fb = convert<QColor_to_Color_converter, Color>(QImage(Data_config::get_instance()->get_absolute_qfilename("/textures/background_grid.png")));
-    _background_grid_texture = f.create_texture(backdrop_grid_tex_fb);
+    _background_grid_texture = _gl_functions.create_texture(backdrop_grid_tex_fb);
 
     resize(size);
 
@@ -592,6 +588,10 @@ void Shader_renderer::init(const QGLContext *context, const QSize &size)
 
 void Shader_renderer::resize(const QSize &size)
 {
+    std::cout << __FUNCTION__ << std::endl;
+
+    World_renderer::resize(size);
+
     //        _scene_fbo = std::unique_ptr<QGLFramebufferObject>(new QGLFramebufferObject(size, QGLFramebufferObject::Depth));
     _scene_fbo = std::unique_ptr<QGLFramebufferObject>(new QGLFramebufferObject(size));
 
@@ -605,12 +605,9 @@ void Shader_renderer::resize(const QSize &size)
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     glBindTexture(GL_TEXTURE_2D, 0);
 
-    GL_functions f;
-    f.init(_context);
-
     // FIXME: need to delete first
-    _tmp_screen_texture[0] = f.create_texture(size.width(), size.height());
-    _tmp_screen_texture[1] = f.create_texture(size.width(), size.height());
+    _tmp_screen_texture[0].reset(_gl_functions.create_texture(size.width(), size.height()));
+    _tmp_screen_texture[1].reset(_gl_functions.create_texture(size.width(), size.height()));
 
     _scene_fbo->bind();
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, _depth_texture, 0);
@@ -624,17 +621,14 @@ void Shader_renderer::resize(const QSize &size)
 
 void Shader_renderer::update(const Level_data &level_data)
 {
-    GL_functions f;
-    f.init(_context);
-
     glDeleteTextures(1, &_backdrop_texture);
     QImage background(Data_config::get_instance()->get_absolute_qfilename("textures/" + QString::fromStdString(level_data._background_name)));
     Frame_buffer<Color> backdrop_tex_fb = convert<QColor_to_Color_converter, Color>(background);
-    _backdrop_texture = f.create_texture(backdrop_tex_fb);
+    _backdrop_texture = _gl_functions.create_texture(backdrop_tex_fb);
 
     QImage blurred_background = background.scaled(background.size() * 0.05f);
     Frame_buffer<Color> blurred_backdrop_tex_fb = convert<QColor_to_Color_converter, Color>(blurred_background);
-    _blurred_backdrop_texture = f.create_texture(blurred_backdrop_tex_fb);
+    _blurred_backdrop_texture = _gl_functions.create_texture(blurred_backdrop_tex_fb);
 }
 
 void Shader_renderer::draw_atom(const Atom &atom, const float scale, const float alpha)
@@ -1003,7 +997,7 @@ void Shader_renderer::render(QGLFramebufferObject *main_fbo, const Level_data &l
 
     //        glViewport(0.0f, 0.0f, camera->screenWidth(), camera->screenHeight());
 
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, _tmp_screen_texture[0], 0);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, _tmp_screen_texture[0].get_id(), 0);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     _blur_program->bind();
@@ -1021,12 +1015,12 @@ void Shader_renderer::render(QGLFramebufferObject *main_fbo, const Level_data &l
 
     draw_quad_with_tex_coords();
 
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, _tmp_screen_texture[1], 0);
+    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, _tmp_screen_texture[1].get_id(), 0);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
     _blur_program->setUniformValue("texture", 0);
     glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, _tmp_screen_texture[0]);
+    glBindTexture(GL_TEXTURE_2D, _tmp_screen_texture[0].get_id());
     _blur_program->setUniformValue("direction", QVector2D(0.0, 1.0));
     draw_quad_with_tex_coords();
 
@@ -1059,7 +1053,7 @@ void Shader_renderer::render(QGLFramebufferObject *main_fbo, const Level_data &l
 
 //    draw_temperature_mesh(_grid_mesh, level_data, _tmp_screen_texture[1], screen_size, time);
 
-    draw_temperature_cube(_cube_grid_mesh, level_data, _tmp_screen_texture[1], screen_size, time);
+    draw_temperature_cube(_cube_grid_mesh, level_data, _tmp_screen_texture[1].get_id(), screen_size, time);
 
 
     _temperature_fbo->release();

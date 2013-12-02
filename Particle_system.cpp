@@ -126,7 +126,10 @@ Curved_particle_system::Curved_particle_system(std::vector<Eigen::Vector3f> cons
     _total_time(total_time),
     _current_time(0.0f),
     _effect_spread(1.0f),
-    _particle_size(1.0f)
+    _particle_size(1.0f),
+    _tail_dissipation_speed(0.5f),
+    _curve_color(1.0f, 0.0f, 0.0f, 1.0f),
+    _effect_color(0.0f, 1.0f, 0.0f, 1.0f)
 {
     std::random_device rd;
     _rng = std::mt19937(rd());
@@ -154,7 +157,7 @@ void Curved_particle_system::animate(float const timestep)
 //        p.age = std::min(1.001f, p.age + timestep);
         p.age = p.age + timestep;
         p.position += p.speed * timestep;
-        p.color.a = 1.0f - p.age * 0.5f;
+        p.color.a = 1.0f - (p.age * _tail_dissipation_speed);
         p.speed += Eigen::Vector3f(0.0f, -0.001f * timestep, 0.0f);
     }
 
@@ -168,7 +171,7 @@ void Curved_particle_system::animate(float const timestep)
 
         float const normalized_next_position = std::min(_current_time / _total_time, 1.0f);
 
-        float const normalized_travel_distance = 0.2f * (normalized_next_position - normalized_current_position);
+        float const normalized_travel_distance = 0.5f * (normalized_next_position - normalized_current_position);
 
         while (t < normalized_next_position)
         {
@@ -181,7 +184,8 @@ void Curved_particle_system::animate(float const timestep)
             p.position = new_particle_position + orthogonal * (_rng() / float(_rng.max()) - 0.5f) * 0.01f;
 //            p.color = Color4(1.0f, 0.0f, 0.0f, h3.getNext() * 0.4f + 0.6f);
 //            p.size_factor = h2.getNext() * 2.0f + 0.3f;
-            p.color = Color4(1.0f, 0.0f, 0.0f, _rng() / float(_rng.max()) * 0.6f + 0.4f);
+            p.color = _curve_color;
+            p.color.a = _rng() / float(_rng.max()) * 0.6f + 0.4f;
             p.size_factor = _rng() / float(_rng.max()) * 2.0f + 0.3f;
             p.size_factor *= _particle_size;
 
@@ -195,11 +199,12 @@ void Curved_particle_system::animate(float const timestep)
             {
                 Particle p;
                 p.position = new_particle_position;
-                p.color = Color4(0.0f, 1.0f, 0.0f, _rng() / float(_rng.max()) * 0.6f + 0.4f);
+                p.color = _effect_color;
+                p.color.a = _rng() / float(_rng.max()) * 0.6f + 0.4f;
                 p.size_factor = _rng() / float(_rng.max()) * 2.0f + 0.1f;
                 p.size_factor *= _particle_size;
 
-                Eigen::Vector3f speed = tangent * 0.1f;
+                Eigen::Vector3f speed = tangent * 0.1f * _tangent_speed_factor;
                 speed += Eigen::Vector3f::Random() * 0.05f * _effect_spread;
                 p.speed = speed;
 
@@ -208,3 +213,38 @@ void Curved_particle_system::animate(float const timestep)
         }
     }
 }
+
+void Curved_particle_system::set_tail_dissipation_speed(float const tail_dissipation_speed)
+{
+    _tail_dissipation_speed = tail_dissipation_speed;
+}
+
+
+void Curved_particle_system::set_tangent_speed_factor(float const tangent_speed_factor)
+{
+    _tangent_speed_factor = tangent_speed_factor;
+}
+
+Color4 const& Curved_particle_system::get_curve_color() const
+{
+    return _curve_color;
+}
+
+void Curved_particle_system::set_curve_color(Color4 const& curve_color)
+{
+    _curve_color = curve_color;
+}
+
+Color4 const& Curved_particle_system::get_effect_color() const
+{
+    return _effect_color;
+}
+
+void Curved_particle_system::setEffect_color(Color4 const& effect_color)
+{
+    _effect_color = effect_color;
+}
+
+
+
+

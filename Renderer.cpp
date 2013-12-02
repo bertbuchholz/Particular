@@ -479,18 +479,31 @@ void Ui_renderer::generate_statistics_texture(Draggable_statistics &b) const
     //        font.setPointSizeF(10.0f * get_scale(b_size, text_size));
     //        p.setFont(font);
 
-    p.drawText(0.2f * pixel_size.width(), 0.15f * pixel_size.height(), QString::fromStdString(b.get_text()));
+
+
+    p.drawText(0.1f * pixel_size.width(), 0.15f * pixel_size.height(), QString::fromStdString(b.get_text()));
+
+    font.setPixelSize(0.06f * pixel_size.height());
+    p.setFont(font);
+
+    QRect graphkey_rect(0.03f * pixel_size.width(), (0.85f - 0.05f - 0.6f * 0.0f / 4.0f) * pixel_size.height(), 0.06f * pixel_size.width(), 0.1f * pixel_size.height());
+    p.drawText(graphkey_rect, Qt::AlignVCenter | Qt::AlignRight, QString("%1").arg(b.get_min_value()));
+    graphkey_rect.moveTop((0.85f - 0.05f - 0.6f * 4.0f / 4.0f) * pixel_size.height());
+    p.drawText(graphkey_rect, Qt::AlignVCenter | Qt::AlignRight, QString("%1").arg(b.get_max_value()));
+
+//    p.drawText(0.2f * pixel_size.width(), 0.3f * pixel_size.height(), "X");
+//    p.drawText(0.2f * pixel_size.width(), 0.8f * pixel_size.height(), "Y");
 
     pen.setWidthF(0.5f);
     pen.setColor(QColor(255, 255, 255, 100));
     p.setPen(pen);
 
-    p.drawLine(0.2f * pixel_size.width(), 0.8f * pixel_size.height(), 0.9f * pixel_size.width(), 0.8f * pixel_size.height());
+//    p.drawLine(0.2f * pixel_size.width(), 0.8f * pixel_size.height(), 0.9f * pixel_size.width(), 0.8f * pixel_size.height());
 
-    for (int i = 1; i < 5; ++i)
+    for (int i = 0; i < 5; ++i)
     {
-        float const height = 0.8f - 0.6f * i / 4.0f;
-        p.drawLine(0.2f * pixel_size.width(), height * pixel_size.height(), 0.9f * pixel_size.width(), height * pixel_size.height());
+        float const height = 0.85f - 0.6f * i / 4.0f;
+        p.drawLine(0.1f * pixel_size.width(), height * pixel_size.height(), 0.9f * pixel_size.width(), height * pixel_size.height());
     }
 
     p.end();

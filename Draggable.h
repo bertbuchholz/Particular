@@ -291,7 +291,7 @@ public:
 
     float get_normalized_time() const;
 
-    void set_values(std::vector<float> const& values);
+    void set_values(std::vector<float> const& values, boost::optional<float> const& min_value = boost::optional<float>(), boost::optional<float> const& max_value = boost::optional<float>());
     std::vector<float> const& get_values() const;
 
     float get_max_value() const;

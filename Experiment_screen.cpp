@@ -36,16 +36,20 @@ void Experiment_screen::init()
     _labels.push_back(adv_options_label);
 
     _statistic = Draggable_statistics(Eigen::Vector3f(0.25f, 0.6f + 0.35f * 0.5f, 0.0f), Eigen::Vector2f(0.45f, 0.35f), "Released Molecules");
-    _renderer.generate_statistics_texture(_statistic);
 
     std::vector<float> stat_values;
 
+    stat_values.push_back(-10.0f);
+
     for (int i = 0; i < 10; ++i)
     {
-        stat_values.push_back(rand() / float(RAND_MAX));
+        stat_values.push_back(rand() / float(RAND_MAX) * 5.0f - 7.0f);
     }
 
-    _statistic.set_values(stat_values);
+    stat_values.push_back(10.0f);
+
+    _statistic.set_values(stat_values, -10, 10);
+    _renderer.generate_statistics_texture(_statistic);
 
     std::vector<Eigen::Vector3f> points;
 

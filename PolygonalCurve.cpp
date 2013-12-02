@@ -28,15 +28,9 @@ Polygonal_curve::Point Polygonal_curve::get_pos_on_curve(const float s) const
 
     if (s < 0.0001f) return _vertices.front();
 
-//    unsigned int i = 0;
-//    while (i < _vertices.size() - 1 && get_uniform_length_at_vertex(i) <= s)
-//    {
-//        ++i;
-//    }
-
     int i = std::lower_bound(_lengths_at_points.begin(), _lengths_at_points.end(), _length * s) - _lengths_at_points.begin();
 
-    if (i >= _vertices.size() - 1) return _vertices.back();
+    if (i > _vertices.size() - 1) return _vertices.back();
 
     assert(i < _vertices.size());
 

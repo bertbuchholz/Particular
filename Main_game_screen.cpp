@@ -1325,6 +1325,13 @@ void Main_game_screen::resize(QSize const& size)
 
     _tmp_screen_texture[0].reset(f.create_texture(size.width(), size.height()));
     _tmp_screen_texture[1].reset(f.create_texture(size.width(), size.height()));
+//    _tmp_screen_texture[0].reset(f.create_texture(_viewer.camera()->screenWidth(), _viewer.camera()->screenHeight()));
+//    _tmp_screen_texture[1].reset(f.create_texture(_viewer.camera()->screenWidth(), _viewer.camera()->screenHeight()));
+
+//    if (_viewer.camera()->screenHeight() != size.height())
+//    {
+//        std::cout << __FUNCTION__ << " size mismatch: " << _viewer.camera()->screenHeight() << " " << size.height() << std::endl;
+//    }
 }
 
 void Main_game_screen::handle_level_change(Main_game_screen::Level_state const level_state)

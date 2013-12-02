@@ -468,18 +468,26 @@ float Draggable_statistics::get_normalized_time() const
     return into_range((_current_time - _animation_start) / _animation_duration, 0.0f, 1.0f);
 }
 
-void Draggable_statistics::set_values(const std::vector<float> &values)
+void Draggable_statistics::set_values(const std::vector<float> &values, boost::optional<float> const& min_value, boost::optional<float> const& max_value)
 {
     assert(values.size() > 0);
 
     _values = values;
 
-    auto iter_pair = std::minmax_element(_values.begin(), _values.end());
+    if (!min_value || !max_value)
+    {
+        auto iter_pair = std::minmax_element(_values.begin(), _values.end());
 
-    assert(iter_pair.first != _values.end() && iter_pair.second != _values.end());
+        assert(iter_pair.first != _values.end() && iter_pair.second != _values.end());
 
-    _min_value = *(iter_pair.first);
-    _max_value = *(iter_pair.second);
+        _min_value = *(iter_pair.first);
+        _max_value = *(iter_pair.second);
+    }
+    else
+    {
+        _min_value = *min_value;
+        _max_value = *max_value;
+    }
 
     std::vector<Eigen::Vector3f> points;
     points.reserve(_values.size());
@@ -488,11 +496,12 @@ void Draggable_statistics::set_values(const std::vector<float> &values)
     {
         float const v = _values[i];
         points.push_back(Eigen::Vector3f(i / float(_values.size() - 1),
-                                         v / (get_max_value() - get_min_value()) + get_min_value(),
+                                         (v - get_min_value()) / (get_max_value() - get_min_value()),
                                          0.0f));
     }
 
     _particle_system = Curved_particle_system(points, _animation_duration);
+    _particle_system.set_tangent_speed_factor(0.2f);
 }
 
 const std::vector<float> &Draggable_statistics::get_values() const

@@ -337,11 +337,11 @@ void My_viewer::start()
     _ui_renderer.init(context(), size());
 
     _screen_stack.clear();
-//    Screen * s = new Main_game_screen(*this, _core);
-//    s->pause();
-//    add_screen(s);
-//    add_screen(new Main_menu_screen(*this, _core));
-    add_screen(new Experiment_screen(*this, _core)); // DEBUG screen
+    Screen * s = new Main_game_screen(*this, _core);
+    s->pause();
+    add_screen(s);
+    add_screen(new Main_menu_screen(*this, _core));
+//    add_screen(new Experiment_screen(*this, _core)); // DEBUG screen
 }
 
 
@@ -578,33 +578,33 @@ void My_viewer::draw_statistic(const Draggable_statistics &b)
 
     glTranslatef(-0.5f, -0.5f, 0.0f);
 
-    glColor4f(1.0f, 1.0f, 1.0f, 0.7f);
+//    glColor4f(1.0f, 1.0f, 1.0f, 0.7f);
 
-    glLineWidth(2.0f);
+//    glLineWidth(2.0f);
 
-    glTranslatef(0.2f, 0.2f, 0.0f);
-    glScalef(0.7f, 0.6f, 1.0f);
+    glTranslatef(0.1f, 0.15f, 0.0f);
+    glScalef(0.8f, 0.6f, 1.0f);
 
-    glBegin(GL_LINE_STRIP);
+//    glBegin(GL_LINE_STRIP);
 
-    size_t i;
-    float const time = values.size() * b.get_normalized_time();
+//    size_t i;
+//    float const time = values.size() * b.get_normalized_time();
 
-    for (i = 0; i < time; ++i)
-    {
-        glVertex2f(i / float(values.size()), values[i] / (b.get_max_value() - b.get_min_value()) + b.get_min_value());
-    }
+//    for (i = 0; i < time; ++i)
+//    {
+//        glVertex2f(i / float(values.size()), values[i] / (b.get_max_value() - b.get_min_value()) + b.get_min_value());
+//    }
 
-    --i;
-    Eigen::Vector2f v0(i / float(values.size()), values[i] / (b.get_max_value() - b.get_min_value()) + b.get_min_value());
-    i = std::min(values.size() - 1, i + 1);
-    Eigen::Vector2f v1(i / float(values.size()), values[i] / (b.get_max_value() - b.get_min_value()) + b.get_min_value());
+//    --i;
+//    Eigen::Vector2f v0(i / float(values.size()), values[i] / (b.get_max_value() - b.get_min_value()) + b.get_min_value());
+//    i = std::min(values.size() - 1, i + 1);
+//    Eigen::Vector2f v1(i / float(values.size()), values[i] / (b.get_max_value() - b.get_min_value()) + b.get_min_value());
 
-    float const alpha = time - int(time);
+//    float const alpha = time - int(time);
 
-    glVertex2fv(Eigen::Vector2f(v0 * (1.0f - alpha) + v1 * alpha).data());
+//    glVertex2fv(Eigen::Vector2f(v0 * (1.0f - alpha) + v1 * alpha).data());
 
-    glEnd();
+//    glEnd();
 
     _ui_renderer.draw_curved_particle_system_in_existing_coord_sys(b.get_particle_system(), height());
 

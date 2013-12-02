@@ -137,6 +137,15 @@ public:
 
     void set_particle_size(float const size) { _particle_size = size; }
 
+    void set_tail_dissipation_speed(float const tail_dissipation_speed);
+
+    void set_tangent_speed_factor(float const tangent_speed_factor);
+
+    Color4 const& get_curve_color() const;
+    void set_curve_color(Color4 const& get_curve_color);
+
+    Color4 const& get_effect_color() const;
+    void setEffect_color(const Color4 &get_effect_color);
 
 protected:
     float _total_time;
@@ -151,6 +160,11 @@ protected:
 
     float _effect_spread;
     float _particle_size;
+    float _tail_dissipation_speed;
+    float _tangent_speed_factor;
+
+    Color4 _curve_color;
+    Color4 _effect_color;
 };
 
 //void draw_particle_system(Targeted_particle_system const& system, int const height);

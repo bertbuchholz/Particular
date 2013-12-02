@@ -152,6 +152,59 @@ void World_renderer::draw_particle_system(Targeted_particle_system const& system
     glPopMatrix();
 }
 
+void World_renderer::draw_curved_particle_system(Curved_particle_system const& system, int const height) const
+{
+    glDisable(GL_DEPTH_TEST);
+    glDisable(GL_LIGHTING);
+
+    glMatrixMode(GL_PROJECTION);
+    glPushMatrix();
+    glLoadIdentity();
+
+    glOrtho(0.0f, 1.0f, 0.0f, 1.0, 1.0f, -1.0f);
+
+    glMatrixMode(GL_MODELVIEW);
+    glPushMatrix();
+    glLoadIdentity();
+
+    glTranslatef(0.5f, 0.5f, 0.0f);
+
+    glScalef(0.5f, 0.5f, 1.0f);
+
+    //        glBindTexture(GL_TEXTURE_2D, _particle_tex);
+
+    draw_curved_particle_system_in_existing_coord_sys(system, height);
+
+    glMatrixMode(GL_PROJECTION);
+    glPopMatrix();
+    glMatrixMode(GL_MODELVIEW);
+    glPopMatrix();
+}
+
+void World_renderer::draw_curved_particle_system_in_existing_coord_sys(const Curved_particle_system &system, const int height) const
+{
+    for (Particle const& p : system.get_curve_particles())
+    {
+        glPointSize(p.size_factor * 4.0f * height / (768.0f));
+        glBegin(GL_POINTS);
+        Color4 color = Color4(p.color.rgb() + Color(1.0f) * (1.0f - p.age), p.color.a);
+        glColor4fv(color.data());
+        glVertex3fv(p.position.data());
+        glEnd();
+    }
+
+    for (Particle const& p : system.get_effect_particles())
+    {
+        if (p.color.a < 0.0f) continue;
+        glPointSize(p.size_factor * 4.0f * height / (768.0f));
+        glBegin(GL_POINTS);
+        Color4 color = Color4(p.color.rgb() + Color(1.0f) * (1.0f - p.age), p.color.a);
+        glColor4fv(color.data());
+        glVertex3fv(p.position.data());
+        glEnd();
+    }
+}
+
 void World_renderer::draw_textured_quad(const GLuint tex_id) const
 {
     glBindTexture(GL_TEXTURE_2D, tex_id);

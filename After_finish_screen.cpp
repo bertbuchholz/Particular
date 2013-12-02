@@ -3,6 +3,7 @@
 #include "My_viewer.h"
 #include "Statistics_screen.h"
 #include "Before_start_screen.h"
+#include "Main_menu_screen.h"
 
 After_finish_screen::After_finish_screen(My_viewer &viewer, Core &core) : Menu_screen(viewer, core)
 {

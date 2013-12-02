@@ -1,5 +1,9 @@
 #include "My_viewer.h"
 
+#include "Experiment_screen.h"
+#include "Main_menu_screen.h"
+#include "Main_options_window.h"
+
 class Game_camera_constraint_old : public qglviewer::Constraint
 {
 public:
@@ -333,10 +337,11 @@ void My_viewer::start()
     _ui_renderer.init(context(), size());
 
     _screen_stack.clear();
-    Screen * s = new Main_game_screen(*this, _core);
-    s->pause();
-    add_screen(s);
-    add_screen(new Main_menu_screen(*this, _core));
+//    Screen * s = new Main_game_screen(*this, _core);
+//    s->pause();
+//    add_screen(s);
+//    add_screen(new Main_menu_screen(*this, _core));
+    add_screen(new Experiment_screen(*this, _core)); // DEBUG screen
 }
 
 
@@ -600,6 +605,8 @@ void My_viewer::draw_statistic(const Draggable_statistics &b)
     glVertex2fv(Eigen::Vector2f(v0 * (1.0f - alpha) + v1 * alpha).data());
 
     glEnd();
+
+    _ui_renderer.draw_curved_particle_system_in_existing_coord_sys(b.get_particle_system(), height());
 
     glPopMatrix();
 }

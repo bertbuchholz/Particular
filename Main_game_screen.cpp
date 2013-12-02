@@ -8,6 +8,7 @@
 #include "After_finish_editor_screen.h"
 #include "FloatSlider.h"
 #include "GL_texture.h"
+#include "Main_options_window.h"
 
 class Widget_text_combination : public QWidget
 {

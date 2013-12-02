@@ -459,6 +459,8 @@ Draggable_statistics::Draggable_statistics(const Eigen::Vector3f &position, cons
 void Draggable_statistics::animate(const float timestep)
 {
     _current_time += timestep;
+
+    _particle_system.animate(timestep);
 }
 
 float Draggable_statistics::get_normalized_time() const
@@ -468,25 +470,29 @@ float Draggable_statistics::get_normalized_time() const
 
 void Draggable_statistics::set_values(const std::vector<float> &values)
 {
+    assert(values.size() > 0);
+
     _values = values;
 
-    auto iter = std::max_element(_values.begin(), _values.end());
+    auto iter_pair = std::minmax_element(_values.begin(), _values.end());
 
-    _max_value = 0.0f;
+    assert(iter_pair.first != _values.end() && iter_pair.second != _values.end());
 
-    if (iter != _values.end())
+    _min_value = *(iter_pair.first);
+    _max_value = *(iter_pair.second);
+
+    std::vector<Eigen::Vector3f> points;
+    points.reserve(_values.size());
+
+    for (int i = 0; i < int(_values.size()); ++i)
     {
-        _max_value = *iter;
+        float const v = _values[i];
+        points.push_back(Eigen::Vector3f(i / float(_values.size() - 1),
+                                         v / (get_max_value() - get_min_value()) + get_min_value(),
+                                         0.0f));
     }
 
-    iter = std::min_element(_values.begin(), _values.end());
-
-    _min_value = 0.0f;
-
-    if (iter != _values.end())
-    {
-        _min_value = *iter;
-    }
+    _particle_system = Curved_particle_system(points, _animation_duration);
 }
 
 const std::vector<float> &Draggable_statistics::get_values() const

@@ -116,3 +116,95 @@ void Targeted_particle_system::animate(const float timestep)
         }
     }
 }
+
+
+Curved_particle_system::Curved_particle_system() : _total_time(1.0f), _current_time(0.0f)
+{ }
+
+
+Curved_particle_system::Curved_particle_system(std::vector<Eigen::Vector3f> const& curve_points, float const total_time) :
+    _total_time(total_time),
+    _current_time(0.0f),
+    _effect_spread(1.0f),
+    _particle_size(1.0f)
+{
+    std::random_device rd;
+    _rng = std::mt19937(rd());
+
+    for (auto const& p : curve_points)
+    {
+        _curve.add_vertex_at_back(p);
+    }
+
+    _curve.finish();
+}
+
+void Curved_particle_system::animate(float const timestep)
+{
+    // animate current particles, then generate new ones
+    for (Particle & p : _curve_particles)
+    {
+        p.age = std::min(1.0f, p.age + timestep);
+        p.speed += Eigen::Vector3f::Random() * 0.0001f;
+//        p.position += p.speed * timestep;
+    }
+
+    for (Particle & p : _effect_particles)
+    {
+//        p.age = std::min(1.001f, p.age + timestep);
+        p.age = p.age + timestep;
+        p.position += p.speed * timestep;
+        p.color.a = 1.0f - p.age * 0.5f;
+        p.speed += Eigen::Vector3f(0.0f, -0.001f * timestep, 0.0f);
+    }
+
+    if (_current_time <= _total_time)
+    {
+        float const normalized_current_position = _current_time / _total_time;
+
+        float t = normalized_current_position;
+
+        _current_time += timestep;
+
+        float const normalized_next_position = std::min(_current_time / _total_time, 1.0f);
+
+        float const normalized_travel_distance = 0.2f * (normalized_next_position - normalized_current_position);
+
+        while (t < normalized_next_position)
+        {
+            Eigen::Vector3f const tangent = _curve.compute_tangent(t);
+            Eigen::Vector3f const orthogonal(tangent[1], -tangent[0], 0.0f);
+
+            Eigen::Vector3f const new_particle_position = _curve.get_pos_on_curve(t);
+
+            Particle p;
+            p.position = new_particle_position + orthogonal * (_rng() / float(_rng.max()) - 0.5f) * 0.01f;
+//            p.color = Color4(1.0f, 0.0f, 0.0f, h3.getNext() * 0.4f + 0.6f);
+//            p.size_factor = h2.getNext() * 2.0f + 0.3f;
+            p.color = Color4(1.0f, 0.0f, 0.0f, _rng() / float(_rng.max()) * 0.6f + 0.4f);
+            p.size_factor = _rng() / float(_rng.max()) * 2.0f + 0.3f;
+            p.size_factor *= _particle_size;
+
+            _curve_particles.push_back(p);
+
+            t += normalized_travel_distance;
+
+            int const spawned_particles = 2;
+
+            for (int i = 0; i < spawned_particles; ++i)
+            {
+                Particle p;
+                p.position = new_particle_position;
+                p.color = Color4(0.0f, 1.0f, 0.0f, _rng() / float(_rng.max()) * 0.6f + 0.4f);
+                p.size_factor = _rng() / float(_rng.max()) * 2.0f + 0.1f;
+                p.size_factor *= _particle_size;
+
+                Eigen::Vector3f speed = tangent * 0.1f;
+                speed += Eigen::Vector3f::Random() * 0.05f * _effect_spread;
+                p.speed = speed;
+
+                _effect_particles.push_back(p);
+            }
+        }
+    }
+}

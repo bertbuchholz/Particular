@@ -2,6 +2,8 @@
 
 #include "My_viewer.h"
 
+#include "Main_menu_screen.h"
+
 
 Before_start_screen::Before_start_screen(My_viewer &viewer, Core &core) : Menu_screen(viewer, core)
 {

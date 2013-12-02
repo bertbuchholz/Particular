@@ -920,7 +920,7 @@ void Core::load_default_simulation_settings()
 void Core::save_level(const std::string &file_name) const
 {
     //        std::ofstream out_file(file_name.c_str(), std::ios_base::binary);
-    std::ofstream out_file(file_name.c_str());
+    std::ofstream out_file(file_name.c_str(), std::fstream::binary | std::fstream::in);
     //        boost::archive::text_oarchive oa(out_file);
     boost::archive::xml_oarchive oa(out_file);
 
@@ -1147,7 +1147,7 @@ void Core::load_level(std::string const& file_name)
     clear();
     set_simulation_state(false);
 
-    std::ifstream in_file(file_name.c_str());
+    std::ifstream in_file(file_name.c_str(), std::fstream::binary | std::fstream::in);
     boost::archive::xml_iarchive ia(in_file);
 
     try

@@ -96,7 +96,7 @@ bool Menu_screen::mousePressEvent(QMouseEvent *event)
         int picked_index = _picking.do_pick(
                     event->pos().x() / float(_viewer.camera()->screenWidth()),
                     (_viewer.camera()->screenHeight() - event->pos().y())  / float(_viewer.camera()->screenHeight()),
-                    std::bind(&Main_menu_screen::draw_draggables_for_picking, this));
+                    std::bind(&Menu_screen::draw_draggables_for_picking, this));
 
         if (picked_index > -1)
         {

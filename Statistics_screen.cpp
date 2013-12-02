@@ -99,7 +99,7 @@ void Statistics_screen::repeat()
 {
     for (Draggable_statistics & stat : _statistics)
     {
-            stat.reset_animation();
+        stat.reset_animation();
     }
 }
 

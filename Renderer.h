@@ -34,6 +34,9 @@ public:
     void setup_gl_points(bool const distance_dependent) const;
 
     void draw_particle_system(Targeted_particle_system const& system, int const height) const;
+    void draw_curved_particle_system(Curved_particle_system const& system, int const height) const;
+    void draw_curved_particle_system_in_existing_coord_sys(Curved_particle_system const& system, int const height) const;
+
 
     void draw_textured_quad(const GLuint tex_id) const;
 

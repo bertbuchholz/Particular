@@ -20,8 +20,7 @@
 
 #include "Screen.h"
 #include "Main_game_screen.h"
-#include "Main_menu_screen.h"
-#include "Main_options_window.h"
+
 
 class My_viewer : public Options_viewer // , public QGLFunctions
 {

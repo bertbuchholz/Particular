@@ -7,6 +7,7 @@
 #include <Eigen/Core>
 #include <functional>
 #include <vector>
+#include <random>
 
 #ifndef Q_MOC_RUN
 #include <boost/serialization/version.hpp>
@@ -15,6 +16,8 @@
 #include <Utilities.h>
 #include <Color.h>
 #include <Frame_buffer.h>
+
+#include "PolygonalCurve.h"
 
 struct Particle
 {
@@ -76,7 +79,7 @@ public:
         }
     }
 
-private:
+protected:
     std::vector<Particle> _particles;
 };
 
@@ -115,6 +118,39 @@ private:
 
     float _total_duration;
     float _age;
+};
+
+class Curved_particle_system
+{
+public:
+    Curved_particle_system();
+
+    Curved_particle_system(std::vector<Eigen::Vector3f> const& curve, float const total_time);
+
+    void animate(float const timestep);
+
+    std::vector<Particle> const& get_curve_particles() const { return _curve_particles; }
+
+    std::vector<Particle> const& get_effect_particles() const { return _effect_particles; }
+
+    void set_effect_spread(float const spread) { _effect_spread = spread; }
+
+    void set_particle_size(float const size) { _particle_size = size; }
+
+
+protected:
+    float _total_time;
+    float _current_time;
+
+    Polygonal_curve _curve;
+
+    std::vector<Particle> _curve_particles;
+    std::vector<Particle> _effect_particles;
+
+    std::mt19937 _rng;
+
+    float _effect_spread;
+    float _particle_size;
 };
 
 //void draw_particle_system(Targeted_particle_system const& system, int const height);

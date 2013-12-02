@@ -299,6 +299,8 @@ public:
 
     void reset_animation();
 
+    Curved_particle_system const& get_particle_system() const { return _particle_system; }
+
 private:
     std::string _x_label;
     std::string _y_label;
@@ -310,6 +312,8 @@ private:
     std::vector<float> _values;
     float _max_value;
     float _min_value;
+
+    Curved_particle_system _particle_system;
 };
 
 

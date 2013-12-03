@@ -117,7 +117,8 @@ SOURCES += main.cpp \
     Pause_screen.cpp \
     GL_texture.cpp \
     Experiment_screen.cpp \
-    PolygonalCurve.cpp
+    PolygonalCurve.cpp \
+    Help_screen.cpp
 
 OTHER_FILES += TODO.txt \
     data/shaders/picking.vert \
@@ -178,4 +179,5 @@ HEADERS += \
     Menu_screen.h \
     GL_texture.h \
     Experiment_screen.h \
-    PolygonalCurve.h
+    PolygonalCurve.h \
+    Help_screen.h

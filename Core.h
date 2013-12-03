@@ -153,11 +153,11 @@ public:
     Molecule_external_force & get_user_force();
     Molecule_external_force const& get_user_force() const;
 
-    std::vector<Barrier*> const& get_barriers() const;
-    std::vector<Portal*> const& get_portals() const;
-    std::vector<Molecule_releaser*> const& get_molecule_releasers() const;
-    std::vector<Brownian_element*> const& get_brownian_elements() const;
-    boost::optional<Molecule const&> get_molecule(int const id) const;
+//    std::vector<Barrier*> const& get_barriers() const;
+//    std::vector<Portal*> const& get_portals() const;
+//    std::vector<Molecule_releaser*> const& get_molecule_releasers() const;
+//    std::vector<Brownian_element*> const& get_brownian_elements() const;
+//    boost::optional<Molecule const&> get_molecule(int const id) const;
 
     Eigen::Vector3f calc_forces_between_atoms(Atom const& a_0, Atom const& a_1) const;
 

@@ -57,7 +57,16 @@ void Targeted_particle_system::generate(const QImage &image)
                 //                    p.color = Color4(1.0f, 0.33f, 0.05f, alpha);
                 float const green = std::rand() / float(RAND_MAX) * 0.26f + 0.2f;
                 p.color = Color4(1.0f, green, 0.05f, alpha);
-                p.position = Eigen::Vector3f::Random();
+
+//                p.position = Eigen::Vector3f::Random();
+
+                float const s = std::rand() / float(RAND_MAX) * 2.0f * M_PI;
+                p.position = { std::cos(s) * 1.5f,
+                               std::sin(s) * 1.5f,
+                               0.0f };
+
+//                p.position = { 1.0f, 1.0f, 0.0f };
+
                 p.position[2] = 0.0f;
                 p.target = Eigen::Vector3f(  x / float(image.width())  * 2.0f - 1.0f,
                                              -(y / float(image.height()) * 2.0f - 1.0f),

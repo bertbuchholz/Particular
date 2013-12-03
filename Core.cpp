@@ -727,10 +727,10 @@ void Core::update_tree()
 }
 
 
-const std::vector<Brownian_element *> &Core::get_brownian_elements() const
-{
-    return _level_data._brownian_elements;
-}
+//const std::vector<Brownian_element *> &Core::get_brownian_elements() const
+//{
+//    return _level_data._brownian_elements;
+//}
 
 
 Eigen::Vector3f Core::calc_forces_between_atoms(const Atom &a_0, const Atom &a_1) const
@@ -746,17 +746,17 @@ Eigen::Vector3f Core::calc_forces_between_atoms(const Atom &a_0, const Atom &a_1
 }
 
 
-boost::optional<const Molecule &> Core::get_molecule(const int id) const
-{
-    auto iter = _molecule_id_to_molecule_map.find(id);
+//boost::optional<const Molecule &> Core::get_molecule(const int id) const
+//{
+//    auto iter = _molecule_id_to_molecule_map.find(id);
 
-    if (iter != _molecule_id_to_molecule_map.end())
-    {
-        return boost::optional<Molecule const&>(*iter->second);
-    }
+//    if (iter != _molecule_id_to_molecule_map.end())
+//    {
+//        return boost::optional<Molecule const&>(*iter->second);
+//    }
 
-    return boost::optional<Molecule const&>();
-}
+//    return boost::optional<Molecule const&>();
+//}
 
 
 void Core::start_level()
@@ -1075,22 +1075,22 @@ void Core::update_physics()
 }
 
 
-const std::vector<Molecule_releaser *> &Core::get_molecule_releasers() const
-{
-    return _level_data._molecule_releasers;
-}
+//const std::vector<Molecule_releaser *> &Core::get_molecule_releasers() const
+//{
+//    return _level_data._molecule_releasers;
+//}
 
 
-const std::vector<Portal *> &Core::get_portals() const
-{
-    return _level_data._portals;
-}
+//const std::vector<Portal *> &Core::get_portals() const
+//{
+//    return _level_data._portals;
+//}
 
 
-const std::vector<Barrier *> &Core::get_barriers() const
-{
-    return _level_data._barriers;
-}
+//const std::vector<Barrier *> &Core::get_barriers() const
+//{
+//    return _level_data._barriers;
+//}
 
 
 const Molecule_external_force &Core::get_user_force() const

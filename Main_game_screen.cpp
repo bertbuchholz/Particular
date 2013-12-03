@@ -261,45 +261,53 @@ bool Main_game_screen::keyPressEvent(QKeyEvent * event)
 
     if (event->key() == Qt::Key_Escape)
     {
-            if (get_state() == State::Running && _level_state != Level_state::Intro)
+        if (get_state() == State::Running && _level_state != Level_state::Intro)
+        {
+            // go into pause and start pause menu
+            pause();
+
+            if (_ui_state == Ui_state::Level_editor)
             {
-                // go into pause and start pause menu
-                pause();
-
-                if (_ui_state == Ui_state::Level_editor)
-                {
-                    _viewer.add_screen(new Editor_pause_screen(_viewer, _core, this));
-                }
-                else
-                {
-                    _viewer.add_screen(new Pause_screen(_viewer, _core, this));
-                }
-
-                _core.set_simulation_state(false);
-
-                handled = true;
+                _viewer.add_screen(new Editor_pause_screen(_viewer, _core, this));
             }
-            else if ((get_state() == State::Paused || get_state() == State::Pausing) && _level_state != Level_state::Intro)
+            else
             {
-                resume();
-
-                handled = true;
+                _viewer.add_screen(new Pause_screen(_viewer, _core, this));
             }
-            else if (_level_state == Level_state::Intro)
-            {
-                pause();
 
-                _viewer.camera()->deletePath(0);
+            _core.set_simulation_state(false);
 
-                _core.load_next_level();
+            handled = true;
+        }
+        else if ((get_state() == State::Paused || get_state() == State::Pausing) && _level_state != Level_state::Intro)
+        {
+            resume();
 
-                _viewer.add_screen(new Before_start_screen(_viewer, _core));
+            handled = true;
+        }
+        else if (_level_state == Level_state::Intro)
+        {
+            pause();
 
-                _level_state = Level_state::Running;
+            _viewer.camera()->deletePath(0);
 
-                handled = true;
-            }
+            _core.load_next_level();
+
+            _viewer.add_screen(new Before_start_screen(_viewer, _core));
+
+            _level_state = Level_state::Running;
+
+            handled = true;
+        }
     }
+    else if (event->key() == Qt::Key_F && (event->modifiers() & Qt::ShiftModifier) && (event->modifiers() & Qt::ControlModifier))
+    {
+        std::cout << __FUNCTION__ << " finish forced" << std::endl;
+
+        _core.set_new_game_state(Core::Game_state::Finished);
+        handled = true;
+    }
+
 
     return handled;
 }

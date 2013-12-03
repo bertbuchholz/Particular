@@ -245,6 +245,14 @@ void Curved_particle_system::setEffect_color(Color4 const& effect_color)
     _effect_color = effect_color;
 }
 
+void Curved_particle_system::reset()
+{
+    _current_time = 0.0f;
+
+    _curve_particles.clear();
+    _effect_particles.clear();
+}
+
 
 
 

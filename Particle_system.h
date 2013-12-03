@@ -147,6 +147,8 @@ public:
     Color4 const& get_effect_color() const;
     void setEffect_color(const Color4 &get_effect_color);
 
+    void reset();
+
 protected:
     float _total_time;
     float _current_time;

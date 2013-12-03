@@ -47,12 +47,12 @@ void Statistics_screen::init()
 //        _viewer.generate_label_texture(label.get());
 //    }
 
+    setup_statistics(_core.get_sensor_data()); // this MUST be before the generation of the textures!
+
     for (Draggable_statistics & stat : _statistics)
     {
         _renderer.generate_statistics_texture(stat);
     }
-
-    setup_statistics(_core.get_sensor_data());
 }
 
 void Statistics_screen::draw()

@@ -492,11 +492,13 @@ void Draggable_statistics::set_values(const std::vector<float> &values, boost::o
     std::vector<Eigen::Vector3f> points;
     points.reserve(_values.size());
 
+    float const min_max_diff = std::max(get_max_value() - get_min_value(), 0.00001f);
+
     for (int i = 0; i < int(_values.size()); ++i)
     {
         float const v = _values[i];
         points.push_back(Eigen::Vector3f(i / float(_values.size() - 1),
-                                         (v - get_min_value()) / (get_max_value() - get_min_value()),
+                                         (v - get_min_value()) / min_max_diff,
                                          0.0f));
     }
 

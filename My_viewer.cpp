@@ -566,6 +566,8 @@ void My_viewer::draw_statistic(const Draggable_statistics &b)
 
     if (values.empty()) return;
 
+    glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+
     glPushMatrix();
 
     glTranslatef(b.get_position()[0], b.get_position()[1], b.get_position()[2]);

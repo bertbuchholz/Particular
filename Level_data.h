@@ -45,6 +45,8 @@ public:
     void update_variables();
     void update_parameters();
 
+    float get_temperature(Eigen::Vector3f const& world_pos) const;
+
     void add_molecule_releaser(Molecule_releaser *molecule_releaser);
     void add_portal(Portal *portal);
     void add_brownian_element(Brownian_element *element);
@@ -192,6 +194,11 @@ public:
 
     float _rotation_fluctuation;
     float _translation_fluctuation;
+
+    float _game_field_width;
+    float _game_field_height;
+
+    Frame_buffer<float> _temperature_grid;
 
 //    float _gravity;
 

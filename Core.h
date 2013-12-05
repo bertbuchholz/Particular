@@ -31,6 +31,7 @@
 #include "Progress.h"
 #include "Main_game_screen.h"
 
+void update_temperature_grid(Level_data const& level_data, Frame_buffer<float> & grid);
 
 class Core : public QObject
 {

@@ -60,7 +60,16 @@ void After_finish_screen::init()
         _core.get_progress().last_level += 1;
     }
 
-    _core.get_progress().scores[_core.get_current_level_name()].push_back(score);
+    std::vector<Score> & scores = _core.get_progress().scores[_core.get_current_level_name()];
+
+    auto iter = std::max_element(scores.begin(), scores.end(), Score::score_comparer);
+
+    if (score.final_score > iter->final_score)
+    {
+        std::cout << __FUNCTION__ << " new highscore" <<  std::endl;
+    }
+
+    scores.push_back(score);
 
 //    _next_level_button->set_visible(_core.get_progress().last_level < _core.get_level_names().size());
 

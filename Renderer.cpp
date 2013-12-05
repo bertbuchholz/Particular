@@ -487,9 +487,9 @@ void Ui_renderer::generate_statistics_texture(Draggable_statistics &b) const
     p.setFont(font);
 
     QRect graphkey_rect(0.03f * pixel_size.width(), (0.85f - 0.05f - 0.6f * 0.0f / 4.0f) * pixel_size.height(), 0.06f * pixel_size.width(), 0.1f * pixel_size.height());
-    p.drawText(graphkey_rect, Qt::AlignVCenter | Qt::AlignRight, QString("%1").arg(b.get_min_value()));
+    p.drawText(graphkey_rect, Qt::AlignVCenter | Qt::AlignRight, QString("%1").arg(b.get_min_value(), 0, 'f', 0));
     graphkey_rect.moveTop((0.85f - 0.05f - 0.6f * 4.0f / 4.0f) * pixel_size.height());
-    p.drawText(graphkey_rect, Qt::AlignVCenter | Qt::AlignRight, QString("%1").arg(b.get_max_value()));
+    p.drawText(graphkey_rect, Qt::AlignVCenter | Qt::AlignRight, QString("%1").arg(b.get_max_value(), 0, 'f', 0));
 
 //    p.drawText(0.2f * pixel_size.width(), 0.3f * pixel_size.height(), "X");
 //    p.drawText(0.2f * pixel_size.width(), 0.8f * pixel_size.height(), "Y");
@@ -819,15 +819,13 @@ void Shader_renderer::draw_temperature_mesh(const MyMesh &mesh, const Level_data
 }
 
 
-void Shader_renderer::draw_temperature_cube(const MyMesh &mesh, const Level_data &level_data, const GLuint bg_texture, const QSize &screen_size, const float time)
+void Shader_renderer::draw_temperature_cube(MyMesh const& mesh, Level_data const& level_data, GLuint const bg_texture, QSize const& screen_size, float const time)
 {
     if (level_data._game_field_borders.size() != 6)
     {
         std::cout << __FUNCTION__ << " no game field borders or too many/few, not drawing temperature mesh" << std::endl;
         return;
     }
-
-    float const general_temperature = 0.5f * (level_data._translation_fluctuation + level_data._rotation_fluctuation);
 
 //    glDisable(GL_DEPTH_TEST);
 
@@ -847,8 +845,6 @@ void Shader_renderer::draw_temperature_cube(const MyMesh &mesh, const Level_data
     //        glColor3f(0.5f, 0.5f, 0.5f);
     //        draw_backdrop_quad();
 
-    std::vector<Brownian_element*> const& elements = level_data._brownian_elements;
-
 //    auto front_face_iter = level_data._game_field_borders.find(Level_data::Plane::Neg_Y);
 
 //    assert(front_face_iter != level_data._game_field_borders.end());
@@ -865,6 +861,8 @@ void Shader_renderer::draw_temperature_cube(const MyMesh &mesh, const Level_data
     cube_system.scale(game_field_size * 0.5f);
 //            Eigen::Scaling(game_field_size * 0.5f);
 
+    float const max_strength = 50.0f;
+
     MyMesh::ConstFaceIter fIt(mesh.faces_begin()), fEnd(mesh.faces_end());
 
     glBegin(GL_TRIANGLES);
@@ -875,21 +873,39 @@ void Shader_renderer::draw_temperature_cube(const MyMesh &mesh, const Level_data
         Eigen::Vector3f p = cube_system * OM2Eigen(mesh.point(fvIt.handle()));
         //            glColor4f(1.0f, 0.0f, 0.0f, 1.0f);
         glTexCoord2fv(mesh.texcoord2D(fvIt.handle()).data());
-        glColor3fv(Color(get_brownian_strength(p, elements, general_temperature)).data());
+//        glColor3fv(Color(get_brownian_strength(p, elements, general_temperature)).data());
+
+        float strength = level_data.get_temperature(p);
+        strength = into_range(strength / max_strength, -1.0f, 1.0f) * 0.5f + 0.5f;
+
+        glColor3fv(Color(strength).data());
+
         glVertex3fv(p.data());
 
         ++fvIt;
         p = cube_system * OM2Eigen(mesh.point(fvIt.handle()));
         //            glColor4f(1.0f, 0.0f, 0.0f, 1.0f);
         glTexCoord2fv(mesh.texcoord2D(fvIt.handle()).data());
-        glColor3fv(Color(get_brownian_strength(p, elements, general_temperature)).data());
+//        glColor3fv(Color(get_brownian_strength(p, elements, general_temperature)).data());
+
+        strength = level_data.get_temperature(p);
+        strength = into_range(strength / max_strength, -1.0f, 1.0f) * 0.5f + 0.5f;
+
+        glColor3fv(Color(strength).data());
+
         glVertex3fv(p.data());
 
         ++fvIt;
         p = cube_system * OM2Eigen(mesh.point(fvIt.handle()));
         //            glColor4f(1.0f, 0.0f, 0.0f, 1.0f);
         glTexCoord2fv(mesh.texcoord2D(fvIt.handle()).data());
-        glColor3fv(Color(get_brownian_strength(p, elements, general_temperature)).data());
+//        glColor3fv(Color(get_brownian_strength(p, elements, general_temperature)).data());
+
+        strength = level_data.get_temperature(p);
+        strength = into_range(strength / max_strength, -1.0f, 1.0f) * 0.5f + 0.5f;
+
+        glColor3fv(Color(strength).data());
+
         glVertex3fv(p.data());
     }
     glEnd();

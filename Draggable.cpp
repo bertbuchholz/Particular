@@ -504,6 +504,7 @@ void Draggable_statistics::set_values(const std::vector<float> &values, boost::o
 
     _particle_system = Curved_particle_system(points, _animation_duration);
     _particle_system.set_tangent_speed_factor(0.2f);
+    _particle_system.set_particle_size(0.5f);
 }
 
 const std::vector<float> &Draggable_statistics::get_values() const
@@ -524,6 +525,8 @@ float Draggable_statistics::get_min_value() const
 void Draggable_statistics::reset_animation()
 {
     _current_time = 0.0f;
+
+    _particle_system.reset();
 }
 
 

@@ -8,6 +8,11 @@ struct Score
     int final_score;
     Sensor_data sensor_data;
 
+    static bool score_comparer(Score const& score1, Score const& score2)
+    {
+        return score1.final_score < score2.final_score;
+    }
+
     template<class Archive>
     void serialize(Archive & ar, const unsigned int /* version */)
     {

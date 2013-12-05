@@ -328,13 +328,19 @@ void Core::compute_force_and_torque(Molecule &receiver)
     float brownian_translation_factor = _level_data._translation_fluctuation;
     float brownian_rotation_factor = _level_data._rotation_fluctuation * translation_to_rotation_ratio;
 
-    for (Brownian_element const* element : _level_data._brownian_elements)
-    {
-        float const factor = element->get_brownian_motion_factor(receiver._x);
+//    for (Brownian_element const* element : _level_data._brownian_elements)
+//    {
+//        float const factor = element->get_brownian_motion_factor(receiver._x);
 
-        brownian_translation_factor += factor;
-        brownian_rotation_factor += translation_to_rotation_ratio * factor;
-    }
+//        brownian_translation_factor += factor;
+//        brownian_rotation_factor += translation_to_rotation_ratio * factor;
+//    }
+
+    float const factor = _level_data.get_temperature(receiver._x);
+
+    brownian_translation_factor += factor;
+    brownian_rotation_factor += translation_to_rotation_ratio * factor;
+
 
     Eigen::Vector3f random_dir = Eigen::Vector3f::Random().normalized();
 
@@ -442,6 +448,38 @@ void Core::check_molecules_in_portals()
 }
 
 
+void update_temperature_grid(Level_data const& level_data, Frame_buffer<float> & grid)
+{
+    float const game_field_width  = level_data._parameters["Game Field Width"]->get_value<float>();
+    float const game_field_height = level_data._parameters["Game Field Height"]->get_value<float>();
+
+    float const temp_min = level_data._parameters["Temperature"]->get_min<float>();
+    float const temp_max = level_data._parameters["Temperature"]->get_max<float>();
+
+    float const overall_temperature = level_data._parameters["Temperature"]->get_value<float>();
+
+    for (int i = 0; i < grid.get_size(); ++i)
+    {
+        int x, y;
+        grid.get_coordinates(i, x, y);
+
+        float const normalized_x = x / float(grid.get_width() - 1)  * 2.0f - 1.0f;
+        float const normalized_z = y / float(grid.get_height() - 1) * 2.0f - 1.0f;
+
+        Eigen::Vector3f pos(normalized_x * game_field_width * 0.5f, 0.0f, normalized_z * game_field_height * 0.5f);
+
+        float temperature = overall_temperature;
+
+        for (Brownian_element const* element : level_data._brownian_elements)
+        {
+            temperature += element->get_brownian_motion_factor(pos);
+        }
+
+        grid.set_data(i, into_range(temperature, temp_min, temp_max));
+    }
+}
+
+
 void Core::update(const float time_step)
 {
     _current_time += time_step;
@@ -515,6 +553,8 @@ void Core::update(const float time_step)
     {
         e->animate(time_step);
     }
+
+    update_temperature_grid(_level_data, _level_data._temperature_grid);
 
     if (time_debug)
     {
@@ -646,12 +686,23 @@ void Core::do_sensor_check()
     }
 
     // TODO: add power consumption of tractors
-
     for (Brownian_element const* p : _level_data._brownian_elements)
     {
-        energy_consumption += std::abs(p->get_strength()) * p->get_radius();
-        average_temperature += p->get_strength() * p->get_radius();
+        Eigen::AlignedBox3f const world_aabb = p->get_world_aabb();
+        float const volume = (world_aabb.sizes()[0] + p->get_radius()) * (world_aabb.sizes()[2] + p->get_radius());
+
+        energy_consumption += std::abs(p->get_strength()) * volume;
     }
+
+    for (float const temp : _level_data._temperature_grid.get_data())
+    {
+        assert(is_in_range(temp, -50.0f, 50.0f));
+        average_temperature += temp;
+    }
+
+    average_temperature /= float(_level_data._temperature_grid.get_size());
+
+    assert(is_in_range(average_temperature, -50.0f, 50.0f));
 
     _sensor_data.add_value(Sensor_data::Type::AvgTemp, average_temperature);
     _sensor_data.add_value(Sensor_data::Type::ColMol, num_collected_molecules);

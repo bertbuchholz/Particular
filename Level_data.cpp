@@ -35,6 +35,10 @@ Level_data::Level_data()
     available_list->add_parameter(new Parameter("Molecule_releaser", 0, 0, 9, update_variables));
     available_list->add_parameter(new Parameter("Charged_barrier", 0, 0, 9, update_variables));
     available_list->add_parameter(new Parameter("Tractor_barrier", 0, 0, 9, update_variables));
+
+    _temperature_grid.set_size(10, 10);
+
+    update_variables();
 }
 
 bool Level_data::validate_elements()
@@ -213,6 +217,9 @@ void Level_data::update_variables()
     //        _gravity = _parameters["gravity"]->get_value<float>();
     _external_forces["gravity"]._force[2] = -_parameters["gravity"]->get_value<float>();
 
+    _game_field_width = _parameters["Game Field Width"]->get_value<float>();
+    _game_field_height = _parameters["Game Field Height"]->get_value<float>();
+
     Parameter_list const* available_list = _parameters.get_child("Available elements");
 
     for (auto const& iter : *available_list)
@@ -255,6 +262,13 @@ void Level_data::update_parameters()
     {
         iter.second->set_value_no_update(_available_elements[iter.first]);
     }
+}
+
+float Level_data::get_temperature(Eigen::Vector3f const& world_pos) const
+{
+    return _temperature_grid.get_interpolated_value(
+            into_range(world_pos[0] / (_game_field_width * 0.5f) * 0.5f + 0.5f, 0.0f, 1.0f),
+            into_range(world_pos[2] / (_game_field_height * 0.5f) * 0.5f + 0.5f, 0.0f, 1.0f));
 }
 
 void Level_data::add_molecule_releaser(Molecule_releaser *molecule_releaser)

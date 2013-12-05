@@ -157,7 +157,8 @@ void Curved_particle_system::animate(float const timestep)
     for (Particle & p : _curve_particles)
     {
         p.age = std::min(1.0f, p.age + timestep);
-        p.speed += Eigen::Vector3f::Random() * 0.0001f;
+        p.speed += Eigen::Vector3f::Random().normalized() * 0.00001f;
+//        p.speed += Eigen::Vector3f::Zero();
 //        p.position += p.speed * timestep;
     }
 

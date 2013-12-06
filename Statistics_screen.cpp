@@ -7,23 +7,29 @@ void Statistics_screen::init()
 {
     _statistics.resize(_core.get_sensor_data().get_num_data_types());
 
+    float const stat_anim_duration = 10.0f;
+
     {
-        Draggable_statistics stat(Eigen::Vector3f(0.25f, 0.6f + 0.35f * 0.5f, 0.0f), Eigen::Vector2f(0.45f, 0.35f), "Released Molecules");
+        boost::shared_ptr<Draggable_statistics> stat(new Draggable_statistics(Eigen::Vector3f(0.25f, 0.6f + 0.35f * 0.5f, 0.0f), Eigen::Vector2f(0.45f, 0.35f), "Released Molecules"));
+        stat->set_duration(stat_anim_duration);
         _statistics[int(Sensor_data::Type::RelMol)] = stat;
     }
 
     {
-        Draggable_statistics stat(Eigen::Vector3f(0.75f, 0.6f + 0.35f * 0.5f, 0.0f), Eigen::Vector2f(0.45f, 0.35f), "Collected Molecules");
+        boost::shared_ptr<Draggable_statistics> stat(new Draggable_statistics(Eigen::Vector3f(0.75f, 0.6f + 0.35f * 0.5f, 0.0f), Eigen::Vector2f(0.45f, 0.35f), "Collected Molecules"));
+        stat->set_duration(stat_anim_duration);
         _statistics[int(Sensor_data::Type::ColMol)] = stat;
     }
 
     {
-        Draggable_statistics stat(Eigen::Vector3f(0.25f, 0.2f + 0.35f * 0.5f, 0.0f), Eigen::Vector2f(0.45f, 0.35f), "Avg. Temperature");
+        boost::shared_ptr<Draggable_statistics> stat(new Draggable_statistics(Eigen::Vector3f(0.25f, 0.2f + 0.35f * 0.5f, 0.0f), Eigen::Vector2f(0.45f, 0.35f), "Avg. Temperature"));
+        stat->set_duration(stat_anim_duration);
         _statistics[int(Sensor_data::Type::AvgTemp)] = stat;
     }
 
     {
-        Draggable_statistics stat(Eigen::Vector3f(0.75f, 0.2f + 0.35f * 0.5f, 0.0f), Eigen::Vector2f(0.45f, 0.35f), "Energy Consumption");
+        boost::shared_ptr<Draggable_statistics> stat(new Draggable_statistics(Eigen::Vector3f(0.75f, 0.2f + 0.35f * 0.5f, 0.0f), Eigen::Vector2f(0.45f, 0.35f), "Energy Consumption"));
+        stat->set_duration(stat_anim_duration);
         _statistics[int(Sensor_data::Type::EnergyCon)] = stat;
     }
 
@@ -47,26 +53,73 @@ void Statistics_screen::init()
 //        _viewer.generate_label_texture(label.get());
 //    }
 
+    _collected_score_label = boost::shared_ptr<Draggable_label>(new Draggable_label({ 0.75f, 0.6f + 0.35f * 0.5f, 0.0f }, { 0.3f, 0.2f }, "ColScore"));
+    _collected_score_label->set_alpha(0.0f);
+    _renderer.generate_label_texture(_collected_score_label.get());
+    _labels.push_back(_collected_score_label);
+
+    _power_score_label = boost::shared_ptr<Draggable_label>(new Draggable_label({ 0.75f, 0.6f + 0.35f * 0.5f, 0.0f }, { 0.3f, 0.2f }, "PowerScore"));
+    _power_score_label->set_alpha(0.0f);
+    _renderer.generate_label_texture(_power_score_label.get());
+    _labels.push_back(_power_score_label);
+
+    boost::shared_ptr<Draggable_event> collected_label_event(new Draggable_event(_collected_score_label, Draggable_event::Type::Fade_in));
+    _events.push_back(collected_label_event);
+
+    boost::shared_ptr<Draggable_event> power_label_event(new Draggable_event(_power_score_label, Draggable_event::Type::Fade_in));
+    _events.push_back(power_label_event);
+
+
+    {
+        boost::shared_ptr<Draggable_event> e(new Draggable_event(_statistics[int(Sensor_data::Type::RelMol)], Draggable_event::Type::Animate));
+        e->set_duration(stat_anim_duration);
+        e->trigger();
+        _events.push_back(e);
+    }
+
+    {
+        boost::shared_ptr<Draggable_event> e(new Draggable_event(_statistics[int(Sensor_data::Type::ColMol)], Draggable_event::Type::Animate));
+        e->set_duration(stat_anim_duration);
+        e->trigger();
+        e->set_finish_function(std::bind(&Draggable_event::trigger, collected_label_event.get()));
+        _events.push_back(e);
+    }
+
+    {
+        boost::shared_ptr<Draggable_event> e(new Draggable_event(_statistics[int(Sensor_data::Type::AvgTemp)], Draggable_event::Type::Animate));
+        e->set_duration(stat_anim_duration);
+        e->trigger();
+        _events.push_back(e);
+    }
+
+    {
+        boost::shared_ptr<Draggable_event> e(new Draggable_event(_statistics[int(Sensor_data::Type::EnergyCon)], Draggable_event::Type::Animate));
+        e->set_duration(stat_anim_duration);
+        e->trigger();
+        e->set_finish_function(std::bind(&Draggable_event::trigger, power_label_event.get()));
+        _events.push_back(e);
+    }
+
     setup_statistics(_core.get_sensor_data()); // this MUST be before the generation of the textures!
 
-    for (Draggable_statistics & stat : _statistics)
+    for (boost::shared_ptr<Draggable_statistics> const& stat : _statistics)
     {
-        _renderer.generate_statistics_texture(stat);
+        _renderer.generate_statistics_texture(*stat);
     }
 }
 
 void Statistics_screen::draw()
 {
-    Menu_screen::draw();
-
     _viewer.start_normalized_screen_coordinates();
 
-    for (Draggable_statistics const& stat : _statistics)
+    for (boost::shared_ptr<Draggable_statistics> const& stat : _statistics)
     {
-            _viewer.draw_statistic(stat);
+        _viewer.draw_statistic(*stat);
     }
 
     _viewer.stop_normalized_screen_coordinates();
+
+    Menu_screen::draw();
 }
 
 
@@ -74,9 +127,14 @@ void Statistics_screen::update_event(const float time_step)
 {
     Menu_screen::update_event(time_step);
 
-    for (Draggable_statistics & stat : _statistics)
+//    for (Draggable_statistics & stat : _statistics)
+//    {
+//        stat.animate(time_step);
+//    }
+
+    for (boost::shared_ptr<Draggable_event> & e : _events)
     {
-        stat.animate(time_step);
+        e->update(time_step);
     }
 }
 
@@ -84,7 +142,7 @@ void Statistics_screen::setup_statistics(const Sensor_data &sensor_data)
 {
     for (int i = 0; i < sensor_data.get_num_data_types(); ++i)
     {
-        _statistics[i].set_values(sensor_data.get_data(Sensor_data::Type(i)));
+        _statistics[i]->set_values(sensor_data.get_data(Sensor_data::Type(i)));
     }
 }
 
@@ -97,12 +155,11 @@ void Statistics_screen::exit()
 
 void Statistics_screen::repeat()
 {
-    for (Draggable_statistics & stat : _statistics)
+    for (boost::shared_ptr<Draggable_statistics> & stat : _statistics)
     {
-        stat.reset_animation();
+        stat->reset_animation();
     }
 }
-
 
 Statistics_screen::Statistics_screen(My_viewer & viewer, Core & core, Screen *calling_screen) :
     Menu_screen(viewer, core), _calling_screen(calling_screen)

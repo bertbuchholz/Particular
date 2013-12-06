@@ -458,9 +458,14 @@ Draggable_statistics::Draggable_statistics(const Eigen::Vector3f &position, cons
 
 void Draggable_statistics::animate(const float timestep)
 {
-    _current_time += timestep;
+    _current_time = std::min(_animation_duration + 0.001f, _current_time + timestep);
 
     _particle_system.animate(timestep);
+
+    if (_current_time > _animation_duration && _finish_callback)
+    {
+        _finish_callback();
+    }
 }
 
 float Draggable_statistics::get_normalized_time() const
@@ -527,6 +532,11 @@ void Draggable_statistics::reset_animation()
     _current_time = 0.0f;
 
     _particle_system.reset();
+}
+
+void Draggable_statistics::set_duration(const float duration)
+{
+    _animation_duration = duration;
 }
 
 

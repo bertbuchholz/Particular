@@ -2,6 +2,7 @@
 #define DRAGGABLE_H
 
 #include <vector>
+#include <functional>
 #include <QVariantAnimation>
 
 #include <Eigen/Core>
@@ -299,6 +300,8 @@ public:
 
     void reset_animation();
 
+    void set_duration(float const duration);
+
     Curved_particle_system const& get_particle_system() const { return _particle_system; }
 
 private:
@@ -314,6 +317,8 @@ private:
     float _min_value;
 
     Curved_particle_system _particle_system;
+
+    std::function<void(void)> _finish_callback;
 };
 
 

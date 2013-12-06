@@ -36,7 +36,7 @@ public:
         return int(_data.size());
     }
 
-    float get_check_interval()
+    float get_check_interval() const
     {
         return _check_interval;
     }
@@ -50,9 +50,26 @@ public:
             score += std::exp(-float(i) / time_factor) * _data[int(Type::ColMol)][i];
         }
 
-        score *= _check_interval;
+        score *= _check_interval / float(_data[int(Type::ColMol)].size());
 
         return score * 100;
+    }
+
+    std::vector<int> calculate_score(Type const type, float const time_factor) const
+    {
+        std::vector<float> const& values = _data[int(type)];
+
+        std::vector<int> result;
+        result.reserve(values.size());
+
+        for (size_t i = 0; i < values.size(); ++i)
+        {
+            float score = std::exp(-float(i) / time_factor) * values[i];
+            score *= _check_interval / float(values.size()) * 100;
+            result.push_back(score);
+        }
+
+        return result;
     }
 
     template<class Archive>

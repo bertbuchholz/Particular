@@ -250,7 +250,7 @@ Color4 const& Curved_particle_system::get_effect_color() const
     return _effect_color;
 }
 
-void Curved_particle_system::setEffect_color(Color4 const& effect_color)
+void Curved_particle_system::set_effect_color(Color4 const& effect_color)
 {
     _effect_color = effect_color;
 }

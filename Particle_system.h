@@ -145,7 +145,7 @@ public:
     void set_curve_color(Color4 const& get_curve_color);
 
     Color4 const& get_effect_color() const;
-    void setEffect_color(const Color4 &get_effect_color);
+    void set_effect_color(const Color4 &get_effect_color);
 
     void reset();
 

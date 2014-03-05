@@ -70,20 +70,26 @@ void Menu_screen::draw()
 
     for (size_t i = 0; i < _buttons.size(); ++i)
     {
-        boost::shared_ptr<Draggable_button> const& button = _buttons[i];
-        if (int(i) == _hover_index)
+        if (_buttons[i]->is_visible())
         {
-            draw_hovered_button(button.get(), _time, alpha);
-        }
-        else
-        {
-            _viewer.draw_button(button.get(), false, alpha);
+            boost::shared_ptr<Draggable_button> const& button = _buttons[i];
+            if (int(i) == _hover_index)
+            {
+                draw_hovered_button(button.get(), _time, alpha);
+            }
+            else
+            {
+                _viewer.draw_button(button.get(), false, alpha);
+            }
         }
     }
 
     for (boost::shared_ptr<Draggable_label> const& label : _labels)
     {
-        _viewer.draw_label(label.get(), alpha);
+        if (label->is_visible())
+        {
+            _viewer.draw_label(label.get(), alpha);
+        }
     }
 
     _viewer.stop_normalized_screen_coordinates();

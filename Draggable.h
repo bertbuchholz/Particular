@@ -181,15 +181,14 @@ public:
     std::vector<Draggable *> get_draggables(Level_element::Edit_type const /* edit_type */) override;
 
     GLuint get_texture() const;
-
     void set_texture(GLuint texture);
 
     std::string const& get_text();
 
     Eigen::Vector2f const& get_extent() const;
+    void set_extent(Eigen::Vector2f const& extent);
 
     float get_alpha() const;
-
     void set_alpha(float const alpha);
 
 protected:

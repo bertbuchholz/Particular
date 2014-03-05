@@ -9,6 +9,7 @@
 #include "FloatSlider.h"
 #include "GL_texture.h"
 #include "Main_options_window.h"
+#include "Event.h"
 
 class Widget_text_combination : public QWidget
 {
@@ -1352,6 +1353,16 @@ void Main_game_screen::handle_level_change(Main_game_screen::Level_state const l
     {
         setup_intro();
         assert(_core.get_level_data()._game_field_borders.size() == 6);
+    }
+    else if (_core.get_progress().last_level == 0)
+    {
+        std::cout << "Level 0, adding tutorial events" << std::endl;
+        _viewer.clear_events();
+        _viewer.add_event(new Molecule_releaser_event(_core, _viewer));
+        _viewer.add_event(new Portal_event(_core, _viewer));
+        _viewer.add_event(new Heat_button_event(_core, _viewer));
+        _viewer.add_event(new Heat_element_placed_event(_core, _viewer));
+        _viewer.add_event(new Heat_turned_up_event(_core, _viewer));
     }
 
 //    if (_ui_state != Ui_state::Level_editor)

@@ -69,8 +69,9 @@ public:
     void draw_spinbox(Draggable_spinbox const& s, const bool for_picking, float const alpha = 1.0f) const;
 
     void generate_button_texture(Draggable_button *b) const;
-    void generate_label_texture(Draggable_label *b) const;
+    void generate_label_texture(Draggable_label *b, const int text_alignment = Qt::AlignCenter) const;
     void generate_statistics_texture(Draggable_statistics &b) const;
+    Eigen::Vector2f generate_flowing_text_label(Draggable_label *label, float const text_width) const;
     Draggable_tooltip * generate_tooltip(Eigen::Vector3f const& screen_pos, Eigen::Vector3f const& element_extent, std::string const& text) const;
 
     void setup_fonts();

@@ -3,36 +3,40 @@
 
 #include "Menu_screen.h"
 
-class Help_event
-{
-public:
-    Help_event() {}
-
-    Help_event(QString const& text, Eigen::Vector3f const& position, float const radius) :
-        _text(text), _position(position), _radius(radius)
-    {}
-
-//private:
-    QString _text;
-    Eigen::Vector3f _position;
-    float _radius;
-};
-
 class Help_screen : public Menu_screen
 {
 public:
+    struct Help_item
+    {
+        QString _text;
+        Eigen::Vector2f _text_rect_position; // upper left corner
+        Eigen::Vector2f _text_rect_size;
+        Eigen::Vector2f _position;
+        Eigen::Vector2f _radius;
+        Curved_particle_system _particle_system;
+        bool _use_particle_system;
+    };
+
     Help_screen(My_viewer & viewer, Core & core, Screen * calling_state);
 
 //    bool keyPressEvent(QKeyEvent * event) override;
 
     void init();
 
-//    void continue_game();
-//    void return_to_main_menu();
-//    void restart_level();
+    void draw() override;
+    void update_event(float const time_step) override;
+
+    void continue_game();
+    void next_help();
+
+    static Help_screen * test(My_viewer &viewer, Core &core);
+
+    std::vector<Help_item> _help_items;
 
 private:
     Screen * _calling_screen;
+
+    int _current_item_index;
 };
 
 #endif // HELP_SCREEN_H

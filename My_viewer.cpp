@@ -3,6 +3,7 @@
 #include "Experiment_screen.h"
 #include "Main_menu_screen.h"
 #include "Main_options_window.h"
+#include "Help_screen.h"
 
 class Game_camera_constraint_old : public qglviewer::Constraint
 {
@@ -280,7 +281,7 @@ void My_viewer::update_game_camera()
 
     camera()->interpolateTo(level_initial_view, 2.0f);
 
-    Game_camera_constraint * camera_constraint = new Game_camera_constraint(_core.get_level_data()._game_field_borders); // FIXME: leak
+//    Game_camera_constraint * camera_constraint = new Game_camera_constraint(_core.get_level_data()._game_field_borders); // FIXME: leak
 
     //        delete camera()->frame()->constraint();
     //        camera()->frame()->setConstraint(camera_constraint);
@@ -337,11 +338,14 @@ void My_viewer::start()
     _ui_renderer.init(context(), size());
 
     _screen_stack.clear();
+
     Screen * s = new Main_game_screen(*this, _core);
     s->pause();
     add_screen(s);
     add_screen(new Main_menu_screen(*this, _core));
+
 //    add_screen(new Experiment_screen(*this, _core)); // DEBUG screen
+//    add_screen(Help_screen::test(*this, _core)); // DEBUG screen
 }
 
 
@@ -367,6 +371,17 @@ void My_viewer::draw()
     {
         s->draw();
     }
+}
+
+Eigen::Vector2f My_viewer::get_projected_coordinates(Eigen::Vector3f const& world_position) const
+{
+    Eigen::Vector3f projected_position = QGLV2Eigen(_my_camera->projectedCoordinatesOf(Eigen2QGLV(world_position)));
+
+    projected_position[0] /= float(_my_camera->screenWidth());
+    projected_position[1] /= float(_my_camera->screenHeight());
+    projected_position[1] = 1.0f - projected_position[1];
+
+    return Eigen::Vector2f(projected_position[0], projected_position[1]);
 }
 
 void My_viewer::draw_textured_quad(const GLuint tex_id)
@@ -785,6 +800,16 @@ void My_viewer::animate()
 //        }
     }
 
+    if (!_events.empty())
+    {
+        Event * e = _events.front().get();
+
+        if (e->trigger())
+        {
+            _events.pop_front();
+        }
+    }
+
     Base::animate();
 }
 
@@ -805,6 +830,21 @@ void My_viewer::replace_screens(Screen *s)
 {
     kill_all_screens();
     add_screen(s);
+}
+
+Screen *My_viewer::get_current_screen() const
+{
+    return _screen_stack.front().get();
+}
+
+void My_viewer::clear_events()
+{
+    _events.clear();
+}
+
+void My_viewer::add_event(Event *event)
+{
+    _events.push_back(std::unique_ptr<Event>(event));
 }
 
 void My_viewer::load_defaults()

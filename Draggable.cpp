@@ -334,6 +334,11 @@ const Eigen::Vector2f &Draggable_label::get_extent() const
     return _extent;
 }
 
+void Draggable_label::set_extent(Eigen::Vector2f const& extent)
+{
+    _extent = extent;
+}
+
 float Draggable_label::get_alpha() const
 {
     return _alpha;
@@ -510,6 +515,12 @@ void Draggable_statistics::set_values(const std::vector<float> &values, boost::o
     _particle_system = Curved_particle_system(points, _animation_duration);
     _particle_system.set_tangent_speed_factor(0.2f);
     _particle_system.set_particle_size(0.5f);
+
+    float const green = std::rand() / float(RAND_MAX) * 0.26f + 0.2f;
+    Color4 curve_color = Color4(1.0f, green, 0.05f, 1.0f);
+
+    _particle_system.set_curve_color(curve_color);
+    _particle_system.set_effect_color(curve_color);
 }
 
 const std::vector<float> &Draggable_statistics::get_values() const

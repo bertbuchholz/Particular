@@ -18,6 +18,11 @@ public:
 
     void update(float const timestep)
     {
+        if (_type == Type::Animate)
+        {
+            _draggable->animate(timestep);
+        }
+
         if (!_active) return;
 
         _current_time = std::min(_duration + 0.0001f, _current_time + timestep);
@@ -43,10 +48,6 @@ public:
             float const alpha = _current_time / _duration;
 
             _draggable->set_alpha(1.0f - alpha);
-        }
-        else if (_type == Type::Animate)
-        {
-            _draggable->animate(timestep);
         }
     }
 

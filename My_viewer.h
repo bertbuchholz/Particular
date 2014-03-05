@@ -17,6 +17,7 @@
 
 #include "Core.h"
 #include "Renderer.h"
+#include "Event.h"
 
 #include "Screen.h"
 #include "Main_game_screen.h"
@@ -45,6 +46,8 @@ public:
 
     void draw() override;
 
+    Eigen::Vector2f get_projected_coordinates(Eigen::Vector3f const& world_position) const;
+
     void draw_textured_quad(GLuint const tex_id);
     void start_normalized_screen_coordinates();
     void stop_normalized_screen_coordinates();
@@ -63,6 +66,10 @@ public:
     void add_screen(Screen * s);
     void kill_all_screens();
     void replace_screens(Screen * s);
+    Screen * get_current_screen() const;
+
+    void clear_events();
+    void add_event(Event * event);
 
 //    void clear();
 
@@ -75,6 +82,7 @@ public:
     void draw_label(Draggable_label const* b, const float alpha = 1.0f);
     void draw_statistic(Draggable_statistics const& b);
     void draw_slider(Draggable_slider const& s, const bool for_picking, const float alpha = 1.0f);
+
 //    void draw_spinbox(const Draggable_spinbox &s, const bool for_picking, const float alpha = 1.0f);
 
     void quit_game();
@@ -96,6 +104,7 @@ private:
     QFont _particle_font;
 
     std::deque< std::unique_ptr<Screen> > _screen_stack;
+    std::deque< std::unique_ptr<Event> > _events;
 
     Ui_renderer _ui_renderer;
 };

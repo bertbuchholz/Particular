@@ -398,7 +398,7 @@ void Ui_renderer::generate_button_texture(Draggable_button *b) const
 //    b->set_texture(bindTexture(img));
 }
 
-void Ui_renderer::generate_label_texture(Draggable_label *b) const
+void Ui_renderer::generate_label_texture(Draggable_label *b, int const text_alignment) const
 {
     std::cout << __FUNCTION__ << " constructing label texture" << std::endl;
 
@@ -421,13 +421,13 @@ void Ui_renderer::generate_label_texture(Draggable_label *b) const
 
     QSize text_size(pixel_size.width() * 0.8f, pixel_size.height() * 0.8f);
 
-    QSize b_size = p.boundingRect(QRect(QPoint(0, 0), text_size), Qt::AlignCenter, QString::fromStdString(b->get_text())).size();
+    QSize b_size = p.boundingRect(QRect(QPoint(0, 0), text_size), text_alignment, QString::fromStdString(b->get_text())).size();
 
     //        font.setPointSizeF(10.0f * text_size.height() / float(b_size.height())); // always use height ratio to ensure same size text for buttons of same height
     font.setPointSizeF(10.0f * get_scale(b_size, text_size));
     p.setFont(font);
 
-    p.drawText(img.rect(), Qt::AlignCenter, QString::fromStdString(b->get_text()));
+    p.drawText(img.rect(), text_alignment, QString::fromStdString(b->get_text()));
 
     p.end();
 
@@ -518,6 +518,56 @@ void Ui_renderer::generate_statistics_texture(Draggable_statistics &b) const
 //    b.set_texture(bindTexture(img));
 }
 
+Eigen::Vector2f Ui_renderer::generate_flowing_text_label(Draggable_label * label, float const text_width) const
+{
+    std::cout << __FUNCTION__ << std::endl;
+
+    QSize const pixel_size(_screen_size.width() * text_width, _screen_size.height() * 0.5f);
+
+    QImage text_image(pixel_size, QImage::Format_ARGB32);
+//    text_image.fill(QColor(0, 0, 0, 255));
+    text_image.fill(QColor(255, 255, 255, 0));
+
+    QPainter p(&text_image);
+//    p.setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing | QPainter::SmoothPixmapTransform);
+    p.setCompositionMode(QPainter::CompositionMode_SourceOver);
+
+    QFont font = _main_font;
+    font.setPixelSize(0.02f * float(_screen_size.width()));
+    p.setFont(font);
+
+    p.setPen(QColor(255, 255, 255));
+
+    // draw off of the edges of the image and cut out with padding to avoid UV imprecisions to cause texture artifacts (bad wrap arounds)
+    QRect final_text_bb;
+    QRect inset_text_bb = text_image.rect();
+    inset_text_bb.setWidth(inset_text_bb.width() - 40);
+    inset_text_bb.setHeight(inset_text_bb.height() - 40);
+    inset_text_bb.setTopLeft({20, 20});
+    p.drawText(inset_text_bb, Qt::AlignTop | Qt::AlignLeft | Qt::TextWordWrap, QString::fromStdString(label->get_text()), &final_text_bb);
+    p.end();
+
+    final_text_bb.setWidth(final_text_bb.width() + 4);
+    final_text_bb.setHeight(final_text_bb.height() + 4);
+    final_text_bb.setLeft(final_text_bb.left() - 2);
+    final_text_bb.setTop(final_text_bb.top() - 2);
+    text_image = text_image.copy(final_text_bb);
+
+    Eigen::Vector2f const uniform_bb(final_text_bb.width() / float(_screen_size.width()),
+                                     final_text_bb.height() / float(_screen_size.height()));
+
+    GL_functions f(_context);
+
+    Frame_buffer<Color4> texture_fb = convert<QRgb_to_Color4_converter, Color4>(text_image);
+    label->set_texture(f.create_texture(texture_fb));
+    label->set_extent(uniform_bb);
+
+//    text_image.save(QDir::tempPath() + "/tooltip.png");
+    text_image.save("/tmp/tooltip.png");
+
+    return uniform_bb;
+}
+
 Draggable_tooltip *Ui_renderer::generate_tooltip(const Eigen::Vector3f &screen_pos, const Eigen::Vector3f &element_extent, const std::string &text) const
 {
     std::cout << __FUNCTION__ << std::endl;
@@ -575,7 +625,7 @@ Draggable_tooltip *Ui_renderer::generate_tooltip(const Eigen::Vector3f &screen_p
     Draggable_tooltip * tooltip = new Draggable_tooltip(final_screen_pos, uniform_bb, "");
 
 //    tooltip->set_texture(bindTexture(text_image));
-    text_image.save(QDir::tempPath() + "/tooltip.png");
+//    text_image.save(QDir::tempPath() + "/tooltip.png");
 
     GL_functions f(_context);
 
@@ -671,7 +721,6 @@ void Shader_renderer::resize(const QSize &size)
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     glBindTexture(GL_TEXTURE_2D, 0);
 
-    // FIXME: need to delete first
     _tmp_screen_texture[0].reset(_gl_functions.create_texture(size.width(), size.height()));
     _tmp_screen_texture[1].reset(_gl_functions.create_texture(size.width(), size.height()));
 

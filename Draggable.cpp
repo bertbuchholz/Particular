@@ -294,7 +294,7 @@ Draggable *Draggable::get_parent()
 
 
 Draggable_label::Draggable_label(const Eigen::Vector3f &position, const Eigen::Vector2f &size, const std::string &text) :
-    Draggable(position), _alpha(1.0f), _texture(0), _extent(size), _text(text)
+    Draggable(position), _alpha(1.0f), _texture(0), _extent(size), _text(text), _color(Color4(1.0f, 1.0f, 1.0f, 1.0f))
 {
     _draggable = false;
 }
@@ -324,7 +324,12 @@ void Draggable_label::set_texture(GLuint texture)
     _texture = texture;
 }
 
-const std::string &Draggable_label::get_text()
+void Draggable_label::set_text(std::string const& text)
+{
+    _text = text;
+}
+
+const std::string &Draggable_label::get_text() const
 {
     return _text;
 }
@@ -347,6 +352,16 @@ float Draggable_label::get_alpha() const
 void Draggable_label::set_alpha(const float alpha)
 {
     _alpha = alpha;
+}
+
+const Color4 &Draggable_label::get_color() const
+{
+    return _color;
+}
+
+void Draggable_label::set_color(const Color4 &color)
+{
+    _color = color;
 }
 
 

@@ -34,6 +34,7 @@ struct Particle
     Eigen::Vector3f position;
     Eigen::Vector3f speed;
     Color4 color;
+    Color4 current_color;
     float age; // between 0 and 1
     float size_factor;
 
@@ -146,6 +147,8 @@ public:
 
     Color4 const& get_effect_color() const;
     void set_effect_color(const Color4 &get_effect_color);
+
+    Polygonal_curve const& get_curve() const { return _curve; }
 
     void reset();
 

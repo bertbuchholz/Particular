@@ -183,13 +183,17 @@ public:
     GLuint get_texture() const;
     void set_texture(GLuint texture);
 
-    std::string const& get_text();
+    void set_text(std::string const& text);
+    std::string const& get_text() const;
 
     Eigen::Vector2f const& get_extent() const;
     void set_extent(Eigen::Vector2f const& extent);
 
     float get_alpha() const;
     void set_alpha(float const alpha);
+
+    Color4 const& get_color() const;
+    void set_color(const Color4 &color);
 
 protected:
     float _alpha;
@@ -200,6 +204,8 @@ private:
     Eigen::Vector2f _extent;
 
     std::string _text;
+
+    Color4 _color;
 };
 
 
@@ -319,7 +325,6 @@ private:
 
     std::function<void(void)> _finish_callback;
 };
-
 
 
 class Draggable_slider : public Draggable_label

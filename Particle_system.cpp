@@ -151,6 +151,11 @@ Curved_particle_system::Curved_particle_system(std::vector<Eigen::Vector3f> cons
     _curve.finish();
 }
 
+Color4 color_aging(Color4 const& c, float const age)
+{
+    return Color4(c.rgb() + Color(1.0f) * (1.0f - age), c.a);
+}
+
 void Curved_particle_system::animate(float const timestep)
 {
     // animate current particles, then generate new ones
@@ -158,6 +163,7 @@ void Curved_particle_system::animate(float const timestep)
     {
         p.age = std::min(1.0f, p.age + timestep);
         p.speed += Eigen::Vector3f::Random().normalized() * 0.00001f;
+        p.current_color = color_aging(p.color, p.age);
 //        p.speed += Eigen::Vector3f::Zero();
 //        p.position += p.speed * timestep;
     }
@@ -168,6 +174,7 @@ void Curved_particle_system::animate(float const timestep)
         p.age = p.age + timestep;
         p.position += p.speed * timestep;
         p.color.a = 1.0f - (p.age * _tail_dissipation_speed);
+        p.current_color = color_aging(p.color, p.age);
         p.speed += Eigen::Vector3f(0.0f, -0.001f * timestep, 0.0f);
     }
 
@@ -196,6 +203,7 @@ void Curved_particle_system::animate(float const timestep)
 //            p.size_factor = h2.getNext() * 2.0f + 0.3f;
             p.color = _curve_color;
             p.color.a = _rng() / float(_rng.max()) * 0.6f + 0.4f;
+            p.current_color = color_aging(p.color, p.age);
             p.size_factor = _rng() / float(_rng.max()) * 2.0f + 0.3f;
             p.size_factor *= _particle_size;
 
@@ -211,6 +219,7 @@ void Curved_particle_system::animate(float const timestep)
                 p.position = new_particle_position;
                 p.color = _effect_color;
                 p.color.a = _rng() / float(_rng.max()) * 0.6f + 0.4f;
+                p.current_color = color_aging(p.color, p.age);
                 p.size_factor = _rng() / float(_rng.max()) * 2.0f + 0.1f;
                 p.size_factor *= _particle_size;
 

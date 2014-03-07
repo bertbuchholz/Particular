@@ -119,7 +119,9 @@ SOURCES += main.cpp \
     Experiment_screen.cpp \
     PolygonalCurve.cpp \
     Help_screen.cpp \
-    Event.cpp
+    Event.cpp \
+    Score.cpp \
+    Draggable_event.cpp
 
 OTHER_FILES += TODO.txt \
     data/shaders/picking.vert \
@@ -140,7 +142,9 @@ OTHER_FILES += TODO.txt \
     data/shaders/blur_1D.frag \
     heat.frag \
     data/shaders/heat.frag \
-    data/shaders/drop_shadow.frag
+    data/shaders/drop_shadow.frag \
+    data/shaders/particle.vert \
+    data/shaders/particle.frag
 
 HEADERS += \
     My_viewer.h \
@@ -182,4 +186,5 @@ HEADERS += \
     Experiment_screen.h \
     PolygonalCurve.h \
     Help_screen.h \
-    Event.h
+    Event.h \
+    Draggable_event.h

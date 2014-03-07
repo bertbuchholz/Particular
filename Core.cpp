@@ -915,6 +915,7 @@ void Core::reset_level()
     _molecule_id_to_molecule_map.clear();
 
     _sensor_data.clear();
+    _sensor_data.set_game_field_volume(_level_data._game_field_height * _level_data._game_field_width);
 
     _level_data.reset_level_elements();
 

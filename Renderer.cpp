@@ -67,8 +67,6 @@ void draw_cube()
     glPopMatrix();
 }
 
-
-
 void World_renderer::init(QGLContext const* context, QSize const& size)
 {
     _context = context;
@@ -80,6 +78,10 @@ void World_renderer::init(QGLContext const* context, QSize const& size)
     _screen_size = size;
 
     _aspect_ratio = size.width() / float(size.height());
+
+    _particle_program = std::unique_ptr<QGLShaderProgram>(init_program(context,
+                                                                       Data_config::get_instance()->get_absolute_qfilename("shaders/particle.vert"),
+                                                                       Data_config::get_instance()->get_absolute_qfilename("shaders/particle.frag")));
 }
 
 void World_renderer::resize(QSize const& size)
@@ -116,7 +118,7 @@ void World_renderer::setup_gl_points(bool const distance_dependent) const
     glEnable(GL_POINT_SMOOTH);
 }
 
-void World_renderer::draw_particle_system(Targeted_particle_system const& system, int const height) const
+void World_renderer::draw_particle_system(Targeted_particle_system const& system, int const height)
 {
     glDisable(GL_DEPTH_TEST);
     glDisable(GL_LIGHTING);
@@ -137,14 +139,35 @@ void World_renderer::draw_particle_system(Targeted_particle_system const& system
 
     //        glBindTexture(GL_TEXTURE_2D, _particle_tex);
 
-    for (Targeted_particle const& p : system.get_particles())
-    {
-        glPointSize(p.size_factor * 4.0f * height / (768.0f));
-        glBegin(GL_POINTS);
-        glColor4fv(p.color.data());
-        glVertex3fv(p.position.data());
-        glEnd();
-    }
+//    for (Targeted_particle const& p : system.get_particles())
+//    {
+//        glPointSize(p.size_factor * 4.0f * height / (768.0f));
+//        glBegin(GL_POINTS);
+//        glColor4fv(p.color.data());
+//        glVertex3fv(p.position.data());
+//        glEnd();
+//    }
+
+    int const offset = sizeof(Targeted_particle);
+
+    glEnable(GL_VERTEX_PROGRAM_POINT_SIZE);
+
+    _particle_program->bind();
+
+    _particle_program->setUniformValue("height", 2.0f * height / 768.0f);
+    _particle_program->setAttributeArray("particle_size", GL_FLOAT, &system.get_particles()[0].size_factor, 1, offset);
+    _particle_program->enableAttributeArray("particle_size");
+
+    glEnableClientState(GL_VERTEX_ARRAY);
+    glEnableClientState(GL_COLOR_ARRAY);
+    glVertexPointer(3, GL_FLOAT, offset, &system.get_particles()[0].position);
+    glColorPointer(4, GL_FLOAT, offset, &system.get_particles()[0].color);
+    glDrawArrays(GL_POINTS, 0, system.get_particles().size());
+    glDisableClientState(GL_VERTEX_ARRAY);
+    glDisableClientState(GL_COLOR_ARRAY);
+    _particle_program->disableAttributeArray("particle_size");
+
+    _particle_program->release();
 
     glMatrixMode(GL_PROJECTION);
     glPopMatrix();
@@ -183,26 +206,35 @@ void World_renderer::draw_curved_particle_system(Curved_particle_system const& s
 
 void World_renderer::draw_curved_particle_system_in_existing_coord_sys(const Curved_particle_system &system, const int height) const
 {
-    for (Particle const& p : system.get_curve_particles())
-    {
-        glPointSize(p.size_factor * 4.0f * height / (768.0f));
-        glBegin(GL_POINTS);
-        Color4 color = Color4(p.color.rgb() + Color(1.0f) * (1.0f - p.age), p.color.a);
-        glColor4fv(color.data());
-        glVertex3fv(p.position.data());
-        glEnd();
-    }
+    if (system.get_curve_particles().size() == 0) return;
 
-    for (Particle const& p : system.get_effect_particles())
-    {
-        if (p.color.a < 0.0f) continue;
-        glPointSize(p.size_factor * 4.0f * height / (768.0f));
-        glBegin(GL_POINTS);
-        Color4 color = Color4(p.color.rgb() + Color(1.0f) * (1.0f - p.age), p.color.a);
-        glColor4fv(color.data());
-        glVertex3fv(p.position.data());
-        glEnd();
-    }
+    int const offset = sizeof(Particle);
+
+    glEnable(GL_VERTEX_PROGRAM_POINT_SIZE);
+
+    _particle_program->bind();
+
+    _particle_program->setUniformValue("height", 4.0f * height / 768.0f);
+    _particle_program->setAttributeArray("particle_size", GL_FLOAT, &system.get_curve_particles()[0].size_factor, 1, offset);
+    _particle_program->enableAttributeArray("particle_size");
+
+    glEnableClientState(GL_VERTEX_ARRAY);
+    glEnableClientState(GL_COLOR_ARRAY);
+
+    glVertexPointer(3, GL_FLOAT, offset, &system.get_curve_particles()[0].position);
+    glColorPointer(4, GL_FLOAT, offset, &system.get_curve_particles()[0].current_color);
+    glDrawArrays(GL_POINTS, 0, system.get_curve_particles().size());
+
+    _particle_program->setAttributeArray("particle_size", GL_FLOAT, &system.get_effect_particles()[0].size_factor, 1, offset);
+    glVertexPointer(3, GL_FLOAT, offset, &system.get_effect_particles()[0].position);
+    glColorPointer(4, GL_FLOAT, offset, &system.get_effect_particles()[0].current_color);
+    glDrawArrays(GL_POINTS, 0, system.get_effect_particles().size());
+
+    glDisableClientState(GL_VERTEX_ARRAY);
+    glDisableClientState(GL_COLOR_ARRAY);
+    _particle_program->disableAttributeArray("particle_size");
+
+    _particle_program->release();
 }
 
 void World_renderer::draw_textured_quad(const GLuint tex_id) const

@@ -48,11 +48,17 @@ void After_finish_editor_screen::init()
         _renderer.generate_label_texture(label.get());
     }
 
-    int const score_count = _core.get_sensor_data().calculate_score(_core.get_level_data()._score_time_factor);
+    int num_molecules_to_capture = 0;
+
+    for (Portal * p : _core.get_level_data()._portals)
+    {
+        num_molecules_to_capture += p->get_condition().get_min_captured_molecules();
+    }
 
     Score score;
-    score.final_score = score_count;
     score.sensor_data = _core.get_sensor_data();
+    int const score_count = score.calculate_score(_core.get_level_data()._score_time_factor, num_molecules_to_capture);
+    score.final_score = score_count;
 
     _score_particle_system = Targeted_particle_system(3.0f);
     _score_particle_system.generate(QString("%1").arg(score_count, 8, 10, QChar('0')).toStdString(), _viewer.get_particle_font(), QRectF(0.0f, 0.5f, 1.0f, 0.3f));

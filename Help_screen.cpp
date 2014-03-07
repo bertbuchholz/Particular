@@ -97,6 +97,19 @@ void Help_screen::init()
         ++index;
     }
 
+//    {
+//        float const extra_button_v_distance = 0.01f;
+//        Eigen::Vector2f const button_size(0.2f, 0.04f);
+
+//        Eigen::Vector3f const pos(item._text_rect_position[0] + button_size[0] * 0.5f,
+//                item._text_rect_position[1] - item._text_rect_size[1] - button_size[1] * 0.5f - extra_button_v_distance,
+//                0.0f);
+
+//        Draggable_button * button = new Draggable_button(pos, button_size, "Disable Tutorial",  std::bind(&Help_screen::next_help, this));
+//        _renderer.generate_button_texture(button);
+//        _buttons.push_back(boost::shared_ptr<Draggable_button>(button));
+//    }
+
     _buttons[_current_item_index]->set_visible(true);
     _labels[_current_item_index]->set_visible(true);
 
@@ -163,6 +176,7 @@ Help_screen *Help_screen::test(My_viewer & viewer, Core & core)
     item._text_rect_size = Eigen::Vector2f(0.5f, 0.5f);
     item._position = {0.8f, 0.8f};
     item._radius = {0.1f, 0.1f};
+    item._use_particle_system = true;
 
     help_screen->_help_items.push_back(item);
     help_screen->init();

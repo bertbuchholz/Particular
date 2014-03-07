@@ -88,6 +88,7 @@ public:
     void quit_game();
 
     Ui_renderer const& get_renderer() const;
+    Ui_renderer & get_renderer();
 
     QFont const& get_particle_font() const { return _particle_font; }
 

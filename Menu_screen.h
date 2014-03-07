@@ -30,7 +30,7 @@ public:
 protected:
     Core & _core;
 
-    Ui_renderer const& _renderer;
+    Ui_renderer & _renderer;
     Picking _picking;
 
     std::vector< boost::shared_ptr<Draggable_button> > _buttons;

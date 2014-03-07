@@ -3,6 +3,10 @@
 
 #include <vector>
 
+#ifndef Q_MOC_RUN
+#include <boost/serialization/nvp.hpp>
+#endif
+
 class Sensor_data
 {
 public:
@@ -41,35 +45,9 @@ public:
         return _check_interval;
     }
 
-    int calculate_score(float const time_factor) const
+    void set_game_field_volume(float const volume)
     {
-        float score = 0.0f;
-
-        for (size_t i = 0; i < _data[int(Type::ColMol)].size(); ++i)
-        {
-            score += std::exp(-float(i) / time_factor) * _data[int(Type::ColMol)][i];
-        }
-
-        score *= _check_interval / float(_data[int(Type::ColMol)].size());
-
-        return score * 100;
-    }
-
-    std::vector<int> calculate_score(Type const type, float const time_factor) const
-    {
-        std::vector<float> const& values = _data[int(type)];
-
-        std::vector<int> result;
-        result.reserve(values.size());
-
-        for (size_t i = 0; i < values.size(); ++i)
-        {
-            float score = std::exp(-float(i) / time_factor) * values[i];
-            score *= _check_interval / float(values.size()) * 100;
-            result.push_back(score);
-        }
-
-        return result;
+        _game_field_volume = volume;
     }
 
     template<class Archive>
@@ -80,6 +58,11 @@ public:
 
 private:
     std::vector< std::vector<float> > _data;
+
+    std::vector<float> _cumulative_energy;
+    std::vector<float> _energy_score;
+
+    float _game_field_volume;
     float _check_interval;
 };
 

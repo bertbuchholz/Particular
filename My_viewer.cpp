@@ -445,7 +445,7 @@ void My_viewer::draw_label(const Draggable_label *b, float const alpha)
 
     glTranslatef(b->get_position()[0], b->get_position()[1], b->get_position()[2]);
     glScalef(b->get_extent()[0] * 0.5f, b->get_extent()[1] * 0.5f, 1.0f);
-    glColor4f(1.0f, 1.0f, 1.0f, b->get_alpha() * alpha);
+    glColor4f(b->get_color()[0], b->get_color()[1], b->get_color()[2], b->get_alpha() * alpha);
 
     draw_textured_quad(b->get_texture());
 
@@ -590,38 +590,12 @@ void My_viewer::draw_statistic(const Draggable_statistics &b)
 
     draw_textured_quad(b.get_texture());
 
-
     glScalef(2.0f, 2.0f, 1.0f);
 
     glTranslatef(-0.5f, -0.5f, 0.0f);
 
-//    glColor4f(1.0f, 1.0f, 1.0f, 0.7f);
-
-//    glLineWidth(2.0f);
-
     glTranslatef(0.1f, 0.15f, 0.0f);
     glScalef(0.8f, 0.6f, 1.0f);
-
-//    glBegin(GL_LINE_STRIP);
-
-//    size_t i;
-//    float const time = values.size() * b.get_normalized_time();
-
-//    for (i = 0; i < time; ++i)
-//    {
-//        glVertex2f(i / float(values.size()), values[i] / (b.get_max_value() - b.get_min_value()) + b.get_min_value());
-//    }
-
-//    --i;
-//    Eigen::Vector2f v0(i / float(values.size()), values[i] / (b.get_max_value() - b.get_min_value()) + b.get_min_value());
-//    i = std::min(values.size() - 1, i + 1);
-//    Eigen::Vector2f v1(i / float(values.size()), values[i] / (b.get_max_value() - b.get_min_value()) + b.get_min_value());
-
-//    float const alpha = time - int(time);
-
-//    glVertex2fv(Eigen::Vector2f(v0 * (1.0f - alpha) + v1 * alpha).data());
-
-//    glEnd();
 
     _ui_renderer.draw_curved_particle_system_in_existing_coord_sys(b.get_particle_system(), height());
 
@@ -887,6 +861,11 @@ void My_viewer::quit_game()
 }
 
 const Ui_renderer &My_viewer::get_renderer() const
+{
+    return _ui_renderer;
+}
+
+Ui_renderer &My_viewer::get_renderer()
 {
     return _ui_renderer;
 }

@@ -46,10 +46,20 @@ void Experiment_screen::init()
         stat_values.push_back(rand() / float(RAND_MAX) * 5.0f - 7.0f);
     }
 
+    stat_values[3] = 10.0f;
+    stat_values[4] = -10.0f;
+    stat_values[5] = 0.0f;
+    stat_values[6] = 0.0f;
+    stat_values[7] = 0.0f;
+
+
     stat_values.push_back(10.0f);
 
     _statistic.set_values(stat_values, -10, 10);
-    _renderer.generate_statistics_texture(_statistic);
+    _renderer.generate_statistics_texture(_statistic, 60.0f, 30.0f);
+
+    _statistic.get_particle_system().set_display_ratio((_viewer.camera()->screenWidth() * _statistic.get_extent()[0]) /
+            (_viewer.camera()->screenHeight() * _statistic.get_extent()[1]));
 
     std::vector<Eigen::Vector3f> points;
 
@@ -69,8 +79,12 @@ void Experiment_screen::init()
     points.push_back(Eigen::Vector3f(0.1f, 0.9f, 0.0f));
     points.push_back(Eigen::Vector3f(0.9f, 0.9f, 0.0f));
 
-    _curved_system = Curved_particle_system(points, 10.0f);
+    _curved_system = Curved_particle_system(points, 1.0f);
     _curved_system.set_effect_spread(1.0f);
+
+    _curved_system.set_particle_size(1.0f);
+
+    _curved_system.set_display_ratio(_viewer.camera()->screenWidth() / float(_viewer.camera()->screenHeight()));
 }
 
 void Experiment_screen::update_event(const float time_step)

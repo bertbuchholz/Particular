@@ -3,6 +3,8 @@
 
 #include "Sensor_data.h"
 
+#include <cmath>
+
 #ifndef Q_MOC_RUN
 #include <boost/serialization/nvp.hpp>
 #include <boost/serialization/version.hpp>
@@ -27,6 +29,16 @@ struct Score
     std::vector< std::pair<float, int> > const& get_score_at_time() const;
 
     float get_full_time() const { return full_time; }
+
+    static float get_score_multiplier(float const time, const float time_threshold)
+    {
+        if (time < time_threshold)
+        {
+            return 1.0f;
+        }
+
+        return std::exp(-(time - time_threshold) / time_threshold);
+    }
 
     template<class Archive>
     void serialize(Archive & ar, const unsigned int /* version */)

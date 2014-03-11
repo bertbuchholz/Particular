@@ -2,6 +2,8 @@
 
 #include <QtOpenGL>
 
+#include <cmath>
+
 void Targeted_particle_system::generate(const std::string &text, const QFont &main_font, const QRectF &rect)
 {
 
@@ -138,7 +140,8 @@ Curved_particle_system::Curved_particle_system(std::vector<Eigen::Vector3f> cons
     _particle_size(1.0f),
     _tail_dissipation_speed(0.5f),
     _curve_color(1.0f, 0.0f, 0.0f, 1.0f),
-    _effect_color(0.0f, 1.0f, 0.0f, 1.0f)
+    _effect_color(0.0f, 1.0f, 0.0f, 1.0f),
+    _display_ratio(1.0f)
 {
     std::random_device rd;
     _rng = std::mt19937(rd());
@@ -178,6 +181,11 @@ void Curved_particle_system::animate(float const timestep)
         p.speed += Eigen::Vector3f(0.0f, -0.001f * timestep, 0.0f);
     }
 
+//    float const l_x = _curve.get_length_y_over_x();
+//    float const l   = _curve.get_length();
+
+//    int const num_points = 100 * l / l_x;
+
     if (_current_time <= _total_time)
     {
         float const normalized_current_position = _current_time / _total_time;
@@ -188,7 +196,26 @@ void Curved_particle_system::animate(float const timestep)
 
         float const normalized_next_position = std::min(_current_time / _total_time, 1.0f);
 
-        float const normalized_travel_distance = 0.5f * (normalized_next_position - normalized_current_position);
+        Eigen::Vector3f const start_pos = _curve.get_pos_on_curve(normalized_current_position);
+        Eigen::Vector3f const end_pos   = _curve.get_pos_on_curve(normalized_next_position);
+
+        float const step_length = (end_pos - start_pos).norm();
+
+//        Eigen::Vector3f const step_vector = end_pos - start_pos;
+//        float const step_ratio = std::abs(step_vector[1] / step_vector[0]);
+
+//        float const travel_dist_factor = 1.0f + std::pow(std::abs((end_pos - start_pos).normalized()[1]), 5.0f) * _display_ratio;
+        float const travel_dist_factor = 1.0f + std::cos(0.5f * M_PI * std::abs((end_pos - start_pos).normalized()[0])) * _display_ratio;
+
+//        float const normalized_travel_distance = 0.1f * _display_ratio * step_length / _curve.get_length();
+        float const normalized_travel_distance = 0.01f * travel_dist_factor * _curve.get_length();
+
+//        if (normalized_travel_distance > (normalized_next_position - normalized_current_position)) return;
+
+//        float const normalized_travel_distance = 0.5f * (normalized_next_position - normalized_current_position);
+//        float const normalized_travel_distance = std::max(0.01f, step_ratio / _display_ratio * 0.01f *
+//                (_curve.get_absolute_length_at_uniform_length(normalized_next_position) - _curve.get_absolute_length_at_uniform_length(normalized_current_position)) /
+//                _curve.get_length());
 
         while (t < normalized_next_position)
         {
@@ -198,13 +225,12 @@ void Curved_particle_system::animate(float const timestep)
             Eigen::Vector3f const new_particle_position = _curve.get_pos_on_curve(t);
 
             Particle p;
-            p.position = new_particle_position + orthogonal * (_rng() / float(_rng.max()) - 0.5f) * 0.01f;
-//            p.color = Color4(1.0f, 0.0f, 0.0f, h3.getNext() * 0.4f + 0.6f);
-//            p.size_factor = h2.getNext() * 2.0f + 0.3f;
+            p.position = new_particle_position; // + orthogonal * (_rng() / float(_rng.max()) - 0.5f) * 0.01f;
             p.color = _curve_color;
             p.color.a = _rng() / float(_rng.max()) * 0.6f + 0.4f;
             p.current_color = color_aging(p.color, p.age);
-            p.size_factor = _rng() / float(_rng.max()) * 2.0f + 0.3f;
+//            p.size_factor = _rng() / float(_rng.max()) * 2.0f + 0.3f;
+            p.size_factor = 1.0f;
             p.size_factor *= _particle_size;
 
             _curve_particles.push_back(p);

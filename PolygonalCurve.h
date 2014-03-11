@@ -34,6 +34,7 @@ public:
     void calcLength();
 
     float get_length() const;
+    float get_length_y_over_x() const;
 
     float get_uniform_length_at_vertex(int const index) const;
     float get_uniform_length_at_vertex_y_over_x(const int index) const;

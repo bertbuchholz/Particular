@@ -325,8 +325,12 @@ void Core::compute_force_and_torque(Molecule &receiver)
         receiver._force += b->calc_force_on_molecule(receiver);
     }
 
-    float brownian_translation_factor = _level_data._translation_fluctuation;
-    float brownian_rotation_factor = _level_data._rotation_fluctuation * translation_to_rotation_ratio;
+    float brownian_translation_factor = 0.0f;
+    float brownian_rotation_factor = 0.0f;
+
+
+//    float brownian_translation_factor = _level_data._translation_fluctuation;
+//    float brownian_rotation_factor = _level_data._rotation_fluctuation * translation_to_rotation_ratio;
 
 //    for (Brownian_element const* element : _level_data._brownian_elements)
 //    {

@@ -342,9 +342,9 @@ void My_viewer::start()
     Screen * s = new Main_game_screen(*this, _core);
     s->pause();
     add_screen(s);
-    add_screen(new Main_menu_screen(*this, _core));
+//    add_screen(new Main_menu_screen(*this, _core));
 
-//    add_screen(new Experiment_screen(*this, _core)); // DEBUG screen
+    add_screen(new Experiment_screen(*this, _core)); // DEBUG screen
 //    add_screen(Help_screen::test(*this, _core)); // DEBUG screen
 }
 

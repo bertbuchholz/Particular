@@ -7,6 +7,9 @@ void Statistics_screen::init()
 {
     _statistics.resize(_core.get_sensor_data().get_num_data_types());
 
+    float const full_time = _core.get_progress().scores[_core.get_current_level_name()].back().get_full_time();
+    float const time_threshold = _core.get_level_data()._score_time_factor;
+
     {
         boost::shared_ptr<Draggable_statistics> stat(new Draggable_statistics(Eigen::Vector3f(0.25f, 0.6f + 0.35f * 0.5f, 0.0f), Eigen::Vector2f(0.45f, 0.35f), "Released Molecules"));
         stat->set_duration(_stat_anim_duration);
@@ -89,10 +92,11 @@ void Statistics_screen::init()
 
     setup_statistics(_core.get_sensor_data(), _core.get_progress().scores[_core.get_current_level_name()].back()); // this MUST be before the generation of the textures!
 
-    for (boost::shared_ptr<Draggable_statistics> const& stat : _statistics)
-    {
-        _renderer.generate_statistics_texture(*stat);
-    }
+    _renderer.generate_statistics_texture(*_statistics[int(Sensor_data::Type::ColMol)].get(), full_time, time_threshold);
+    _renderer.generate_statistics_texture(*_statistics[int(Sensor_data::Type::AvgTemp)].get(), full_time);
+    _renderer.generate_statistics_texture(*_statistics[int(Sensor_data::Type::RelMol)].get(), full_time);
+    _renderer.generate_statistics_texture(*_statistics[int(Sensor_data::Type::EnergyCon)].get(), full_time);
+
 
     for (boost::shared_ptr<Draggable_button> const& button : _buttons)
     {

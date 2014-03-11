@@ -148,6 +148,8 @@ public:
     Color4 const& get_effect_color() const;
     void set_effect_color(const Color4 &get_effect_color);
 
+    void set_display_ratio(float const ratio) { _display_ratio = ratio; }
+
     Polygonal_curve const& get_curve() const { return _curve; }
 
     void reset();
@@ -170,6 +172,8 @@ protected:
 
     Color4 _curve_color;
     Color4 _effect_color;
+
+    float _display_ratio;
 };
 
 //void draw_particle_system(Targeted_particle_system const& system, int const height);

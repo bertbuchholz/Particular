@@ -308,6 +308,7 @@ public:
     void set_duration(float const duration);
 
     Curved_particle_system const& get_particle_system() const { return _particle_system; }
+    Curved_particle_system & get_particle_system() { return _particle_system; }
 
 private:
     std::string _x_label;

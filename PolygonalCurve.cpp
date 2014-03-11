@@ -217,6 +217,12 @@ float Polygonal_curve::get_length() const
 }
 
 
+float Polygonal_curve::get_length_y_over_x() const
+{
+    return _length_y_over_x;
+}
+
+
 float Polygonal_curve::get_uniform_length_at_vertex(const int index) const
 {
     return _lengths_at_points[index] / _length;

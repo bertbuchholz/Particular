@@ -37,17 +37,9 @@ int Score::calculate_score(const float time_factor, const int num_molecules_to_c
         {
             highest_num_captured = current_captured;
 
-            if (current_time < time_factor)
-            {
-                score_at_time.push_back(std::pair<float, int>(current_time, points_per_molecule));
-                score += points_per_molecule;
-            }
-            else
-            {
-                int const new_score = points_per_molecule * std::exp(-current_time / time_factor);
-                score += new_score;
-                score_at_time.push_back(std::pair<float, int>(current_time, new_score));
-            }
+            int const new_score = points_per_molecule * get_score_multiplier(current_time, time_factor);
+            score += new_score;
+            score_at_time.push_back(std::pair<float, int>(current_time, new_score));
         }
 
     }

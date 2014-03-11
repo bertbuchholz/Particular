@@ -20,6 +20,7 @@
 #include "Level_data.h"
 #include "Level_element_draw_visitor.h"
 #include "Data_config.h"
+#include "Score.h"
 
 float get_scale(QSize const& b_size, QSize const& target_size)
 {
@@ -473,7 +474,7 @@ void Ui_renderer::generate_label_texture(Draggable_label *b, int const text_alig
 //    b->set_texture(bindTexture(img));
 }
 
-void Ui_renderer::generate_statistics_texture(Draggable_statistics &b) const
+void Ui_renderer::generate_statistics_texture(Draggable_statistics &b, float const full_time, float const time_threshold) const
 {
     std::cout << __FUNCTION__ << " constructing statistic texture" << std::endl;
 
@@ -522,9 +523,8 @@ void Ui_renderer::generate_statistics_texture(Draggable_statistics &b) const
     p.drawText(graphkey_rect, Qt::AlignVCenter | Qt::AlignRight, QString("%1").arg(b.get_min_value(), 0, 'f', 0));
     graphkey_rect.moveTop((0.85f - 0.05f - 0.6f * 4.0f / 4.0f) * pixel_size.height());
     p.drawText(graphkey_rect, Qt::AlignVCenter | Qt::AlignRight, QString("%1").arg(b.get_max_value(), 0, 'f', 0));
-
-//    p.drawText(0.2f * pixel_size.width(), 0.3f * pixel_size.height(), "X");
-//    p.drawText(0.2f * pixel_size.width(), 0.8f * pixel_size.height(), "Y");
+    graphkey_rect = QRect(0.8f * pixel_size.width(), 0.85f * pixel_size.height(), 0.1f * pixel_size.width(), 0.1f * pixel_size.height());
+    p.drawText(graphkey_rect, Qt::AlignVCenter | Qt::AlignRight, QString("%1 s").arg(full_time, 0, 'f', 0));
 
     pen.setWidthF(0.5f);
     pen.setColor(QColor(255, 255, 255, 100));
@@ -538,6 +538,30 @@ void Ui_renderer::generate_statistics_texture(Draggable_statistics &b) const
         p.drawLine(0.1f * pixel_size.width(), height * pixel_size.height(), 0.9f * pixel_size.width(), height * pixel_size.height());
     }
 
+    // threshold curve
+    if (time_threshold > 0.0f)
+    {
+        int const score_falloff_line_points = 50;
+
+        for (int i = 0; i < score_falloff_line_points - 1; ++i)
+        {
+            float const t0 = i / float(score_falloff_line_points - 1);
+            float const t1 = (i + 1) / float(score_falloff_line_points - 1);
+            float const time0 = full_time * t0;
+            float const time1 = full_time * t1;
+            float const pos0 = 0.1f + t0 * 0.8f;
+            float const pos1 = 0.1f + t1 * 0.8f;
+            float const height0 = (1.0f - Score::get_score_multiplier(time0, time_threshold)) * 0.6f + 0.25f;
+            float const height1 = (1.0f - Score::get_score_multiplier(time1, time_threshold)) * 0.6f + 0.25f;
+
+            float const color_alpha = Score::get_score_multiplier(time0, time_threshold);
+
+            Color4 const line_color = Color4(Color(122 / 255.0f, 225 / 255.0f, 5 / 255.0f) * color_alpha + Color(255 / 255.0f, 134 / 255.0f, 36 / 255.0f) * (1.0f - color_alpha), 0.85f);
+            p.setPen(convert<QColor, Color4>(line_color));
+            p.drawLine(pos0 * pixel_size.width(), height0 * pixel_size.height(), pos1 * pixel_size.width(), height1 * pixel_size.height());
+        }
+    }
+
     p.end();
 
     GL_functions f(_context);
@@ -545,9 +569,6 @@ void Ui_renderer::generate_statistics_texture(Draggable_statistics &b) const
     f.delete_texture(b.get_texture());
     Frame_buffer<Color4> texture_fb = convert<QRgb_to_Color4_converter, Color4>(img);
     b.set_texture(f.create_texture(texture_fb));
-
-//    deleteTexture(b.get_texture());
-//    b.set_texture(bindTexture(img));
 }
 
 Eigen::Vector2f Ui_renderer::generate_flowing_text_label(Draggable_label * label, float const text_width) const
@@ -595,7 +616,7 @@ Eigen::Vector2f Ui_renderer::generate_flowing_text_label(Draggable_label * label
     label->set_extent(uniform_bb);
 
 //    text_image.save(QDir::tempPath() + "/tooltip.png");
-    text_image.save("/tmp/tooltip.png");
+//    text_image.save("/tmp/tooltip.png");
 
     return uniform_bb;
 }

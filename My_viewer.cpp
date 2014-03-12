@@ -844,6 +844,8 @@ void My_viewer::resizeEvent(QResizeEvent *ev)
 ////        resize(actual_ratio / aspect_ratio * ev->size());
 //    }
 
+    Base::resizeEvent(ev);
+
     _ui_renderer.resize(ev->size());
 
     for (std::unique_ptr<Screen> const& screen : _screen_stack)
@@ -851,7 +853,13 @@ void My_viewer::resizeEvent(QResizeEvent *ev)
         screen->resize(ev->size());
     }
 
-    Base::resizeEvent(ev);
+    if (camera()->screenHeight() != ev->size().height())
+    {
+        std::cout << __FUNCTION__ << " size mismatch: " << camera()->screenHeight() << " " << ev->size().height() << std::endl;
+        std::cout << __FUNCTION__ << " size mismatch: " << camera()->screenWidth() << " " << ev->size().width() << std::endl;
+
+//        assert(false);
+    }
 }
 
 void My_viewer::quit_game()

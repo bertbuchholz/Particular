@@ -48,12 +48,12 @@ void Statistics_screen::init()
     _collected_score_label = boost::shared_ptr<Draggable_label>(new Draggable_label({0.75f, 0.6f - 0.05f, 0.0f}, { 0.3f, 0.1f }, "0000000"));
     _collected_score_label->set_color({147 / 255.0f, 232 / 255.0f, 112 / 255.0f, 1.0f});
     _renderer.generate_label_texture(_collected_score_label.get());
-//    _labels.push_back(_collected_score_label);
+    _labels.push_back(_collected_score_label);
 
     _penalty_label = boost::shared_ptr<Draggable_label>(new Draggable_label({ 0.75f, 0.2f - 0.05f, 0.0f }, { 0.3f, 0.1f }, "0000000"));
-    _collected_score_label->set_color({255 / 255.0f, 121 / 255.0f, 54 / 255.0f, 1.0f});
+    _penalty_label->set_color({255 / 255.0f, 121 / 255.0f, 54 / 255.0f, 1.0f});
     _renderer.generate_label_texture(_penalty_label.get());
-//    _labels.push_back(_penalty_label);
+    _labels.push_back(_penalty_label);
 
     {
         boost::shared_ptr<Draggable_event> e(new Draggable_event(_statistics[int(Sensor_data::Type::RelMol)], Draggable_event::Type::Animate));
@@ -128,11 +128,16 @@ void Statistics_screen::update_event(const float time_step)
 
     Score const& score = _core.get_progress().scores[_core.get_current_level_name()].back();
     std::vector< std::pair<float, int> > const& penalty_at_time = score.penalty_at_time;
-    int const penalty_value = std::lower_bound(penalty_at_time.begin(), penalty_at_time.end(), _time / _stat_anim_duration * score.get_full_time(),
-                                       [](std::pair<float, int> const & x, float d)
-                                                 { return x.first < d; })->second;
 
-    _penalty_label->set_text(QString("%1").arg(penalty_value, 7, 10, QChar('0')).toStdString());
+    auto iter = std::lower_bound(penalty_at_time.begin(), penalty_at_time.end(), _time / _stat_anim_duration * score.get_full_time(),
+                                           [](std::pair<float, int> const & x, float d)
+                                                    { return x.first < d; });
+
+    int const penalty_sum = std::accumulate(penalty_at_time.begin(), iter, 0,
+                                          [](int d, std::pair<float, int> const & x)
+                                                    { return x.second + d; });
+
+    _penalty_label->set_text(QString("%1").arg(penalty_sum, 7, 10, QChar('0')).toStdString());
     _renderer.generate_label_texture(_penalty_label.get());
 }
 
@@ -235,11 +240,16 @@ void Statistics_screen::repeat()
 void Statistics_screen::update_score_label()
 {
     std::vector< std::pair<float, int> > score_at_time = _core.get_progress().scores[_core.get_current_level_name()].back().score_at_time;
-    int const score = std::lower_bound(score_at_time.begin(), score_at_time.end(), _time / _stat_anim_duration * _core.get_progress().scores[_core.get_current_level_name()].back().get_full_time(),
-                                       [](std::pair<float, int> const & x, float d)
-                                                 { return x.first < d; })->second;
 
-    _collected_score_label->set_text(QString("%1").arg(score, 7, 10, QChar('0')).toStdString());
+    auto iter = std::lower_bound(score_at_time.begin(), score_at_time.end(), _time / _stat_anim_duration * _core.get_progress().scores[_core.get_current_level_name()].back().get_full_time(),
+                                           [](std::pair<float, int> const & x, float d)
+                                                    { return x.first < d; });
+
+    int const score_sum = std::accumulate(score_at_time.begin(), iter, 0,
+                                          [](int d, std::pair<float, int> const & x)
+                                                    { return x.second + d; });
+
+    _collected_score_label->set_text(QString("%1").arg(score_sum, 7, 10, QChar('0')).toStdString());
     _renderer.generate_label_texture(_collected_score_label.get());
 }
 

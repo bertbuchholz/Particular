@@ -40,7 +40,7 @@ void Score::calculate_score(const float time_factor, const int num_molecules_to_
     // energy of 1 or less gets no penalty, energy over 1 gets a penalty of up to 95% of the current time's score possibility
     // 95% equals energy == 5
 
-    float avg_penalty = 0.0f;
+//    float avg_penalty = 0.0f;
     int penalty_sum = 0;
 
     for (size_t i = 0; i < energy_values.size(); ++i)

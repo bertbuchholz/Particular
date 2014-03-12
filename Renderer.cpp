@@ -1119,7 +1119,7 @@ void Shader_renderer::draw_backdrop_quad() const
 
 void Shader_renderer::render(QGLFramebufferObject *main_fbo, const Level_data &level_data, const float time, const qglviewer::Camera *camera)
 {
-    glViewport(0.0f, 0.0f, camera->screenWidth(), camera->screenHeight());
+//    glViewport(0.0f, 0.0f, camera->screenWidth(), camera->screenHeight());
 
     glEnable(GL_DEPTH_TEST);
 

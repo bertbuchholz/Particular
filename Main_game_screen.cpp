@@ -98,20 +98,23 @@ Main_game_screen::Main_game_screen(My_viewer &viewer, Core &core, Ui_state ui_st
     connect(&_core, SIGNAL(level_changed(Main_game_screen::Level_state)), this, SLOT(handle_level_change(Main_game_screen::Level_state)));
     connect(&_core, SIGNAL(game_state_changed()), this, SLOT(handle_game_state_change()));
 
+    if (_ui_state != Ui_state::Level_editor)
     {
-        boost::shared_ptr<Draggable_label> energy_label(new Draggable_label({ 0.0f, 0.0f, 0.0f }, { 0.3f, 0.2f }, "Energy"));
-        Eigen::Vector2f bb = _ui_renderer.generate_flowing_text_label(energy_label.get(), 0.4f);
-        Eigen::Vector3f right_edge_pos(0.8f - bb[0] * 0.5f, 1.0f - 0.02f - bb[1] * 0.5f, 0.0f);
-        energy_label->set_position(right_edge_pos);
-        _labels.push_back(energy_label);
-    }
+        {
+            boost::shared_ptr<Draggable_label> energy_label(new Draggable_label({ 0.0f, 0.0f, 0.0f }, { 0.3f, 0.2f }, "Energy"));
+            Eigen::Vector2f bb = _ui_renderer.generate_flowing_text_label(energy_label.get(), 0.4f);
+            Eigen::Vector3f right_edge_pos(0.8f - bb[0] * 0.5f, 1.0f - 0.02f - bb[1] * 0.5f, 0.0f);
+            energy_label->set_position(right_edge_pos);
+            _labels.push_back(energy_label);
+        }
 
-    {
-        _energy_amount_label = boost::shared_ptr<Draggable_label>(new Draggable_label({ 0.0f, 0.0f, 0.0f }, { 0.3f, 0.2f }, ""));
-        Eigen::Vector2f bb = _ui_renderer.generate_flowing_text_label(_energy_amount_label.get(), 0.4f);
-        Eigen::Vector3f right_edge_pos(0.8f + bb[0] * 0.5f + 0.01f, 1.0f - 0.02f - bb[1] * 0.5f, 0.0f);
-        _energy_amount_label->set_position(right_edge_pos);
-        _labels.push_back(_energy_amount_label);
+        {
+            _energy_amount_label = boost::shared_ptr<Draggable_label>(new Draggable_label({ 0.0f, 0.0f, 0.0f }, { 0.3f, 0.2f }, ""));
+            Eigen::Vector2f bb = _ui_renderer.generate_flowing_text_label(_energy_amount_label.get(), 0.4f);
+            Eigen::Vector3f right_edge_pos(0.8f + bb[0] * 0.5f + 0.01f, 1.0f - 0.02f - bb[1] * 0.5f, 0.0f);
+            _energy_amount_label->set_position(right_edge_pos);
+            _labels.push_back(_energy_amount_label);
+        }
     }
 }
 

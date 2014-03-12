@@ -71,8 +71,8 @@ void Help_screen::init()
 
             for (int i = 0; i < num_points; ++i)
             {
-                points.push_back({item._position[0] + item._radius[0] * std::cos(i / float(num_points - 1) * 2.0f * M_PI),
-                                  item._position[1] + item._radius[1] * std::sin(i / float(num_points - 1) * 2.0f * M_PI),
+                points.push_back({item._position[0] + item._radius[0] * std::cos(i / float(num_points - 1) * 2.0f * float(M_PI)),
+                                  item._position[1] + item._radius[1] * std::sin(i / float(num_points - 1) * 2.0f * float(M_PI)),
                                   0.0f}
                                  );
             }

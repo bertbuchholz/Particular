@@ -504,7 +504,7 @@
 			</boxmax>
 			<_first_release>1</_first_release>
 			<_last_release>1</_last_release>
-			<_interval>1</_interval>
+			<_interval>0.4</_interval>
 			<_num_max_molecules>50</_num_max_molecules>
 			<_num_released_molecules>0</_num_released_molecules>
 			<_molecule_type>H2O</_molecule_type>

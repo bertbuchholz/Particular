@@ -433,7 +433,7 @@ void Ui_renderer::generate_button_texture(Draggable_button *b) const
 
 void Ui_renderer::generate_label_texture(Draggable_label *b, int const text_alignment) const
 {
-    std::cout << __FUNCTION__ << " constructing label texture" << std::endl;
+//    std::cout << __FUNCTION__ << " constructing label texture" << std::endl;
 
     QSize const pixel_size(_screen_size.width() * b->get_extent()[0], _screen_size.height() * b->get_extent()[1]);
 
@@ -1119,6 +1119,8 @@ void Shader_renderer::draw_backdrop_quad() const
 
 void Shader_renderer::render(QGLFramebufferObject *main_fbo, const Level_data &level_data, const float time, const qglviewer::Camera *camera)
 {
+    glViewport(0.0f, 0.0f, camera->screenWidth(), camera->screenHeight());
+
     glEnable(GL_DEPTH_TEST);
 
     glColor4f(1.0f, 1.0f, 1.0f, 1.0f);

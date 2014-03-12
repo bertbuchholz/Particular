@@ -37,7 +37,7 @@ void main(void)
 {
     vec2 tex_coord = gl_TexCoord[0].st;
 
-    vec4 color = texture2D(texture, tex_coord); // + color * (1.0 - f);
+    vec4 color = texture2D(texture, tex_coord) * gl_Color; // + color * (1.0 - f);
 
     float shadow = blur_alpha(tex_coord, blur_size / 2);
 

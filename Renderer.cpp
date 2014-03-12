@@ -519,10 +519,29 @@ void Ui_renderer::generate_statistics_texture(Draggable_statistics &b, float con
     font.setPixelSize(0.06f * pixel_size.height());
     p.setFont(font);
 
-    QRect graphkey_rect(0.03f * pixel_size.width(), (0.85f - 0.05f - 0.6f * 0.0f / 4.0f) * pixel_size.height(), 0.06f * pixel_size.width(), 0.1f * pixel_size.height());
-    p.drawText(graphkey_rect, Qt::AlignVCenter | Qt::AlignRight, QString("%1").arg(b.get_min_value(), 0, 'f', 0));
+    QRect graphkey_rect(0.0f * pixel_size.width(), (0.85f - 0.05f - 0.6f * 0.0f / 4.0f) * pixel_size.height(), 0.1f * pixel_size.width(), 0.1f * pixel_size.height());
+
+    if (b.get_display_type() == Draggable_statistics::Display_type::Int)
+    {
+        p.drawText(graphkey_rect, Qt::AlignVCenter | Qt::AlignRight, QString("%1").arg(b.get_min_value(), 0, 'f', 0));
+    }
+    else if (b.get_display_type() == Draggable_statistics::Display_type::Percentage)
+    {
+        p.drawText(graphkey_rect, Qt::AlignVCenter | Qt::AlignRight, QString("%1\%").arg(b.get_min_value() * 100, 0, 'f', 0));
+    }
+
     graphkey_rect.moveTop((0.85f - 0.05f - 0.6f * 4.0f / 4.0f) * pixel_size.height());
-    p.drawText(graphkey_rect, Qt::AlignVCenter | Qt::AlignRight, QString("%1").arg(b.get_max_value(), 0, 'f', 0));
+
+    if (b.get_display_type() == Draggable_statistics::Display_type::Int)
+    {
+        p.drawText(graphkey_rect, Qt::AlignVCenter | Qt::AlignRight, QString("%1").arg(b.get_max_value(), 0, 'f', 0));
+    }
+    else if (b.get_display_type() == Draggable_statistics::Display_type::Percentage)
+    {
+        p.drawText(graphkey_rect, Qt::AlignVCenter | Qt::AlignRight, QString("%1\%").arg(b.get_max_value() * 100, 0, 'f', 0));
+    }
+
+
     graphkey_rect = QRect(0.8f * pixel_size.width(), 0.85f * pixel_size.height(), 0.1f * pixel_size.width(), 0.1f * pixel_size.height());
     p.drawText(graphkey_rect, Qt::AlignVCenter | Qt::AlignRight, QString("%1 s").arg(full_time, 0, 'f', 0));
 
@@ -611,6 +630,7 @@ Eigen::Vector2f Ui_renderer::generate_flowing_text_label(Draggable_label * label
 
     GL_functions f(_context);
 
+    f.delete_texture(label->get_texture());
     Frame_buffer<Color4> texture_fb = convert<QRgb_to_Color4_converter, Color4>(text_image);
     label->set_texture(f.create_texture(texture_fb));
     label->set_extent(uniform_bb);

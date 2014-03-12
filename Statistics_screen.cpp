@@ -31,6 +31,7 @@ void Statistics_screen::init()
     {
         boost::shared_ptr<Draggable_statistics> stat(new Draggable_statistics(Eigen::Vector3f(0.75f, 0.2f + 0.35f * 0.5f, 0.0f), Eigen::Vector2f(0.45f, 0.35f), "Energy Consumption"));
         stat->set_duration(_stat_anim_duration);
+        stat->set_display_type(Draggable_statistics::Display_type::Percentage);
         _statistics[int(Sensor_data::Type::EnergyCon)] = stat;
     }
 
@@ -44,21 +45,21 @@ void Statistics_screen::init()
         _buttons.push_back(boost::shared_ptr<Draggable_button>(button));
     }
 
-    _collected_score_label = boost::shared_ptr<Draggable_label>(new Draggable_label({ 0.25f, 0.6f + 0.35f * 0.5f, 0.0f }, { 0.3f, 0.2f }, "ColScore"));
-    _collected_score_label->set_alpha(0.0f);
-//    _renderer.generate_label_texture(_collected_score_label.get());
+    _collected_score_label = boost::shared_ptr<Draggable_label>(new Draggable_label({0.75f, 0.6f - 0.05f, 0.0f}, { 0.3f, 0.1f }, "0000000"));
+    _collected_score_label->set_color({147 / 255.0f, 232 / 255.0f, 112 / 255.0f, 1.0f});
+    _renderer.generate_label_texture(_collected_score_label.get());
     _labels.push_back(_collected_score_label);
 
-    _power_score_label = boost::shared_ptr<Draggable_label>(new Draggable_label({ 0.75f, 0.6f + 0.35f * 0.5f, 0.0f }, { 0.3f, 0.2f }, "PowerScore"));
-    _power_score_label->set_alpha(0.0f);
-//    _renderer.generate_label_texture(_power_score_label.get());
-    _labels.push_back(_power_score_label);
+    _penalty_label = boost::shared_ptr<Draggable_label>(new Draggable_label({ 0.75f, 0.2f - 0.05f, 0.0f }, { 0.3f, 0.1f }, "0000000"));
+    _collected_score_label->set_color({255 / 255.0f, 121 / 255.0f, 54 / 255.0f, 1.0f});
+    _renderer.generate_label_texture(_penalty_label.get());
+    _labels.push_back(_penalty_label);
 
-    boost::shared_ptr<Draggable_event> collected_label_event(new Draggable_event(_collected_score_label, Draggable_event::Type::Fade_in));
-    _events.push_back(collected_label_event);
+//    boost::shared_ptr<Draggable_event> collected_label_event(new Draggable_event(_collected_score_label, Draggable_event::Type::Fade_in));
+//    _events.push_back(collected_label_event);
 
-    boost::shared_ptr<Draggable_event> power_label_event(new Draggable_event(_power_score_label, Draggable_event::Type::Fade_in));
-    _events.push_back(power_label_event);
+//    boost::shared_ptr<Draggable_event> power_label_event(new Draggable_event(_power_score_label, Draggable_event::Type::Fade_in));
+//    _events.push_back(power_label_event);
 
     {
         boost::shared_ptr<Draggable_event> e(new Draggable_event(_statistics[int(Sensor_data::Type::RelMol)], Draggable_event::Type::Animate));
@@ -71,7 +72,6 @@ void Statistics_screen::init()
         boost::shared_ptr<Draggable_event> e(new Draggable_event(_statistics[int(Sensor_data::Type::ColMol)], Draggable_event::Type::Animate));
         e->set_duration(_stat_anim_duration);
         e->trigger();
-        e->set_finish_function(std::bind(&Draggable_event::trigger, collected_label_event.get()));
         _events.push_back(e);
     }
 
@@ -86,7 +86,6 @@ void Statistics_screen::init()
         boost::shared_ptr<Draggable_event> e(new Draggable_event(_statistics[int(Sensor_data::Type::EnergyCon)], Draggable_event::Type::Animate));
         e->set_duration(_stat_anim_duration);
         e->trigger();
-        e->set_finish_function(std::bind(&Draggable_event::trigger, power_label_event.get()));
         _events.push_back(e);
     }
 
@@ -132,6 +131,15 @@ void Statistics_screen::update_event(const float time_step)
     {
         e->update(_time, time_step);
     }
+
+    Score const& score = _core.get_progress().scores[_core.get_current_level_name()].back();
+    std::vector< std::pair<float, int> > const& penalty_at_time = score.penalty_at_time;
+    int const penalty_value = std::lower_bound(penalty_at_time.begin(), penalty_at_time.end(), _time / _stat_anim_duration * score.get_full_time(),
+                                       [](std::pair<float, int> const & x, float d)
+                                                 { return x.first < d; })->second;
+
+    _penalty_label->set_text(QString("%1").arg(penalty_value, 7, 10, QChar('0')).toStdString());
+    _renderer.generate_label_texture(_penalty_label.get());
 }
 
 void Statistics_screen::setup_statistics(Sensor_data const& sensor_data, Score const& score)
@@ -187,6 +195,7 @@ void Statistics_screen::setup_statistics(Sensor_data const& sensor_data, Score c
             boost::shared_ptr<Draggable_event> e(new Draggable_event(_labels.back(), Draggable_event::Type::Fade_in, event_time));
             e->set_duration(0.1f);
             e->trigger();
+            e->set_finish_function(std::bind(&Statistics_screen::update_score_label, this));
             _events.push_back(e);
         }
 
@@ -227,6 +236,17 @@ void Statistics_screen::repeat()
     }
 
     _time = 0.0f;
+}
+
+void Statistics_screen::update_score_label()
+{
+    std::vector< std::pair<float, int> > score_at_time = _core.get_progress().scores[_core.get_current_level_name()].back().score_at_time;
+    int const score = std::lower_bound(score_at_time.begin(), score_at_time.end(), _time / _stat_anim_duration * _core.get_progress().scores[_core.get_current_level_name()].back().get_full_time(),
+                                       [](std::pair<float, int> const & x, float d)
+                                                 { return x.first < d; })->second;
+
+    _collected_score_label->set_text(QString("%1").arg(score, 7, 10, QChar('0')).toStdString());
+    _renderer.generate_label_texture(_collected_score_label.get());
 }
 
 Statistics_screen::Statistics_screen(My_viewer & viewer, Core & core, Screen *calling_screen) :

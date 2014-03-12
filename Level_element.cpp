@@ -654,6 +654,13 @@ void Tractor_barrier::accept(const Level_element_visitor *visitor)
     visitor->visit(this);
 }
 
+float Tractor_barrier::get_energy_use() const
+{
+    float const max_strength = _properties["tractor_strength"]->get_max<float>();
+
+    return (std::abs(_strength) / max_strength) * (_box.sizes()[0] + _radius * 0.1f)  * (_box.sizes()[2] + _radius * 0.1f);
+}
+
 
 Moving_box_barrier::Moving_box_barrier(const Eigen::Vector3f &min, const Eigen::Vector3f &max, const float strength, const float radius) :
     Box_barrier(min, max, strength, radius)
@@ -834,6 +841,13 @@ void Brownian_box::animate(const float timestep)
     }
 
     //        _particles2.animate(std::bind(&Brownian_box::p_function, this, std::placeholders::_1, std::placeholders::_2), timestep);
+}
+
+float Brownian_box::get_energy_use() const
+{
+    float const max_strength = _properties["strength"]->get_max<float>();
+
+    return (std::abs(_strength) / max_strength) * (_box.sizes()[0] + _radius * 0.1f)  * (_box.sizes()[2] + _radius * 0.1f);
 }
 
 const std::vector<Particle> &Brownian_box::get_particles() const

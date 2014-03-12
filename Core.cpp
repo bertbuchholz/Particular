@@ -690,12 +690,19 @@ void Core::do_sensor_check()
     }
 
     // TODO: add power consumption of tractors
-    for (Brownian_element const* p : _level_data._brownian_elements)
-    {
-        Eigen::AlignedBox3f const world_aabb = p->get_world_aabb();
-        float const volume = (world_aabb.sizes()[0] + p->get_radius()) * (world_aabb.sizes()[2] + p->get_radius());
+//    for (Brownian_element const* p : _level_data._brownian_elements)
+//    {
+//        Eigen::AlignedBox3f const world_aabb = p->get_world_aabb();
+//        float const volume = (world_aabb.sizes()[0] + p->get_radius()) * (world_aabb.sizes()[2] + p->get_radius());
 
-        energy_consumption += std::abs(p->get_strength()) * volume;
+//        energy_consumption += std::abs(p->get_strength()) * volume;
+//    }
+
+    float const max_energy_use = _level_data._game_field_height * _level_data._game_field_width;
+
+    for (boost::shared_ptr<Level_element> const& l : _level_data._level_elements)
+    {
+        energy_consumption += std::min(l->get_energy_use() / max_energy_use, 1.0f) * 2.0f;
     }
 
     for (float const temp : _level_data._temperature_grid.get_data())

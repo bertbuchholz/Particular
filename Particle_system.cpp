@@ -225,12 +225,12 @@ void Curved_particle_system::animate(float const timestep)
             Eigen::Vector3f const new_particle_position = _curve.get_pos_on_curve(t);
 
             Particle p;
-            p.position = new_particle_position; // + orthogonal * (_rng() / float(_rng.max()) - 0.5f) * 0.01f;
+            p.position = new_particle_position + orthogonal * (_rng() / float(_rng.max()) - 0.5f) * 0.01f;
             p.color = _curve_color;
             p.color.a = _rng() / float(_rng.max()) * 0.6f + 0.4f;
             p.current_color = color_aging(p.color, p.age);
-//            p.size_factor = _rng() / float(_rng.max()) * 2.0f + 0.3f;
-            p.size_factor = 1.0f;
+            p.size_factor = _rng() / float(_rng.max()) * 2.0f + 0.3f;
+//            p.size_factor = 1.0f;
             p.size_factor *= _particle_size;
 
             _curve_particles.push_back(p);

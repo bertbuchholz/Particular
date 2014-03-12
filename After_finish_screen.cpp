@@ -70,7 +70,7 @@ void After_finish_screen::init()
     }
 
     {
-        Draggable_label * label = new Draggable_label(Eigen::Vector3f(0.25f, 0.5f, 0.0f), Eigen::Vector2f(0.3f, 0.1f), "00000000");
+        Draggable_label * label = new Draggable_label(Eigen::Vector3f(0.25f, 0.5f, 0.0f), Eigen::Vector2f(0.3f, 0.1f), "0000000");
         label->set_color({147 / 255.0f, 232 / 255.0f, 112 / 255.0f, 1.0f});
         _labels.push_back(boost::shared_ptr<Draggable_label>(label));
         _score_label = _labels.back();
@@ -83,9 +83,10 @@ void After_finish_screen::init()
     }
 
     {
-        Draggable_label * label = new Draggable_label(Eigen::Vector3f(0.75f, 0.5f, 0.0f), Eigen::Vector2f(0.3f, 0.1f), "0005555");
+        Draggable_label * label = new Draggable_label(Eigen::Vector3f(0.75f, 0.5f, 0.0f), Eigen::Vector2f(0.3f, 0.1f), "0000000");
         label->set_color({255 / 255.0f, 121 / 255.0f, 54 / 255.0f, 1.0f});
         _labels.push_back(boost::shared_ptr<Draggable_label>(label));
+        _penalty_label = _labels.back();
 
         boost::shared_ptr<Draggable_event> e(new Draggable_event(_labels.back(), Draggable_event::Type::Move));
         e->set_duration(1.0f);
@@ -114,8 +115,7 @@ void After_finish_screen::init()
 
     Score score;
     score.sensor_data = _core.get_sensor_data();
-    int const score_count = score.calculate_score(_core.get_level_data()._score_time_factor, num_molecules_to_capture);
-    score.final_score = score_count;
+    score.calculate_score(_core.get_level_data()._score_time_factor, num_molecules_to_capture);
 
     if (_core.get_progress().last_level < _core.get_level_names().size())
     {
@@ -186,7 +186,7 @@ void After_finish_screen::start_score_animation()
 
 void After_finish_screen::add_particle_system()
 {
-    int const score = _core.get_progress().scores[_core.get_current_level_name()].back().final_score;
+    int const score = _core.get_progress().scores[_core.get_current_level_name()].back().final_score - _core.get_progress().scores[_core.get_current_level_name()].back()._penalty;
 
     _score_particle_system = Targeted_particle_system(3.0f);
     _score_particle_system.generate(QString("%1").arg(score, 8, 10, QChar('0')).toStdString(), _viewer.get_particle_font(), QRectF(0.0f, 0.5f, 1.0f, 0.3f));
@@ -210,15 +210,22 @@ void After_finish_screen::update_event(const float time_step)
         int const score = _core.get_progress().scores[_core.get_current_level_name()].back().final_score;
         int interpolated_score = score * normalized_time;
 
+        int const penalty = _core.get_progress().scores[_core.get_current_level_name()].back()._penalty;
+        int interpolated_penalty = penalty * normalized_time;
+
         if (normalized_time >= 1.0f)
         {
             interpolated_score = score;
+            interpolated_penalty = penalty;
             _animate_score_time = 101.0f;
             add_particle_system();
         }
 
-        _score_label->set_text(QString("%1").arg(interpolated_score, 8, 10, QChar('0')).toStdString());
+        _score_label->set_text(QString("%1").arg(interpolated_score, 7, 10, QChar('0')).toStdString());
         _renderer.generate_label_texture(_score_label.get());
+
+        _penalty_label->set_text(QString("%1").arg(interpolated_penalty, 7, 10, QChar('0')).toStdString());
+        _renderer.generate_label_texture(_penalty_label.get());
     }
 
     _score_particle_system.animate(time_step);

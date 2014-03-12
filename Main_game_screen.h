@@ -106,6 +106,8 @@ protected:
     std::vector< boost::shared_ptr<Draggable_label> > _labels;
     std::unordered_map<Draggable*, boost::shared_ptr<Draggable_tooltip> > _tooltips_map;
 
+    boost::shared_ptr<Draggable_label> _energy_amount_label;
+
     std::unordered_map<std::string, QImage> _element_images;
 
     GLuint _rotate_tex;

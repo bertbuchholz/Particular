@@ -57,11 +57,10 @@ void After_finish_editor_screen::init()
 
     Score score;
     score.sensor_data = _core.get_sensor_data();
-    int const score_count = score.calculate_score(_core.get_level_data()._score_time_factor, num_molecules_to_capture);
-    score.final_score = score_count;
+    score.calculate_score(_core.get_level_data()._score_time_factor, num_molecules_to_capture);
 
     _score_particle_system = Targeted_particle_system(3.0f);
-    _score_particle_system.generate(QString("%1").arg(score_count, 8, 10, QChar('0')).toStdString(), _viewer.get_particle_font(), QRectF(0.0f, 0.5f, 1.0f, 0.3f));
+    _score_particle_system.generate(QString("%1").arg(score.final_score, 8, 10, QChar('0')).toStdString(), _viewer.get_particle_font(), QRectF(0.0f, 0.5f, 1.0f, 0.3f));
 }
 
 

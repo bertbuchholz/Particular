@@ -29,6 +29,7 @@ private:
     Targeted_particle_system _score_particle_system;
 
     boost::shared_ptr<Draggable_label> _score_label;
+    boost::shared_ptr<Draggable_label> _penalty_label;
     float _animate_score_time;
 
     std::vector< boost::shared_ptr<Draggable_event> > _events;

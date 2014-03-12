@@ -66,7 +66,7 @@ protected:
 class Ui_renderer : public World_renderer
 {
 public:
-    virtual void init(QGLContext const* context, QSize const& size);
+    virtual void init(QGLContext const* context, QSize const& size) override;
 
     void draw_spinbox(Draggable_spinbox const& s, const bool for_picking, float const alpha = 1.0f) const;
 

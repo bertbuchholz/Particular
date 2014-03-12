@@ -97,6 +97,22 @@ Main_game_screen::Main_game_screen(My_viewer &viewer, Core &core, Ui_state ui_st
 
     connect(&_core, SIGNAL(level_changed(Main_game_screen::Level_state)), this, SLOT(handle_level_change(Main_game_screen::Level_state)));
     connect(&_core, SIGNAL(game_state_changed()), this, SLOT(handle_game_state_change()));
+
+    {
+        boost::shared_ptr<Draggable_label> energy_label(new Draggable_label({ 0.0f, 0.0f, 0.0f }, { 0.3f, 0.2f }, "Energy"));
+        Eigen::Vector2f bb = _ui_renderer.generate_flowing_text_label(energy_label.get(), 0.4f);
+        Eigen::Vector3f right_edge_pos(0.8f - bb[0] * 0.5f, 1.0f - 0.02f - bb[1] * 0.5f, 0.0f);
+        energy_label->set_position(right_edge_pos);
+        _labels.push_back(energy_label);
+    }
+
+    {
+        _energy_amount_label = boost::shared_ptr<Draggable_label>(new Draggable_label({ 0.0f, 0.0f, 0.0f }, { 0.3f, 0.2f }, ""));
+        Eigen::Vector2f bb = _ui_renderer.generate_flowing_text_label(_energy_amount_label.get(), 0.4f);
+        Eigen::Vector3f right_edge_pos(0.8f + bb[0] * 0.5f + 0.01f, 1.0f - 0.02f - bb[1] * 0.5f, 0.0f);
+        _energy_amount_label->set_position(right_edge_pos);
+        _labels.push_back(_energy_amount_label);
+    }
 }
 
 Main_game_screen::~Main_game_screen()
@@ -438,6 +454,27 @@ void Main_game_screen::update_event(const float time_step)
     for (auto & l : _labels)
     {
         l->animate(time_step);
+    }
+
+    {
+        if (!_core.get_sensor_data().get_data(Sensor_data::Type::EnergyCon).empty())
+        {
+            float const energy = _core.get_sensor_data().get_data(Sensor_data::Type::EnergyCon).back();
+            std::string new_energy_str = QString("%1\%").arg(int(energy * 100)).toStdString();
+            if (new_energy_str != _energy_amount_label->get_text())
+            {
+                _energy_amount_label->set_text(new_energy_str);
+                //            _ui_renderer.generate_flowing_text_label(_energy_amount_label.get(), 0.4f);
+
+                Eigen::Vector2f bb = _ui_renderer.generate_flowing_text_label(_energy_amount_label.get(), 0.4f);
+                Eigen::Vector3f right_edge_pos(0.8f + bb[0] * 0.5f + 0.01f, 1.0f - 0.02f - bb[1] * 0.5f, 0.0f);
+                _energy_amount_label->set_position(right_edge_pos);
+
+                float const alpha = into_range(energy - 1.0f, 0.0f, 1.0f);
+                _energy_amount_label->set_color({Color(147 / 255.0f, 232 / 255.0f, 112 / 255.0f) * (1.0f - alpha) +
+                                                 Color(255 / 255.0f, 121 / 255.0f, 54 / 255.0f) * alpha, 1.0f});
+            }
+        }
     }
 }
 

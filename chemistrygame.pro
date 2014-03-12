@@ -121,7 +121,8 @@ SOURCES += main.cpp \
     Help_screen.cpp \
     Event.cpp \
     Score.cpp \
-    Draggable_event.cpp
+    Draggable_event.cpp \
+    Level_element_draw_visitor.cpp
 
 OTHER_FILES += TODO.txt \
     data/shaders/picking.vert \
@@ -144,7 +145,8 @@ OTHER_FILES += TODO.txt \
     data/shaders/heat.frag \
     data/shaders/drop_shadow.frag \
     data/shaders/particle.vert \
-    data/shaders/particle.frag
+    data/shaders/particle.frag \
+    data/shaders/distance_particle.vert
 
 HEADERS += \
     My_viewer.h \

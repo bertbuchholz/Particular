@@ -472,7 +472,7 @@ bool Draggable_button::is_pressable() const
 
 
 Draggable_statistics::Draggable_statistics(const Eigen::Vector3f &position, const Eigen::Vector2f &size, const std::string &text) :
-    Draggable_label(position, size, text), _animation_start(0.0f), _animation_duration(10.0f)
+    Draggable_label(position, size, text), _animation_start(0.0f), _animation_duration(10.0f), _display_type(Display_type::Int)
 { }
 
 

@@ -174,6 +174,8 @@ public:
 
     bool does_intersect(Level_element const* element) const;
 
+    virtual float get_energy_use() const { return 0.0f; }
+
     virtual Eigen::AlignedBox<float, 3> get_world_aabb() const = 0;
 
     void add_property(Parameter const* parameter);
@@ -493,6 +495,9 @@ public:
 
     void accept(Level_element_visitor const* visitor) override;
 
+    virtual float get_energy_use() const override;
+
+
     template<class Archive>
     void serialize(Archive & ar, const unsigned int /* version */)
     {
@@ -651,6 +656,8 @@ public:
 //            p.speed = p.speed.normalized() * (_strength + 50.0f) * 0.1f;
 //        }
 //    }
+
+    virtual float get_energy_use() const override;
 
     std::vector<Particle> const& get_particles() const;
 

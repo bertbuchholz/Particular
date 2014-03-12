@@ -289,6 +289,8 @@ private:
 class Draggable_statistics : public Draggable_label
 {
 public:
+    enum class Display_type { Int, Float, Percentage };
+
     Draggable_statistics() {}
 
     Draggable_statistics(Eigen::Vector3f const& position, Eigen::Vector2f const& size, std::string const& text);
@@ -310,6 +312,9 @@ public:
     Curved_particle_system const& get_particle_system() const { return _particle_system; }
     Curved_particle_system & get_particle_system() { return _particle_system; }
 
+    void set_display_type(Display_type const display_type) { _display_type = display_type; }
+    Display_type get_display_type() const { return _display_type; }
+
 private:
     std::string _x_label;
     std::string _y_label;
@@ -323,6 +328,8 @@ private:
     float _min_value;
 
     Curved_particle_system _particle_system;
+
+    Display_type _display_type;
 
     std::function<void(void)> _finish_callback;
 };

@@ -21,11 +21,13 @@ public:
     void exit();
     void repeat();
 
+    void update_score_label();
+
 private:
     std::vector< boost::shared_ptr<Draggable_statistics> > _statistics;
 
     boost::shared_ptr<Draggable_label> _collected_score_label;
-    boost::shared_ptr<Draggable_label> _power_score_label;
+    boost::shared_ptr<Draggable_label> _penalty_label;
 
     Screen * _calling_screen;
 

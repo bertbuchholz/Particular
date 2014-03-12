@@ -3,25 +3,17 @@
 #include <cmath>
 #include <cassert>
 
-int Score::calculate_score(const float time_factor, const int num_molecules_to_capture)
+#include <Utilities.h>
+
+void Score::calculate_score(const float time_factor, const int num_molecules_to_capture_)
 {
     float score = 0.0f;
 
     full_time = sensor_data.get_data(Sensor_data::Type::ColMol).size() * sensor_data.get_check_interval();
 
-//    float const max_power = _game_field_volume * 50.0f;
+    num_molecules_to_capture = num_molecules_to_capture_;
 
-//    _cumulative_energy.clear();
-//    _cumulative_energy.push_back(0.0f);
-
-//    for (size_t i = 1; i < _data[int(Type::EnergyCon)].size(); ++i)
-//    {
-//        _cumulative_energy.push_back(_cumulative_energy.back() + _data[int(Type::EnergyCon)][i] * _check_interval);
-//    }
-
-    _num_molecules_to_capture = num_molecules_to_capture;
-
-    int const points_per_molecule = 1e6 / _num_molecules_to_capture;
+    int const points_per_molecule = 1e6 / num_molecules_to_capture;
 
     int highest_num_captured = 0;
 
@@ -37,14 +29,47 @@ int Score::calculate_score(const float time_factor, const int num_molecules_to_c
         {
             highest_num_captured = current_captured;
 
-            int const new_score = points_per_molecule * get_score_multiplier(current_time, time_factor);
+            int const new_score = int(points_per_molecule * get_score_multiplier(current_time, time_factor) / 100) * 100;
             score += new_score;
             score_at_time.push_back(std::pair<float, int>(current_time, new_score));
         }
-
     }
 
-    return score;
+    std::vector<float> energy_values = sensor_data.get_data(Sensor_data::Type::EnergyCon);
+
+    // energy of 1 or less gets no penalty, energy over 1 gets a penalty of up to 95% of the current time's score possibility
+    // 95% equals energy == 5
+
+    float avg_penalty = 0.0f;
+    int penalty_sum = 0;
+
+    for (size_t i = 0; i < energy_values.size(); ++i)
+    {
+        float const current_time = i * sensor_data.get_check_interval();
+
+        float const penalty = into_range(energy_values[i] - 1.0f, 0.0f, 4.0f) / 4.0f * 0.95f * get_score_multiplier(current_time, time_factor);
+//        avg_penalty += penalty;
+        int const discrete_penalty = int(penalty * score / (energy_values.size() * 100)) * 100;
+        penalty_sum += discrete_penalty;
+
+        penalty_at_time.push_back(std::pair<float, int>(current_time, discrete_penalty));
+    }
+
+//    avg_penalty /= float(energy_values.size());
+
+//    {
+//        float sum = 0.0f;
+
+//        for (auto p : penalty_at_time)
+//        {
+//            sum += p.second;
+//        }
+
+//        assert(std::abs(sum - avg_penalty * score) < avg_penalty * score * 0.01f);
+//    }
+
+    final_score = score;
+    _penalty = penalty_sum;
 }
 
 std::vector<std::pair<float, int> > const& Score::get_score_at_time() const

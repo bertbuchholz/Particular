@@ -7,6 +7,8 @@
 #include <boost/serialization/nvp.hpp>
 #endif
 
+#include <Parameter.h>
+
 class Sensor_data
 {
 public:

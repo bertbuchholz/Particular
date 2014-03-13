@@ -45,12 +45,12 @@ void Statistics_screen::init()
         _buttons.push_back(boost::shared_ptr<Draggable_button>(button));
     }
 
-    _collected_score_label = boost::shared_ptr<Draggable_label>(new Draggable_label({0.75f, 0.6f - 0.05f, 0.0f}, { 0.3f, 0.1f }, "0000000"));
+    _collected_score_label = boost::shared_ptr<Draggable_label>(new Draggable_label({0.75f, 0.6f, 0.0f}, { 0.3f, 0.1f }, "0000000"));
     _collected_score_label->set_color({147 / 255.0f, 232 / 255.0f, 112 / 255.0f, 1.0f});
     _renderer.generate_label_texture(_collected_score_label.get());
     _labels.push_back(_collected_score_label);
 
-    _penalty_label = boost::shared_ptr<Draggable_label>(new Draggable_label({ 0.75f, 0.2f - 0.05f, 0.0f }, { 0.3f, 0.1f }, "0000000"));
+    _penalty_label = boost::shared_ptr<Draggable_label>(new Draggable_label({ 0.75f, 0.2f, 0.0f }, { 0.3f, 0.1f }, "0000000"));
     _penalty_label->set_color({255 / 255.0f, 121 / 255.0f, 54 / 255.0f, 1.0f});
     _renderer.generate_label_texture(_penalty_label.get());
     _labels.push_back(_penalty_label);

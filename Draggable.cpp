@@ -536,6 +536,8 @@ void Draggable_statistics::set_values(const std::vector<float> &values, boost::o
 
     _particle_system.set_curve_color(curve_color);
     _particle_system.set_effect_color(curve_color);
+
+    _particle_system.set_use_as_diagram(true);
 }
 
 const std::vector<float> &Draggable_statistics::get_values() const

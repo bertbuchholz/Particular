@@ -288,7 +288,6 @@ private:
 
     Progress _progress;
 
-//    QTimer * _physics_timer;
     QTimer _physics_timer;
     std::chrono::time_point<std::chrono::system_clock> _physics_elapsed_time;
 

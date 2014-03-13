@@ -85,6 +85,8 @@ void Experiment_screen::init()
     _curved_system.set_particle_size(1.0f);
 
     _curved_system.set_display_ratio(_viewer.camera()->screenWidth() / float(_viewer.camera()->screenHeight()));
+
+    _curved_system.set_use_as_diagram(true);
 }
 
 void Experiment_screen::update_event(const float time_step)

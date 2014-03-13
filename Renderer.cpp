@@ -1117,6 +1117,33 @@ void Shader_renderer::draw_backdrop_quad() const
     glPopMatrix();
 }
 
+void Shader_renderer::draw_gravity(Level_data const& l) const
+{
+    Parameter const* p = l._parameters["gravity"];
+
+    float gravity = p->get_value<float>();
+
+    if (gravity < 0.0001f) return;
+
+    float const g_max   = p->get_max<float>();
+    float const g_min   = p->get_min<float>();
+
+    float const scale = 100.0f * (gravity - g_min) / (g_max - g_min);
+
+    glPushMatrix();
+
+//    glTranslatef(0.0f, 300.0f, 0.0f);
+
+    glScalef(scale, 1.0f, scale);
+
+    glRotatef(-90.0f, 1.0f, 0.0f, 0.0f);
+    glRotatef( 90.0f, 0.0f, 0.0f, 1.0f);
+
+    draw_arrow_z_plane_bold(OpenMesh::Vec3f(0, -1, 0), OpenMesh::Vec3f(0, 1, 0));
+
+    glPopMatrix();
+}
+
 void Shader_renderer::render(QGLFramebufferObject *main_fbo, const Level_data &level_data, const float time, const qglviewer::Camera *camera)
 {
 //    glViewport(0.0f, 0.0f, camera->screenWidth(), camera->screenHeight());
@@ -1154,6 +1181,8 @@ void Shader_renderer::render(QGLFramebufferObject *main_fbo, const Level_data &l
     glPopMatrix();
 
     glBindTexture(GL_TEXTURE_2D, 0);
+
+//    draw_gravity(level_data);
 
     glEnable(GL_LIGHTING);
     glEnable(GL_TEXTURE_2D);
@@ -1575,6 +1604,33 @@ void Editor_renderer::draw_backdrop_quad() const
     glRotatef(90.0f, 1.0f, 0.0f, 0.0f);
 
     draw_quad_with_tex_coords();
+
+    glPopMatrix();
+}
+
+void Editor_renderer::draw_gravity(const Level_data &l) const
+{
+    Parameter const* p = l._parameters["gravity"];
+
+    float gravity = p->get_value<float>();
+
+    if (gravity < 0.0001f) return;
+
+    float const g_max   = p->get_max<float>();
+    float const g_min   = p->get_min<float>();
+
+    float const scale = 100.0f * (gravity - g_min) / (g_max - g_min);
+
+    glPushMatrix();
+
+    //    glTranslatef(0.0f, 300.0f, 0.0f);
+
+    glScalef(scale, 1.0f, scale);
+
+    glRotatef(-90.0f, 1.0f, 0.0f, 0.0f);
+    glRotatef(-90.0f, 0.0f, 1.0f, 0.0f);
+
+    draw_arrow_z_plane_bold(OpenMesh::Vec3f(0, -1, 0), OpenMesh::Vec3f(0, 1, 0));
 
     glPopMatrix();
 }

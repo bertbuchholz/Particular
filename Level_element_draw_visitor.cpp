@@ -149,7 +149,7 @@ void Level_element_draw_visitor::visit(Blow_barrier *b) const
 
     glPushMatrix();
     glRotatef(90.0f, 1.0f, 0.0f, 0.0f);
-    draw_arrow_z_plane(Eigen2OM(arrow_start), Eigen2OM(arrow_end));
+    draw_arrow_z_plane_bold(Eigen2OM(arrow_start), Eigen2OM(arrow_end));
     glPopMatrix();
 
     glPopMatrix();

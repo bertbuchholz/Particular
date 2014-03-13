@@ -150,6 +150,8 @@ public:
 
     void set_display_ratio(float const ratio) { _display_ratio = ratio; }
 
+    void set_use_as_diagram(bool const u) { _use_as_diagram = u; }
+
     Polygonal_curve const& get_curve() const { return _curve; }
 
     void reset();
@@ -174,6 +176,7 @@ protected:
     Color4 _effect_color;
 
     float _display_ratio;
+    bool _use_as_diagram;
 };
 
 //void draw_particle_system(Targeted_particle_system const& system, int const height);

@@ -55,6 +55,8 @@ public:
 
     void change_renderer();
 
+    void change_speed_pressed();
+
     void resize(QSize const& size) override;
 
 public Q_SLOTS:
@@ -107,6 +109,7 @@ protected:
     std::unordered_map<Draggable*, boost::shared_ptr<Draggable_tooltip> > _tooltips_map;
 
     boost::shared_ptr<Draggable_label> _energy_amount_label;
+    boost::shared_ptr<Draggable_label> _time_label;
 
     std::unordered_map<std::string, QImage> _element_images;
 

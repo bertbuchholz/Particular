@@ -115,6 +115,14 @@ Main_game_screen::Main_game_screen(My_viewer &viewer, Core &core, Ui_state ui_st
             _energy_amount_label->set_position(right_edge_pos);
             _labels.push_back(_energy_amount_label);
         }
+
+        {
+            _time_label = boost::shared_ptr<Draggable_label>(new Draggable_label({ 0.0f, 0.0f, 0.0f }, { 0.3f, 0.2f }, ""));
+            Eigen::Vector2f bb = _ui_renderer.generate_flowing_text_label(_time_label.get(), 0.4f);
+            Eigen::Vector3f right_edge_pos(0.5f + bb[0] * 0.5f, 1.0f - 0.02f - bb[1] * 0.5f, 0.0f);
+            _time_label->set_position(right_edge_pos);
+            _labels.push_back(_time_label);
+        }
     }
 }
 
@@ -460,7 +468,7 @@ void Main_game_screen::update_event(const float time_step)
     }
 
     {
-        if (!_core.get_sensor_data().get_data(Sensor_data::Type::EnergyCon).empty())
+        if (_energy_amount_label && !_core.get_sensor_data().get_data(Sensor_data::Type::EnergyCon).empty())
         {
             float const energy = _core.get_sensor_data().get_data(Sensor_data::Type::EnergyCon).back();
             std::string new_energy_str = QString("%1\%").arg(int(energy * 100)).toStdString();
@@ -476,6 +484,20 @@ void Main_game_screen::update_event(const float time_step)
                 float const alpha = into_range(energy - 1.0f, 0.0f, 1.0f);
                 _energy_amount_label->set_color({Color(147 / 255.0f, 232 / 255.0f, 112 / 255.0f) * (1.0f - alpha) +
                                                  Color(255 / 255.0f, 121 / 255.0f, 54 / 255.0f) * alpha, 1.0f});
+            }
+        }
+
+        if (_time_label)
+        {
+            float const time = _core.get_current_time();
+            float const multiplier = Score::get_score_multiplier(time, _core.get_level_data()._score_time_factor);
+            std::string new_time_str = QString("Time: %1s (%2x)").arg(time, 3, 'f', 0).arg(multiplier, 1, 'f', 1).toStdString();
+            if (new_time_str != _time_label->get_text())
+            {
+                _time_label->set_text(new_time_str);
+                Eigen::Vector2f bb = _ui_renderer.generate_flowing_text_label(_time_label.get(), 0.4f);
+                Eigen::Vector3f right_edge_pos(0.5f + bb[0] * 0.5f, 1.0f - 0.02f - bb[1] * 0.5f, 0.0f);
+                _time_label->set_position(right_edge_pos);
             }
         }
     }
@@ -1312,6 +1334,16 @@ void Main_game_screen::update_level_element_buttons()
     _buttons.push_back(button_reset_camera);
 
 
+    boost::shared_ptr<Draggable_button> button_change_speed = boost::shared_ptr<Draggable_button>(
+                new Draggable_button(Eigen::Vector3f(0.89f, 0.95f, 0.0f),
+                                     Eigen::Vector2f(0.04f, 0.04f * _viewer.camera()->aspectRatio()),
+                                     "", std::bind(&Main_game_screen::change_speed_pressed, this)));
+    button_change_speed->set_texture(_viewer.bindTexture(QImage(Data_config::get_instance()->get_absolute_qfilename("textures/button_change_speed.png"))));
+    button_change_speed->set_tooltip_text("Change game speed");
+
+    _buttons.push_back(button_change_speed);
+
+
     update_draggable_to_level_element();
     update_active_draggables();
 }
@@ -1362,6 +1394,20 @@ void Main_game_screen::change_renderer()
     _renderer = std::unique_ptr<World_renderer>(Parameter_registry<World_renderer>::get_class_from_single_select_instance_2(_parameters.get_child("Renderer")));
     _renderer->init(_viewer.context(), _viewer.size());
     _renderer->update(_core.get_level_data());
+}
+
+void Main_game_screen::change_speed_pressed()
+{
+    float const current_speed = _core.get_parameters()["physics_speed"]->get_value<float>();
+
+    float new_speed = std::round(current_speed * 2.0f);
+
+    if (new_speed > 4.1f)
+    {
+        new_speed = 1.0f;
+    }
+
+    _core.get_parameters()["physics_speed"]->set_value(new_speed);
 }
 
 void Main_game_screen::resize(QSize const& size)

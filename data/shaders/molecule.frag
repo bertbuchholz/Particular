@@ -23,15 +23,15 @@ void main(void)
 //    vec3 ref_view_dir = normalize(vec_to_camera - 2.0 * dot(vec_to_camera, world_normal) * world_normal);
     vec3 ref_view_dir = reflect(view_dir, normalize(world_normal));
 
-    float gamma = 8.0;
+//    float gamma = 8.0;
     float alpha = 10.0;
-    float beta = alpha / gamma;
+//    float beta = alpha / gamma;
 
 //    float lambda = length(ref_dir - vec_to_camera) * 0.5;
     float lambda = 1.0 - dot(ref_dir, vec_to_camera);
 
 //    float spec = pow(max(0.0, 1.0 - beta * lambda), gamma);
-    float spec = pow(max(0.0, 1.0 - lambda), alpha);
+    float spec = pow(max(0.0, 1.0 - lambda), alpha) * 0.5;
 
     float fresnel = min(1.0, dot(normalize(vec_to_camera), world_normal) * 0.5 + 0.5);
 

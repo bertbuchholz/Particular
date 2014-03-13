@@ -432,6 +432,17 @@ void Editor_screen::init_controls()
     _normal_controls.push_back(button_reset_camera);
 
 
+    boost::shared_ptr<Draggable_button> button_change_speed = boost::shared_ptr<Draggable_button>(
+                new Draggable_button(Eigen::Vector3f(0.83f, 0.95f, 0.0f),
+                                     Eigen::Vector2f(0.04f, 0.04f * _viewer.camera()->aspectRatio()),
+                                     "", std::bind(&Main_game_screen::change_speed_pressed, this)));
+    button_change_speed->set_texture(_viewer.bindTexture(QImage(Data_config::get_instance()->get_absolute_qfilename("textures/button_change_speed.png"))));
+    button_change_speed->set_tooltip_text("Change game speed");
+
+    _buttons.push_back(button_change_speed);
+    _normal_controls.push_back(button_change_speed);
+
+
     _hide_controls_button = boost::shared_ptr<Draggable_button>(
                 new Draggable_button(Eigen::Vector3f(0.1f, 0.05f, 0.0f),
                                      Eigen::Vector2f(0.15f, 0.05f * _viewer.camera()->aspectRatio()),

@@ -47,7 +47,6 @@ void After_finish_screen::init()
 
     {
         Draggable_label * label = new Draggable_label(Eigen::Vector3f(0.25f, 0.6f, 0.0f), Eigen::Vector2f(0.3f, 0.1f), "Portal Score");
-//        label->set_color({147 / 255.0f, 232 / 255.0f, 112 / 255.0f, 1.0f});
         _labels.push_back(boost::shared_ptr<Draggable_label>(label));
 
         boost::shared_ptr<Draggable_event> e(new Draggable_event(_labels.back(), Draggable_event::Type::Move));
@@ -59,7 +58,6 @@ void After_finish_screen::init()
 
     {
         Draggable_label * label = new Draggable_label(Eigen::Vector3f(0.75f, 0.6f, 0.0f), Eigen::Vector2f(0.3f, 0.1f), "Energy Penalty");
-//        label->set_color({255 / 255.0f, 121 / 255.0f, 54 / 255.0f, 1.0f});
         _labels.push_back(boost::shared_ptr<Draggable_label>(label));
 
         boost::shared_ptr<Draggable_event> e(new Draggable_event(_labels.back(), Draggable_event::Type::Move));
@@ -189,7 +187,7 @@ void After_finish_screen::add_particle_system()
     int const score = _core.get_progress().scores[_core.get_current_level_name()].back().final_score - _core.get_progress().scores[_core.get_current_level_name()].back()._penalty;
 
     _score_particle_system = Targeted_particle_system(3.0f);
-    _score_particle_system.generate(QString("%1").arg(score, 8, 10, QChar('0')).toStdString(), _viewer.get_particle_font(), QRectF(0.0f, 0.5f, 1.0f, 0.3f));
+    _score_particle_system.generate(QString("%1").arg(score, 7, 10, QChar('0')).toStdString(), _viewer.get_particle_font(), QRectF(0.0f, 0.5f, 1.0f, 0.3f));
 
     for (boost::shared_ptr<Draggable_button> const& button : _buttons)
     {

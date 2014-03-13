@@ -113,6 +113,7 @@ public:
     void draw_particle_systems(Level_data const& level_data) const;
     void draw_elements_ui(Level_data const& level_data) const;
     void draw_backdrop_quad() const;
+    void draw_gravity(Level_data const& l) const;
 
     void render(QGLFramebufferObject * main_fbo, Level_data const& level_data, float const time, qglviewer::Camera const* camera) override;
 
@@ -193,6 +194,7 @@ public:
     void draw_particle_systems(Level_data const& level_data) const;
     void draw_elements_ui(Level_data const& level_data) const;
     void draw_backdrop_quad() const;
+    void draw_gravity(Level_data const& l) const;
 
     void render(QGLFramebufferObject * main_fbo, Level_data const& level_data, float const time, qglviewer::Camera const* camera) override;
 

@@ -74,28 +74,14 @@ void Molecule::init()
 
 void Molecule::from_state(const Body_state &, const float mass_factor)
 {
-    //        _L = state._L;
-    //        _P = state._P;
-    //        _q = state._q;
-    //        _x = state._x;
-
     _v = _P / (_mass * mass_factor);
-    //    if (_v.squaredNorm() > 100.0f)
-    //    {
-    //        _v = std::min(_v.norm(), 10.0f) * _v.normalized();
-    //    }
     _q.normalize();
-    //    _R = _q.normalized().toRotationMatrix();
     _R = _q.toRotationMatrix();
     _I_inv = _R * _I_body_inv * _R.transpose();
 
 //    std::cout << "_I_inv * _L: " << (_I_inv * _L) << std::endl;
 
     _omega = (1.0f / mass_factor) * _I_inv * _L;
-    //    if (_omega.squaredNorm() > 1.0f)
-    //    {
-    //        _omega = std::min(_omega.norm(), 1.0f) * _omega.normalized();
-    //    }
 
 //    assert(!std::isnan(_omega.x()) && !std::isinf(_omega.x()));
 //    assert(!std::isnan(_omega.y()) && !std::isinf(_omega.y()));

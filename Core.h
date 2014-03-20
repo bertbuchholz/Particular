@@ -91,6 +91,8 @@ public:
     void check_molecules_in_portals();
 
     void update(float const time_step);
+    void update_level_elements(const float time_step);
+    void update_physics_elements(const float time_step);
 
     void do_sensor_check();
 

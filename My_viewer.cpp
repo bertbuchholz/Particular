@@ -762,6 +762,8 @@ void My_viewer::animate()
 {
     float const time_step = animationPeriod() / 1000.0f;
 
+    _core.update_level_elements(time_step);
+
     _screen_stack.erase(std::remove_if(_screen_stack.begin(), _screen_stack.end(), Screen::is_dead), _screen_stack.end());
 
     for (std::unique_ptr<Screen> const& s : _screen_stack)

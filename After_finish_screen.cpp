@@ -133,7 +133,7 @@ void After_finish_screen::init(Main_game_screen::Ui_state const ui_state)
     _score.sensor_data = _core.get_sensor_data();
     _score.calculate_score(_core.get_level_data()._score_time_factor, num_molecules_to_capture);
 
-    if (ui_state == Main_game_screen::Ui_state::Editor_playing)
+    if (ui_state == Main_game_screen::Ui_state::Playing)
     {
         if (_core.get_progress().last_level < _core.get_level_names().size())
         {

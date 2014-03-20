@@ -488,6 +488,49 @@ void Core::update(const float time_step)
 {
     _current_time += time_step;
 
+    update_physics_elements(time_step);
+}
+
+
+void Core::update_level_elements(const float time_step)
+{
+    if (!_parameters["Toggle simulation"]->get_value<bool>()) return;
+
+    _level_data._particle_system_elements.erase(std::remove_if(_level_data._particle_system_elements.begin(), _level_data._particle_system_elements.end(), Particle_system_element::check_if_dead()),
+                                                _level_data._particle_system_elements.end());
+
+    for (Level_element * e : _level_data._particle_system_elements)
+    {
+        e->animate(time_step);
+    }
+
+    for (boost::shared_ptr<Level_element> const& e : _level_data._level_elements)
+    {
+        e->animate(time_step);
+    }
+
+    update_temperature_grid(_level_data, _level_data._temperature_grid);
+
+    if (_current_time - _last_sensor_check > _sensor_data.get_check_interval())
+    {
+        check_molecules_in_portals(); // portal checks don't need to be done that often
+
+        _last_sensor_check = _current_time;
+        if (_game_state == Game_state::Running)
+        {
+            do_sensor_check();
+        }
+    }
+
+    if (_game_state == Game_state::Running && check_is_finished())
+    {
+        set_new_game_state(Game_state::Finished);
+    }
+}
+
+
+void Core::update_physics_elements(const float time_step)
+{
     bool const time_debug = true;
 
     int elapsed_milliseconds;
@@ -501,26 +544,6 @@ void Core::update(const float time_step)
             add_molecule(m->release(_current_time));
         }
     }
-
-//    if (time_debug)
-//    {
-//        timer_start = std::chrono::system_clock::now();
-//    }
-
-//    //        update_spatial_hash();
-
-//    if (time_debug)
-//    {
-//        timer_end = std::chrono::system_clock::now();
-
-//        elapsed_milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>
-//                (timer_end-timer_start).count();
-
-//        if (elapsed_milliseconds > 1)
-//        {
-//            std::cout << "update_spatial_hash(): " << elapsed_milliseconds << std::endl;
-//        }
-//    }
 
     if (time_debug)
     {
@@ -544,21 +567,6 @@ void Core::update(const float time_step)
             std::cout << "ann_wrapper update: " << elapsed_milliseconds << std::endl;
         }
     }
-
-    _level_data._particle_system_elements.erase(std::remove_if(_level_data._particle_system_elements.begin(), _level_data._particle_system_elements.end(), Particle_system_element::check_if_dead()),
-                                                _level_data._particle_system_elements.end());
-
-    for (Level_element * e : _level_data._particle_system_elements)
-    {
-        e->animate(time_step);
-    }
-
-    for (boost::shared_ptr<Level_element> const& e : _level_data._level_elements)
-    {
-        e->animate(time_step);
-    }
-
-    update_temperature_grid(_level_data, _level_data._temperature_grid);
 
     if (time_debug)
     {
@@ -590,14 +598,6 @@ void Core::update(const float time_step)
 
     _molecule_external_forces.erase(std::remove_if(_molecule_external_forces.begin(), _molecule_external_forces.end(), Check_duration(_current_time)),
                                     _molecule_external_forces.end());
-
-//    if (_use_indicators)
-//    {
-//        for (Force_indicator & f : _indicators)
-//        {
-//            f._force = force_on_atom(f._atom);
-//        }
-//    }
 
     if (time_debug)
     {
@@ -651,22 +651,6 @@ void Core::update(const float time_step)
         {
             std::cout << "update molecules: " << elapsed_milliseconds << std::endl;
         }
-    }
-
-    if (_current_time - _last_sensor_check > _sensor_data.get_check_interval())
-    {
-        check_molecules_in_portals(); // portal checks don't need to be done that often
-
-        _last_sensor_check = _current_time;
-        if (_game_state == Game_state::Running)
-        {
-            do_sensor_check();
-        }
-    }
-
-    if (_game_state == Game_state::Running && check_is_finished())
-    {
-        set_new_game_state(Game_state::Finished);
     }
 }
 

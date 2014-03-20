@@ -245,7 +245,7 @@ float Polygonal_curve::get_absolute_length_at_uniform_length(const float s) cons
 
     get_vertex_and_offset_at_length(s, index, offset);
 
-    if (index == _lengths_at_points.size() - 1)
+    if (index == int(_lengths_at_points.size()) - 1)
     {
         return _length;
     }
@@ -261,7 +261,7 @@ float Polygonal_curve::get_absolute_length_at_uniform_length_y_over_x(const floa
 
     get_vertex_and_offset_at_length_y_over_x(s, index, offset);
 
-    if (index == _lengths_at_points_y_over_x.size() - 1)
+    if (index == int(_lengths_at_points_y_over_x.size()) - 1)
     {
         return _length_y_over_x;
     }

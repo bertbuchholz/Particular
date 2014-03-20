@@ -8,9 +8,9 @@
 class After_finish_screen : public Menu_screen
 {
 public:
-    After_finish_screen(My_viewer & viewer, Core & core);
+    After_finish_screen(My_viewer & viewer, Core & core, Main_game_screen::Ui_state const ui_state);
 
-    void init();
+    void init(Main_game_screen::Ui_state const ui_state);
 
     void draw() override;
 
@@ -18,14 +18,15 @@ public:
     void change_to_statistics();
     void change_to_main_menu();
 
+    void play_again();
+    void return_to_editor();
+
     void start_score_animation();
     void add_particle_system();
 
     void update_event(const float time_step) override;
 
 private:
-    boost::shared_ptr<Draggable_button> _next_level_button;
-
     Targeted_particle_system _score_particle_system;
 
     boost::shared_ptr<Draggable_label> _score_label;
@@ -33,6 +34,8 @@ private:
     float _animate_score_time;
 
     std::vector< boost::shared_ptr<Draggable_event> > _events;
+
+    Score _score;
 };
 
 #endif // AFTER_FINISH_SCREEN_H

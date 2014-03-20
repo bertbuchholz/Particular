@@ -8,7 +8,7 @@
 class Statistics_screen : public Menu_screen
 {
 public:
-    Statistics_screen(My_viewer & viewer, Core & core, Screen * calling_screen);
+    Statistics_screen(My_viewer & viewer, Core & core, Screen * calling_screen, Score const& score);
 
     void init();
 
@@ -34,6 +34,8 @@ private:
     std::vector< boost::shared_ptr<Draggable_event> > _events;
 
     float _stat_anim_duration;
+
+    Score const& _score;
 //    QTimer _;
 };
 

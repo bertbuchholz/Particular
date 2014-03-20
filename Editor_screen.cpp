@@ -51,7 +51,7 @@ std::string get_element_description(std::string const& element_type)
 }
 
 
-Editor_screen::Editor_screen(My_viewer &viewer, Core &core) : Main_game_screen(viewer, core, Ui_state::Level_editor)
+Editor_screen::Editor_screen(My_viewer &viewer, Core &core) : Main_game_screen(viewer, core, Ui_state::Editor)
 {
 //    _placeable_molecules = std::vector<std::string>{ "H2O", "Na", "Cl" };
     _placeable_molecules = { "H2O", "Na", "Cl" };

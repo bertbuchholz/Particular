@@ -4,23 +4,45 @@
 #include "Statistics_screen.h"
 #include "Before_start_screen.h"
 #include "Main_menu_screen.h"
+#include "Editor_screen.h"
 
-After_finish_screen::After_finish_screen(My_viewer &viewer, Core &core) : Menu_screen(viewer, core), _animate_score_time(-1.0f)
+After_finish_screen::After_finish_screen(My_viewer &viewer, Core &core, Main_game_screen::Ui_state const ui_state) : Menu_screen(viewer, core), _animate_score_time(-1.0f)
 {
     _type = Screen::Type::Modal;
 
-    init();
+    init(ui_state);
 
     _picking.init(_viewer.context());
 }
 
-void After_finish_screen::init()
+void After_finish_screen::init(Main_game_screen::Ui_state const ui_state)
 {
     // After finish screen
-    if (_core.get_progress().last_level < _core.get_level_names().size())
+    if (ui_state == Main_game_screen::Ui_state::Editor_playing)
     {
-        Draggable_button * button = new Draggable_button(Eigen::Vector3f(0.25f, 0.1f, 0.0f), Eigen::Vector2f(0.25f, 0.1f), "Next Level",  std::bind(&After_finish_screen::load_next_level, this));
-        _buttons.push_back(boost::shared_ptr<Draggable_button>(button));
+        if (_core.get_progress().last_level < _core.get_level_names().size())
+        {
+            Draggable_button * button = new Draggable_button(Eigen::Vector3f(0.25f, 0.1f, 0.0f), Eigen::Vector2f(0.25f, 0.1f), "Play Again",  std::bind(&After_finish_screen::play_again, this));
+            _buttons.push_back(boost::shared_ptr<Draggable_button>(button));
+        }
+
+        {
+            Draggable_button * button = new Draggable_button(Eigen::Vector3f(0.75f, 0.1f, 0.0f), Eigen::Vector2f(0.25f, 0.1f), "Back to Editor", std::bind(&After_finish_screen::return_to_editor, this));
+            _buttons.push_back(boost::shared_ptr<Draggable_button>(button));
+        }
+    }
+    else
+    {
+        if (_core.get_progress().last_level < _core.get_level_names().size() - 1)
+        {
+            Draggable_button * button = new Draggable_button(Eigen::Vector3f(0.25f, 0.1f, 0.0f), Eigen::Vector2f(0.25f, 0.1f), "Next Level",  std::bind(&After_finish_screen::load_next_level, this));
+            _buttons.push_back(boost::shared_ptr<Draggable_button>(button));
+        }
+
+        {
+            Draggable_button * button = new Draggable_button(Eigen::Vector3f(0.75f, 0.1f, 0.0f), Eigen::Vector2f(0.25f, 0.1f), "Back to Main Menu", std::bind(&After_finish_screen::change_to_main_menu, this));
+            _buttons.push_back(boost::shared_ptr<Draggable_button>(button));
+        }
     }
 
     {
@@ -28,10 +50,7 @@ void After_finish_screen::init()
         _buttons.push_back(boost::shared_ptr<Draggable_button>(button));
     }
 
-    {
-        Draggable_button * button = new Draggable_button(Eigen::Vector3f(0.75f, 0.1f, 0.0f), Eigen::Vector2f(0.25f, 0.1f), "Back to Main Menu", std::bind(&After_finish_screen::change_to_main_menu, this));
-        _buttons.push_back(boost::shared_ptr<Draggable_button>(button));
-    }
+
 
     {
         Draggable_label * label = new Draggable_label(Eigen::Vector3f(0.5f, 0.8f, 0.0f), Eigen::Vector2f(0.8f, 0.3f), "Level finished!");
@@ -111,41 +130,43 @@ void After_finish_screen::init()
         num_molecules_to_capture += p->get_condition().get_min_captured_molecules();
     }
 
-    Score score;
-    score.sensor_data = _core.get_sensor_data();
-    score.calculate_score(_core.get_level_data()._score_time_factor, num_molecules_to_capture);
+    _score.sensor_data = _core.get_sensor_data();
+    _score.calculate_score(_core.get_level_data()._score_time_factor, num_molecules_to_capture);
 
-    if (_core.get_progress().last_level < _core.get_level_names().size())
+    if (ui_state == Main_game_screen::Ui_state::Editor_playing)
     {
-        _core.get_progress().last_level += 1;
-    }
+        if (_core.get_progress().last_level < _core.get_level_names().size())
+        {
+            _core.get_progress().last_level += 1;
+        }
 
-    std::vector<Score> & scores = _core.get_progress().scores[_core.get_current_level_name()];
+        std::vector<Score> & scores = _core.get_progress().scores[_core.get_current_level_name()];
 
-    bool is_new_highscore = false;
+        bool is_new_highscore = false;
 
-    if (!scores.empty())
-    {
-        auto iter = std::max_element(scores.begin(), scores.end(), Score::score_comparer);
+        if (!scores.empty())
+        {
+            auto iter = std::max_element(scores.begin(), scores.end(), Score::score_comparer);
 
-        if (score.final_score > iter->final_score)
+            if (_score.final_score > iter->final_score)
+            {
+                is_new_highscore = true;
+            }
+        }
+        else
         {
             is_new_highscore = true;
         }
-    }
-    else
-    {
-        is_new_highscore = true;
-    }
 
-    if (is_new_highscore)
-    {
-        std::cout << __FUNCTION__ << " new highscore" <<  std::endl;
+        if (is_new_highscore)
+        {
+            std::cout << __FUNCTION__ << " new highscore" <<  std::endl;
+        }
+
+        scores.push_back(_score);
+
+        _core.save_progress();
     }
-
-    scores.push_back(score);
-
-    _core.save_progress();
 }
 
 
@@ -177,6 +198,47 @@ void After_finish_screen::change_to_main_menu()
     kill();
 }
 
+void After_finish_screen::play_again()
+{
+    for (Targeted_particle & p : _score_particle_system.get_particles())
+    {
+        p.target = Eigen::Vector3f::Random().normalized();
+        p.target *= 1.5f;
+    }
+
+    _core.reset_level();
+
+    _core.start_level();
+
+    kill();
+}
+
+void After_finish_screen::return_to_editor()
+{
+    for (Targeted_particle & p : _score_particle_system.get_particles())
+    {
+        p.target = Eigen::Vector3f::Random().normalized();
+        p.target *= 1.5f;
+    }
+
+    _core.reset_level();
+
+    _viewer.camera()->frame()->setConstraint(nullptr);
+
+    _core.set_simulation_state(false);
+
+    _viewer.replace_screens(new Editor_screen(_viewer, _core));
+
+    kill();
+}
+
+void After_finish_screen::change_to_statistics()
+{
+    _viewer.add_screen(new Statistics_screen(_viewer, _core, this, _score));
+
+    pause();
+}
+
 void After_finish_screen::start_score_animation()
 {
     _animate_score_time = _time;
@@ -184,7 +246,7 @@ void After_finish_screen::start_score_animation()
 
 void After_finish_screen::add_particle_system()
 {
-    int const score = _core.get_progress().scores[_core.get_current_level_name()].back().final_score - _core.get_progress().scores[_core.get_current_level_name()].back()._penalty;
+    int const score = _score.final_score - _score._penalty;
 
     _score_particle_system = Targeted_particle_system(3.0f);
     _score_particle_system.generate(QString("%1").arg(score, 7, 10, QChar('0')).toStdString(), _viewer.get_particle_font(), QRectF(0.0f, 0.5f, 1.0f, 0.3f));
@@ -205,10 +267,10 @@ void After_finish_screen::update_event(const float time_step)
 
         float const normalized_time = (_time - _animate_score_time) / duration;
 
-        int const score = _core.get_progress().scores[_core.get_current_level_name()].back().final_score;
+        int const score = _score.final_score;
         int interpolated_score = score * normalized_time;
 
-        int const penalty = _core.get_progress().scores[_core.get_current_level_name()].back()._penalty;
+        int const penalty = _score._penalty;
         int interpolated_penalty = penalty * normalized_time;
 
         if (normalized_time >= 1.0f)
@@ -232,20 +294,6 @@ void After_finish_screen::update_event(const float time_step)
     {
         e->update(_time, time_step);
     }
-}
-
-void After_finish_screen::change_to_statistics()
-{
-//    for (Targeted_particle & p : _score_particle_system.get_particles())
-//    {
-//        p.target = Eigen::Vector3f::Random().normalized();
-//        p.target *= 1.5f;
-//    }
-
-    _viewer.add_screen(new Statistics_screen(_viewer, _core, this));
-
-//    kill();
-    pause();
 }
 
 void After_finish_screen::draw()

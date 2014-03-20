@@ -117,7 +117,7 @@ void Editor_pause_screen::play_level()
     }
     else
     {
-        _viewer.replace_screens(new Main_game_screen(_viewer, _core, Main_game_screen::Ui_state::Level_editor));
+        _viewer.replace_screens(new Main_game_screen(_viewer, _core, Main_game_screen::Ui_state::Editor_playing));
 
         _core.start_level();
     }

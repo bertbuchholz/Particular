@@ -17,7 +17,7 @@ class Main_game_screen : public Screen, public QGLFunctions
 public:
     enum class Mouse_state { None, Init_drag_handle, /* Init_drag_molecule, Dragging_molecule, */ Dragging_handle, Level_element_button_selected };
     enum class Selection { None, Level_element, Molecule };
-    enum class Ui_state { Level_editor, Playing };
+    enum class Ui_state { Editor, Editor_playing, Playing };
     enum class Level_state { Intro, Running };
     enum class Intro_state { Beginning, Single_molecule, Two_molecules_0, Two_molecules_1, Two_molecules_2, Two_molecules_3, Finishing, Finished };
 

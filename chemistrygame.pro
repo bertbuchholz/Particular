@@ -70,10 +70,10 @@ else {
 !win32 {
 QMAKE_CXXFLAGS += -Wall \
     -Wextra \
-    -fPIC \
-    -std=c++11 \
-    -ftemplate-depth=1024 # \
-    -ferror-limit=1
+    -fPIC #\
+#    -std=c++11 \
+#    -ftemplate-depth=1024 # \
+#    -ferror-limit=1
 }
 
 win32 {

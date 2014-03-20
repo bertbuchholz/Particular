@@ -30,9 +30,15 @@ void Main_menu_screen::init()
         _buttons.push_back(boost::shared_ptr<Draggable_button>(button));
     }
 
+    if (_core.get_progress().last_level < _core.get_level_names().size() - 1)
     {
         Draggable_button * button = new Draggable_button(Eigen::Vector3f(0.5f, 0.4f, 0.0f), Eigen::Vector2f(0.5f, 0.15f), "Continue Game",  std::bind(&Main_menu_screen::continue_game, this));
         _buttons.push_back(boost::shared_ptr<Draggable_button>(button));
+    }
+    else
+    {
+        Draggable_label * label = new Draggable_label(Eigen::Vector3f(0.5f, 0.4f, 0.0f), Eigen::Vector2f(0.5f, 0.15f), "All levels finished, try the sandbox!");
+        _labels.push_back(boost::shared_ptr<Draggable_label>(label));
     }
 
     {
@@ -41,13 +47,18 @@ void Main_menu_screen::init()
     }
 
     {
-        Draggable_button * button = new Draggable_button(Eigen::Vector3f(0.85f, 0.1f, 0.0f), Eigen::Vector2f(0.2f, 0.06f), "Editor", std::bind(&Main_menu_screen::start_editor, this));
+        Draggable_button * button = new Draggable_button(Eigen::Vector3f(0.85f, 0.1f, 0.0f), Eigen::Vector2f(0.2f, 0.06f), "Sandbox", std::bind(&Main_menu_screen::start_editor, this));
         _buttons.push_back(boost::shared_ptr<Draggable_button>(button));
     }
 
     for (boost::shared_ptr<Draggable_button> const& button : _buttons)
     {
         _renderer.generate_button_texture(button.get());
+    }
+
+    for (boost::shared_ptr<Draggable_label> const& label : _labels)
+    {
+        _renderer.generate_label_texture(label.get());
     }
 
     _game_name_system.generate("PARTICULAR", _viewer.get_particle_font(), QRectF(0.0f, 0.05f, 1.0f, 0.3f));

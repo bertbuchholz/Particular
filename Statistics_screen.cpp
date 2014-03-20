@@ -3,11 +3,23 @@
 #include "After_finish_screen.h"
 #include "My_viewer.h"
 
+
+Statistics_screen::Statistics_screen(My_viewer & viewer, Core & core, Screen *calling_screen, Score const& score) :
+    Menu_screen(viewer, core), _calling_screen(calling_screen), _stat_anim_duration(10.0f), _score(score)
+{
+    _type = Screen::Type::Modal;
+
+    init();
+
+    _picking.init(_viewer.context());
+}
+
+
 void Statistics_screen::init()
 {
     _statistics.resize(_core.get_sensor_data().get_num_data_types());
 
-    float const full_time = _core.get_progress().scores[_core.get_current_level_name()].back().get_full_time();
+    float const full_time = _score.get_full_time();
     float const time_threshold = _core.get_level_data()._score_time_factor;
 
     {
@@ -83,7 +95,7 @@ void Statistics_screen::init()
         _events.push_back(e);
     }
 
-    setup_statistics(_core.get_sensor_data(), _core.get_progress().scores[_core.get_current_level_name()].back()); // this MUST be before the generation of the textures!
+    setup_statistics(_core.get_sensor_data(), _score); // this MUST be before the generation of the textures!
 
     _renderer.generate_statistics_texture(*_statistics[int(Sensor_data::Type::ColMol)].get(), full_time, time_threshold);
     _renderer.generate_statistics_texture(*_statistics[int(Sensor_data::Type::AvgTemp)].get(), full_time);
@@ -126,10 +138,9 @@ void Statistics_screen::update_event(const float time_step)
         e->update(_time, time_step);
     }
 
-    Score const& score = _core.get_progress().scores[_core.get_current_level_name()].back();
-    std::vector< std::pair<float, int> > const& penalty_at_time = score.penalty_at_time;
+    std::vector< std::pair<float, int> > const& penalty_at_time = _score.penalty_at_time;
 
-    auto iter = std::lower_bound(penalty_at_time.begin(), penalty_at_time.end(), _time / _stat_anim_duration * score.get_full_time(),
+    auto iter = std::lower_bound(penalty_at_time.begin(), penalty_at_time.end(), _time / _stat_anim_duration * _score.get_full_time(),
                                            [](std::pair<float, int> const & x, float d)
                                                     { return x.first < d; });
 
@@ -239,9 +250,9 @@ void Statistics_screen::repeat()
 
 void Statistics_screen::update_score_label()
 {
-    std::vector< std::pair<float, int> > score_at_time = _core.get_progress().scores[_core.get_current_level_name()].back().score_at_time;
+    std::vector< std::pair<float, int> > score_at_time = _score.score_at_time;
 
-    auto iter = std::lower_bound(score_at_time.begin(), score_at_time.end(), _time / _stat_anim_duration * _core.get_progress().scores[_core.get_current_level_name()].back().get_full_time(),
+    auto iter = std::lower_bound(score_at_time.begin(), score_at_time.end(), _time / _stat_anim_duration * _score.get_full_time(),
                                            [](std::pair<float, int> const & x, float d)
                                                     { return x.first < d; });
 
@@ -251,14 +262,4 @@ void Statistics_screen::update_score_label()
 
     _collected_score_label->set_text(QString("%1").arg(score_sum, 7, 10, QChar('0')).toStdString());
     _renderer.generate_label_texture(_collected_score_label.get());
-}
-
-Statistics_screen::Statistics_screen(My_viewer & viewer, Core & core, Screen *calling_screen) :
-    Menu_screen(viewer, core), _calling_screen(calling_screen), _stat_anim_duration(10.0f)
-{
-    _type = Screen::Type::Modal;
-
-    init();
-
-    _picking.init(_viewer.context());
 }

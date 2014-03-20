@@ -5,7 +5,7 @@
 #include "Editor_pause_screen.h"
 #include "Before_start_screen.h"
 #include "After_finish_screen.h"
-#include "After_finish_editor_screen.h"
+//#include "After_finish_editor_screen.h"
 #include "FloatSlider.h"
 #include "GL_texture.h"
 #include "Main_options_window.h"
@@ -98,7 +98,7 @@ Main_game_screen::Main_game_screen(My_viewer &viewer, Core &core, Ui_state ui_st
     connect(&_core, SIGNAL(level_changed(Main_game_screen::Level_state)), this, SLOT(handle_level_change(Main_game_screen::Level_state)));
     connect(&_core, SIGNAL(game_state_changed()), this, SLOT(handle_game_state_change()));
 
-    if (_ui_state != Ui_state::Level_editor)
+    if (_ui_state != Ui_state::Editor)
     {
         {
             boost::shared_ptr<Draggable_label> energy_label(new Draggable_label({ 0.0f, 0.0f, 0.0f }, { 0.3f, 0.2f }, "Energy"));
@@ -294,7 +294,7 @@ bool Main_game_screen::keyPressEvent(QKeyEvent * event)
             // go into pause and start pause menu
             pause();
 
-            if (_ui_state == Ui_state::Level_editor)
+            if (_ui_state == Ui_state::Editor || _ui_state == Ui_state::Editor_playing)
             {
                 _viewer.add_screen(new Editor_pause_screen(_viewer, _core, this));
             }
@@ -912,7 +912,7 @@ void Main_game_screen::update_draggable_to_level_element()
 
     _draggable_to_level_element.clear();
 
-    if (_level_state == Level_state::Running || _ui_state == Ui_state::Level_editor)
+    if (_level_state == Level_state::Running || _ui_state == Ui_state::Editor || _ui_state == Ui_state::Editor_playing)
     {
         for (boost::shared_ptr<Level_element> const& element : _core.get_level_data()._level_elements)
         {
@@ -976,7 +976,7 @@ void Main_game_screen::draw_draggables() // FIXME: use visitors or change it so 
 
             Level_element::Edit_type edit_type = d.second->is_user_editable();
 
-            bool const always_draw = _ui_state == Ui_state::Level_editor && _core.get_game_state() != Core::Game_state::Running;
+            bool const always_draw = (_ui_state == Ui_state::Editor) && (_core.get_game_state() != Core::Game_state::Running);
 
             //                draw_box(d_box->get_min(), d_box->get_max());
 
@@ -1435,6 +1435,8 @@ void Main_game_screen::handle_level_change(Main_game_screen::Level_state const l
 
     _level_state = level_state;
 
+    _viewer.clear_events();
+
     if (_level_state == Level_state::Intro)
     {
         setup_intro();
@@ -1474,14 +1476,16 @@ void Main_game_screen::handle_game_state_change()
     {
         pause();
 
-        if (_ui_state == Ui_state::Level_editor)
-        {
-            _viewer.add_screen(new After_finish_editor_screen(_viewer, _core));
-        }
-        else
-        {
-            _viewer.add_screen(new After_finish_screen(_viewer, _core));
-        }
+        _viewer.add_screen(new After_finish_screen(_viewer, _core, _ui_state));
+
+//        if (_ui_state == Ui_state::Editor_playing)
+//        {
+//            _viewer.add_screen(new After_finish_editor_screen(_viewer, _core, ));
+//        }
+//        else
+//        {
+//            _viewer.add_screen(new After_finish_screen(_viewer, _core, _ui_state));
+//        }
     }
 }
 

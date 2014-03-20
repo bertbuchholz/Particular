@@ -146,6 +146,11 @@ void Menu_screen::resize(QSize const& /* size */)
     {
         _renderer.generate_button_texture(button.get());
     }
+
+    for (boost::shared_ptr<Draggable_label> const& label : _labels)
+    {
+        _renderer.generate_label_texture(label.get());
+    }
 }
 
 void Menu_screen::draw_draggables_for_picking()

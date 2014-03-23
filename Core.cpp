@@ -10,9 +10,6 @@
 #include "Molecule_releaser.h"
 #include "Data_config.h"
 
-//#include "fp_exception_glibc_extension.h"
-//#include <fenv.h>
-
 struct Atom_averager
 {
     Atom operator() (std::vector<Atom const*> const& atoms) const
@@ -66,7 +63,9 @@ Core::Core() :
     _previous_game_state(Game_state::Unstarted),
     _molecule_id_counter(0),
     _current_time(0.0f),
-    _last_sensor_check(0.0f)
+    _last_sensor_check(0.0f),
+    _animation_interval(0.04f),
+    _last_animation_time(0.0f)
   //        _molecule_hash(Molecule_atom_hash(100, 4.0f))
 {
     std::function<void(void)> update_variables = std::bind(&Core::update_variables, this);
@@ -488,6 +487,17 @@ void Core::update(const float time_step)
 {
     _current_time += time_step;
 
+    float const time_since_animation_update = _current_time - _last_animation_time;
+
+    if (time_since_animation_update > _animation_interval)
+    {
+        std::cout << __FUNCTION__ << " " << time_since_animation_update << std::endl;
+
+        _last_animation_time = _current_time;
+
+        update_level_elements(time_since_animation_update);
+    }
+
     update_physics_elements(time_step);
 }
 
@@ -498,6 +508,15 @@ void Core::update_level_elements(const float time_step)
 
     _level_data._particle_system_elements.erase(std::remove_if(_level_data._particle_system_elements.begin(), _level_data._particle_system_elements.end(), Particle_system_element::check_if_dead()),
                                                 _level_data._particle_system_elements.end());
+
+
+    for (Molecule_releaser * m : _level_data._molecule_releasers)
+    {
+        if (m->check_do_release(_current_time))
+        {
+            add_molecule(m->release(_current_time));
+        }
+    }
 
     for (Level_element * e : _level_data._particle_system_elements)
     {
@@ -535,15 +554,6 @@ void Core::update_physics_elements(const float time_step)
 
     int elapsed_milliseconds;
     std::chrono::time_point<std::chrono::system_clock> timer_start, timer_end;
-
-
-    for (Molecule_releaser * m : _level_data._molecule_releasers)
-    {
-        if (m->check_do_release(_current_time))
-        {
-            add_molecule(m->release(_current_time));
-        }
-    }
 
     if (time_debug)
     {
@@ -703,6 +713,8 @@ void Core::do_sensor_check()
     _sensor_data.add_value(Sensor_data::Type::ColMol, num_collected_molecules);
     _sensor_data.add_value(Sensor_data::Type::RelMol, num_released_molecules);
     _sensor_data.add_value(Sensor_data::Type::EnergyCon, energy_consumption);
+
+    _sensor_data.update_energy_bonus();
 }
 
 
@@ -915,6 +927,7 @@ void Core::reset_level()
     _level_data.reset_level_elements();
 
     _current_time = 0.0f;
+    _last_animation_time = 0.0f;
     _last_sensor_check = 0.0f;
 
     change_level_state(Main_game_screen::Level_state::Running);
@@ -986,7 +999,8 @@ void Core::save_level(const std::string &file_name) const
 
 void Core::save_progress()
 {
-    std::ofstream out_file("progress.data");
+    std::string file_name = Data_config::get_instance()->get_absolute_filename("progress.data", false);
+    std::ofstream out_file(file_name);
     boost::archive::xml_oarchive oa(out_file);
 
     oa << BOOST_SERIALIZATION_NVP(_progress);
@@ -996,7 +1010,8 @@ void Core::save_progress()
 
 void Core::load_progress()
 {
-    std::ifstream in_file("progress.data");
+    std::string file_name = Data_config::get_instance()->get_absolute_filename("progress.data", false);
+    std::ifstream in_file(file_name);
 
     if (in_file)
     {

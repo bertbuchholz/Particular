@@ -24,7 +24,7 @@ bool Molecule_releaser_event::trigger()
 {
     if (_core.get_current_time() < 5.0f) return false;
 
-    assert(_core.get_level_data()._molecule_releasers.size() == 1);
+    if (_core.get_level_data()._molecule_releasers.size() != 1) return false;
 
     Molecule_releaser const* m = _core.get_level_data()._molecule_releasers.back();
 
@@ -53,7 +53,7 @@ bool Molecule_releaser_event::trigger()
 
     help_screen->init();
 
-    _viewer.add_screen(help_screen);
+    _viewer.add_screen_delayed(help_screen);
 
     return true;
 }
@@ -105,7 +105,7 @@ bool Portal_event::trigger()
 
     help_screen->init();
 
-    _viewer.add_screen(help_screen);
+    _viewer.add_screen_delayed(help_screen);
 
     return true;
 }
@@ -148,7 +148,7 @@ bool Heat_button_event::trigger()
 
     help_screen->init();
 
-    _viewer.add_screen(help_screen);
+    _viewer.add_screen_delayed(help_screen);
 
     return true;
 }
@@ -213,7 +213,7 @@ bool Heat_element_placed_event::trigger()
 
     help_screen->init();
 
-    _viewer.add_screen(help_screen);
+    _viewer.add_screen_delayed(help_screen);
 
     return true;
 }
@@ -258,7 +258,7 @@ bool Heat_turned_up_event::trigger()
 
     help_screen->init();
 
-    _viewer.add_screen(help_screen);
+    _viewer.add_screen_delayed(help_screen);
 
     return true;
 }

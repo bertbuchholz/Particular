@@ -58,12 +58,12 @@ void Statistics_screen::init()
     }
 
     _collected_score_label = boost::shared_ptr<Draggable_label>(new Draggable_label({0.75f, 0.6f, 0.0f}, { 0.3f, 0.1f }, "0000000"));
-    _collected_score_label->set_color({147 / 255.0f, 232 / 255.0f, 112 / 255.0f, 1.0f});
+    _collected_score_label->set_color(Score::score_color);
     _renderer.generate_label_texture(_collected_score_label.get());
     _labels.push_back(_collected_score_label);
 
     _penalty_label = boost::shared_ptr<Draggable_label>(new Draggable_label({ 0.75f, 0.2f, 0.0f }, { 0.3f, 0.1f }, "0000000"));
-    _penalty_label->set_color({255 / 255.0f, 121 / 255.0f, 54 / 255.0f, 1.0f});
+    _penalty_label->set_color(Score::energy_bonus_color);
     _renderer.generate_label_texture(_penalty_label.get());
     _labels.push_back(_penalty_label);
 
@@ -71,28 +71,28 @@ void Statistics_screen::init()
         boost::shared_ptr<Draggable_event> e(new Draggable_event(_statistics[int(Sensor_data::Type::RelMol)], Draggable_event::Type::Animate));
         e->set_duration(_stat_anim_duration);
         e->trigger();
-        _events.push_back(e);
+        _draggable_events.push_back(e);
     }
 
     {
         boost::shared_ptr<Draggable_event> e(new Draggable_event(_statistics[int(Sensor_data::Type::ColMol)], Draggable_event::Type::Animate));
         e->set_duration(_stat_anim_duration);
         e->trigger();
-        _events.push_back(e);
+        _draggable_events.push_back(e);
     }
 
     {
         boost::shared_ptr<Draggable_event> e(new Draggable_event(_statistics[int(Sensor_data::Type::AvgTemp)], Draggable_event::Type::Animate));
         e->set_duration(_stat_anim_duration);
         e->trigger();
-        _events.push_back(e);
+        _draggable_events.push_back(e);
     }
 
     {
         boost::shared_ptr<Draggable_event> e(new Draggable_event(_statistics[int(Sensor_data::Type::EnergyCon)], Draggable_event::Type::Animate));
         e->set_duration(_stat_anim_duration);
         e->trigger();
-        _events.push_back(e);
+        _draggable_events.push_back(e);
     }
 
     setup_statistics(_core.get_sensor_data(), _score); // this MUST be before the generation of the textures!
@@ -133,22 +133,38 @@ void Statistics_screen::update_event(const float time_step)
 {
     Menu_screen::update_event(time_step);
 
-    for (boost::shared_ptr<Draggable_event> & e : _events)
+    for (boost::shared_ptr<Draggable_event> & e : _draggable_events)
     {
         e->update(_time, time_step);
     }
 
-    std::vector< std::pair<float, int> > const& penalty_at_time = _score.penalty_at_time;
+//    std::vector< std::pair<float, int> > const& penalty_at_time = _score.penalty_at_time;
 
-    auto iter = std::lower_bound(penalty_at_time.begin(), penalty_at_time.end(), _time / _stat_anim_duration * _score.get_full_time(),
-                                           [](std::pair<float, int> const & x, float d)
-                                                    { return x.first < d; });
+//    auto iter = std::lower_bound(penalty_at_time.begin(), penalty_at_time.end(), _time / _stat_anim_duration * _score.get_full_time(),
+//                                           [](std::pair<float, int> const & x, float d)
+//                                                    { return x.first < d; });
 
-    int const penalty_sum = std::accumulate(penalty_at_time.begin(), iter, 0,
-                                          [](int d, std::pair<float, int> const & x)
-                                                    { return x.second + d; });
+//    int const penalty_sum = std::accumulate(penalty_at_time.begin(), iter, 0,
+//                                          [](int d, std::pair<float, int> const & x)
+//                                                    { return x.second + d; });
 
-    _penalty_label->set_text(QString("%1").arg(penalty_sum, 7, 10, QChar('0')).toStdString());
+//    _penalty_label->set_text(QString("%1").arg(penalty_sum, 7, 10, QChar('0')).toStdString());
+//    _renderer.generate_label_texture(_penalty_label.get());
+
+    const int index = (_time / _stat_anim_duration) * _score.get_full_time() / _score.sensor_data.get_check_interval();
+
+    int bonus = 0;
+
+    if (index < _score.sensor_data.get_energy_bonus().size())
+    {
+        bonus = _score.sensor_data.get_energy_bonus()[index];
+    }
+    else
+    {
+        bonus = _score.sensor_data.get_energy_bonus().back();
+    }
+
+    _penalty_label->set_text(QString("%1").arg(bonus, 7, 10, QChar('0')).toStdString());
     _renderer.generate_label_texture(_penalty_label.get());
 }
 
@@ -206,7 +222,7 @@ void Statistics_screen::setup_statistics(Sensor_data const& sensor_data, Score c
             e->set_duration(0.1f);
             e->trigger();
             e->set_finish_function(std::bind(&Statistics_screen::update_score_label, this));
-            _events.push_back(e);
+            _draggable_events.push_back(e);
         }
 
         {
@@ -214,14 +230,14 @@ void Statistics_screen::setup_statistics(Sensor_data const& sensor_data, Score c
             e->set_duration(1.0f);
             e->trigger();
             e->make_move_event(event_pos, event_pos + Eigen::Vector3f(0.0f, 0.05f, 0.0f));
-            _events.push_back(e);
+            _draggable_events.push_back(e);
         }
 
         {
             boost::shared_ptr<Draggable_event> e(new Draggable_event(_labels.back(), Draggable_event::Type::Fade_out, event_time + 1.0f));
             e->set_duration(1.0f);
             e->trigger();
-            _events.push_back(e);
+            _draggable_events.push_back(e);
         }
     }
 }
@@ -240,7 +256,7 @@ void Statistics_screen::repeat()
         stat->reset_animation();
     }
 
-    for (boost::shared_ptr<Draggable_event> & e : _events)
+    for (boost::shared_ptr<Draggable_event> & e : _draggable_events)
     {
         e->reset();
     }

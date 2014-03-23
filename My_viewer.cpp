@@ -762,13 +762,14 @@ void My_viewer::animate()
 {
     float const time_step = animationPeriod() / 1000.0f;
 
-    _core.update_level_elements(time_step);
+//    _core.update_level_elements(time_step);
 
     _screen_stack.erase(std::remove_if(_screen_stack.begin(), _screen_stack.end(), Screen::is_dead), _screen_stack.end());
 
     for (std::unique_ptr<Screen> const& s : _screen_stack)
     {
         s->update(time_step);
+        s->update_events(time_step);
 
 //        if (int(s->get_type()) & int(Screen::Type::Fullscreen))
 //        {
@@ -776,15 +777,12 @@ void My_viewer::animate()
 //        }
     }
 
-    if (!_events.empty())
+    for (Screen * s : _delayed_screen_stack)
     {
-        Event * e = _events.front().get();
-
-        if (e->trigger())
-        {
-            _events.pop_front();
-        }
+        add_screen(s);
     }
+
+    _delayed_screen_stack.clear();
 
     Base::animate();
 }
@@ -792,6 +790,11 @@ void My_viewer::animate()
 void My_viewer::add_screen(Screen *s)
 {
     _screen_stack.push_front(std::unique_ptr<Screen>(s));
+}
+
+void My_viewer::add_screen_delayed(Screen *s)
+{
+    _delayed_screen_stack.push_back(s);
 }
 
 void My_viewer::kill_all_screens()
@@ -811,16 +814,6 @@ void My_viewer::replace_screens(Screen *s)
 Screen *My_viewer::get_current_screen() const
 {
     return _screen_stack.front().get();
-}
-
-void My_viewer::clear_events()
-{
-    _events.clear();
-}
-
-void My_viewer::add_event(Event *event)
-{
-    _events.push_back(std::unique_ptr<Event>(event));
 }
 
 void My_viewer::load_defaults()

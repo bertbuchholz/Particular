@@ -85,6 +85,8 @@ protected:
 
     std::vector<Targeted_particle_system> _particles;
 
+    float _particle_duration;
+
     float _animation_count;
 };
 

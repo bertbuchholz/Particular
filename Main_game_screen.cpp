@@ -24,7 +24,8 @@ class Widget_text_combination : public QWidget
 };
 
 //Main_game_screen::Main_game_screen(My_viewer &viewer, Core &core, std::unique_ptr<World_renderer> &renderer) : Screen(viewer),
-Main_game_screen::Main_game_screen(My_viewer &viewer, Core &core, Ui_state ui_state) : Screen(viewer),
+Main_game_screen::Main_game_screen(My_viewer &viewer, Core &core, Ui_state ui_state) :
+    Screen(viewer),
     _core(core),
 //    _renderer(renderer),
     _ui_renderer(_viewer.get_renderer()),
@@ -33,7 +34,8 @@ Main_game_screen::Main_game_screen(My_viewer &viewer, Core &core, Ui_state ui_st
     _selection(Selection::None),
     _selected_level_element(nullptr),
     _ui_state(ui_state),
-    _level_state(Level_state::Running)
+    _level_state(Level_state::Running),
+    _last_updated_bonus(_core.get_sensor_data().get_energy_bonus().back())
 {
     std::cout << __FUNCTION__ << std::endl;
 
@@ -98,12 +100,23 @@ Main_game_screen::Main_game_screen(My_viewer &viewer, Core &core, Ui_state ui_st
     connect(&_core, SIGNAL(level_changed(Main_game_screen::Level_state)), this, SLOT(handle_level_change(Main_game_screen::Level_state)));
     connect(&_core, SIGNAL(game_state_changed()), this, SLOT(handle_game_state_change()));
 
+    init_labels();
+}
+
+Main_game_screen::~Main_game_screen()
+{
+    std::cout << __FUNCTION__ << std::endl;
+    Main_options_window::get_instance()->remove_parameter_list("Main_game_screen");
+}
+
+void Main_game_screen::init_labels()
+{
     if (_ui_state != Ui_state::Editor)
     {
         {
             boost::shared_ptr<Draggable_label> energy_label(new Draggable_label({ 0.0f, 0.0f, 0.0f }, { 0.3f, 0.2f }, "Energy"));
             Eigen::Vector2f bb = _ui_renderer.generate_flowing_text_label(energy_label.get(), 0.4f);
-            Eigen::Vector3f right_edge_pos(0.8f - bb[0] * 0.5f, 1.0f - 0.02f - bb[1] * 0.5f, 0.0f);
+            Eigen::Vector3f right_edge_pos(0.7f - bb[0] * 0.5f, 1.0f - 0.02f - bb[1] * 0.5f, 0.0f);
             energy_label->set_position(right_edge_pos);
             _labels.push_back(energy_label);
         }
@@ -111,25 +124,35 @@ Main_game_screen::Main_game_screen(My_viewer &viewer, Core &core, Ui_state ui_st
         {
             _energy_amount_label = boost::shared_ptr<Draggable_label>(new Draggable_label({ 0.0f, 0.0f, 0.0f }, { 0.3f, 0.2f }, ""));
             Eigen::Vector2f bb = _ui_renderer.generate_flowing_text_label(_energy_amount_label.get(), 0.4f);
-            Eigen::Vector3f right_edge_pos(0.8f + bb[0] * 0.5f + 0.01f, 1.0f - 0.02f - bb[1] * 0.5f, 0.0f);
-            _energy_amount_label->set_position(right_edge_pos);
+            Eigen::Vector3f left_edge_pos(0.7f + bb[0] * 0.5f + 0.01f, 1.0f - 0.02f - bb[1] * 0.5f, 0.0f);
+            _energy_amount_label->set_position(left_edge_pos);
             _labels.push_back(_energy_amount_label);
+        }
+
+        {
+            boost::shared_ptr<Draggable_label> energy_bonus_label(new Draggable_label({ 0.0f, 0.0f, 0.0f }, { 0.3f, 0.2f }, "Energy Bonus"));
+            Eigen::Vector2f bb = _ui_renderer.generate_flowing_text_label(energy_bonus_label.get(), 0.4f);
+            Eigen::Vector3f right_edge_pos(0.7f - bb[0] * 0.5f, 1.0f - 0.02f - bb[1] * 1.5f, 0.0f);
+            energy_bonus_label->set_position(right_edge_pos);
+            _labels.push_back(energy_bonus_label);
+        }
+
+        {
+            _energy_bonus_label = boost::shared_ptr<Draggable_label>(new Draggable_label({ 0.0f, 0.0f, 0.0f }, { 0.3f, 0.2f }, ""));
+            Eigen::Vector2f bb = _ui_renderer.generate_flowing_text_label(_energy_bonus_label.get(), 0.4f);
+            Eigen::Vector3f left_edge_pos(0.7f + bb[0] * 0.5f + 0.01f, 1.0f - 0.02f - bb[1] * 1.5f, 0.0f);
+            _energy_bonus_label->set_position(left_edge_pos);
+            _labels.push_back(_energy_bonus_label);
         }
 
         {
             _time_label = boost::shared_ptr<Draggable_label>(new Draggable_label({ 0.0f, 0.0f, 0.0f }, { 0.3f, 0.2f }, ""));
             Eigen::Vector2f bb = _ui_renderer.generate_flowing_text_label(_time_label.get(), 0.4f);
-            Eigen::Vector3f right_edge_pos(0.5f + bb[0] * 0.5f, 1.0f - 0.02f - bb[1] * 0.5f, 0.0f);
+            Eigen::Vector3f right_edge_pos(0.4f + bb[0] * 0.5f, 1.0f - 0.02f - bb[1] * 0.5f, 0.0f);
             _time_label->set_position(right_edge_pos);
             _labels.push_back(_time_label);
         }
     }
-}
-
-Main_game_screen::~Main_game_screen()
-{
-    std::cout << __FUNCTION__ << std::endl;
-    Main_options_window::get_instance()->remove_parameter_list("Main_game_screen");
 }
 
 bool Main_game_screen::mousePressEvent(QMouseEvent * event)
@@ -435,28 +458,88 @@ void Main_game_screen::state_changed_event(const Screen::State new_state, const 
 }
 
 
-void Main_game_screen::update_event(const float time_step)
+void Main_game_screen::update_score_labels()
 {
-    if (get_state() == State::Running)
+    if (_energy_amount_label && !_core.get_sensor_data().get_data(Sensor_data::Type::EnergyCon).empty())
     {
-        // normal update
+        float const energy = _core.get_sensor_data().get_data(Sensor_data::Type::EnergyCon).back();
+        std::string new_energy_str = QString("%1\%").arg(int(energy * 100)).toStdString();
+        if (new_energy_str != _energy_amount_label->get_text())
+        {
+            _energy_amount_label->set_text(new_energy_str);
+            //            _ui_renderer.generate_flowing_text_label(_energy_amount_label.get(), 0.4f);
 
-//        if (_mouse_state == Mouse_state::Dragging_molecule)
-//        {
-//            boost::optional<Molecule const&> picked_molecule = _core.get_molecule(_picked_index);
+            Eigen::Vector2f bb = _ui_renderer.generate_flowing_text_label(_energy_amount_label.get(), 0.4f);
+            Eigen::Vector3f left_edge_pos(0.7f + bb[0] * 0.5f + 0.01f, 1.0f - 0.02f - bb[1] * 0.5f, 0.0f);
+            _energy_amount_label->set_position(left_edge_pos);
 
-//            assert(picked_molecule);
-
-//            Molecule_external_force & f = _core.get_user_force();
-
-//            Eigen::Vector3f old_force_target = f._origin + f._force;
-
-//            f._origin = picked_molecule->_R * f._local_origin + picked_molecule->_x;
-//            f._force = old_force_target - f._origin;
-//            f._end_time = _core.get_current_time() + 0.1f;
-//        }
+            float const alpha = into_range(energy - 1.0f, 0.0f, 1.0f);
+            _energy_amount_label->set_color({Score::score_green.rgb() * (1.0f - alpha) +
+                                             Score::score_red.rgb() * alpha, 1.0f});
+        }
     }
 
+    if (_time_label)
+    {
+        float const time = _core.get_current_time();
+        float const multiplier = Score::get_score_multiplier(time, _core.get_level_data()._score_time_factor);
+        std::string new_time_str = QString("Time: %1s (%2x)").arg(time, 3, 'f', 0).arg(multiplier, 1, 'f', 1).toStdString();
+        if (new_time_str != _time_label->get_text())
+        {
+            _time_label->set_text(new_time_str);
+            Eigen::Vector2f bb = _ui_renderer.generate_flowing_text_label(_time_label.get(), 0.4f);
+            Eigen::Vector3f right_edge_pos(0.4f + bb[0] * 0.5f, 1.0f - 0.02f - bb[1] * 0.5f, 0.0f);
+            _time_label->set_position(right_edge_pos);
+        }
+    }
+
+    if (_energy_bonus_label)
+    {
+        float const current_bonus = _core.get_sensor_data().get_energy_bonus().back();
+
+        if (_last_updated_bonus - current_bonus > 200)
+        {
+            _energy_bonus_label->set_text(QString("%1").arg(current_bonus, 6).toStdString());
+            Eigen::Vector2f bb = _ui_renderer.generate_flowing_text_label(_energy_bonus_label.get(), 0.4f);
+            Eigen::Vector3f label_pos(0.7f + bb[0] * 0.5f + 0.01f, 1.0f - 0.02f - bb[1] * 1.5f, 0.0f);
+            _energy_bonus_label->set_position(label_pos);
+
+            Draggable_label * label = new Draggable_label(label_pos, Eigen::Vector2f(0.1f, 0.03f), QString("-%1").arg(_last_updated_bonus - current_bonus).toStdString());
+            label->set_color({255 / 255.0f, 121 / 255.0f, 54 / 255.0f, 1.0f});
+            label->set_alpha(0.0f);
+            _ui_renderer.generate_label_texture(label);
+            _labels.push_back(boost::shared_ptr<Draggable_label>(label));
+
+            {
+                boost::shared_ptr<Draggable_event> e(new Draggable_event(_labels.back(), Draggable_event::Type::Fade_in, _core.get_current_time()));
+                e->set_duration(0.1f);
+                e->trigger();
+                _draggable_events.push_back(e);
+            }
+
+            {
+                boost::shared_ptr<Draggable_event> e(new Draggable_event(_labels.back(), Draggable_event::Type::Move, _core.get_current_time(), QEasingCurve::OutCubic));
+                e->set_duration(1.0f);
+                e->trigger();
+                e->make_move_event(label_pos, label_pos + Eigen::Vector3f(0.0f, 0.02f, 0.0f));
+                _draggable_events.push_back(e);
+            }
+
+            {
+                boost::shared_ptr<Draggable_event> e(new Draggable_event(_labels.back(), Draggable_event::Type::Fade_out, _core.get_current_time() + 0.3f));
+                e->set_duration(0.3f);
+                e->trigger();
+                _draggable_events.push_back(e);
+            }
+
+            _last_updated_bonus = current_bonus;
+        }
+    }
+}
+
+
+void Main_game_screen::update_event(const float time_step)
+{
     if (_level_state == Level_state::Intro)
     {
         update_intro(time_step);
@@ -467,40 +550,12 @@ void Main_game_screen::update_event(const float time_step)
         l->animate(time_step);
     }
 
+    for (boost::shared_ptr<Draggable_event> & e : _draggable_events)
     {
-        if (_energy_amount_label && !_core.get_sensor_data().get_data(Sensor_data::Type::EnergyCon).empty())
-        {
-            float const energy = _core.get_sensor_data().get_data(Sensor_data::Type::EnergyCon).back();
-            std::string new_energy_str = QString("%1\%").arg(int(energy * 100)).toStdString();
-            if (new_energy_str != _energy_amount_label->get_text())
-            {
-                _energy_amount_label->set_text(new_energy_str);
-                //            _ui_renderer.generate_flowing_text_label(_energy_amount_label.get(), 0.4f);
-
-                Eigen::Vector2f bb = _ui_renderer.generate_flowing_text_label(_energy_amount_label.get(), 0.4f);
-                Eigen::Vector3f right_edge_pos(0.8f + bb[0] * 0.5f + 0.01f, 1.0f - 0.02f - bb[1] * 0.5f, 0.0f);
-                _energy_amount_label->set_position(right_edge_pos);
-
-                float const alpha = into_range(energy - 1.0f, 0.0f, 1.0f);
-                _energy_amount_label->set_color({Color(147 / 255.0f, 232 / 255.0f, 112 / 255.0f) * (1.0f - alpha) +
-                                                 Color(255 / 255.0f, 121 / 255.0f, 54 / 255.0f) * alpha, 1.0f});
-            }
-        }
-
-        if (_time_label)
-        {
-            float const time = _core.get_current_time();
-            float const multiplier = Score::get_score_multiplier(time, _core.get_level_data()._score_time_factor);
-            std::string new_time_str = QString("Time: %1s (%2x)").arg(time, 3, 'f', 0).arg(multiplier, 1, 'f', 1).toStdString();
-            if (new_time_str != _time_label->get_text())
-            {
-                _time_label->set_text(new_time_str);
-                Eigen::Vector2f bb = _ui_renderer.generate_flowing_text_label(_time_label.get(), 0.4f);
-                Eigen::Vector3f right_edge_pos(0.5f + bb[0] * 0.5f, 1.0f - 0.02f - bb[1] * 0.5f, 0.0f);
-                _time_label->set_position(right_edge_pos);
-            }
-        }
+        e->update(_core.get_current_time(), time_step);
     }
+
+    update_score_labels();
 }
 
 void Main_game_screen::delete_selected_element()
@@ -1089,7 +1144,9 @@ void Main_game_screen::draw_draggables() // FIXME: use visitors or change it so 
         _drop_shadow_program->setUniformValue("texture", 0);
         _drop_shadow_program->setUniformValue("blur_size", 5);
         _drop_shadow_program->setUniformValue("offset", 0.01f);
+        _drop_shadow_program->setUniformValue("overall_alpha", label->get_alpha());
         _drop_shadow_program->setUniformValue("tex_size", QVector2D(label->get_extent()[0] * _viewer.width(), label->get_extent()[1] * _viewer.height()));
+
         glActiveTexture(GL_TEXTURE0);
 
         if (label->is_visible())
@@ -1435,22 +1492,22 @@ void Main_game_screen::handle_level_change(Main_game_screen::Level_state const l
 
     _level_state = level_state;
 
-    _viewer.clear_events();
+    clear_events();
 
     if (_level_state == Level_state::Intro)
     {
         setup_intro();
         assert(_core.get_level_data()._game_field_borders.size() == 6);
     }
-    else if (_core.get_progress().last_level == 0)
+    else if (_core.get_progress().last_level == 0 && _ui_state == Ui_state::Playing)
     {
         std::cout << "Level 0, adding tutorial events" << std::endl;
-        _viewer.clear_events();
-        _viewer.add_event(new Molecule_releaser_event(_core, _viewer));
-        _viewer.add_event(new Portal_event(_core, _viewer));
-        _viewer.add_event(new Heat_button_event(_core, _viewer));
-        _viewer.add_event(new Heat_element_placed_event(_core, _viewer));
-        _viewer.add_event(new Heat_turned_up_event(_core, _viewer));
+        clear_events();
+        add_event(new Molecule_releaser_event(_core, _viewer));
+        add_event(new Portal_event(_core, _viewer));
+        add_event(new Heat_button_event(_core, _viewer));
+        add_event(new Heat_element_placed_event(_core, _viewer));
+        add_event(new Heat_turned_up_event(_core, _viewer));
     }
 
 //    if (_ui_state != Ui_state::Level_editor)
@@ -1477,15 +1534,6 @@ void Main_game_screen::handle_game_state_change()
         pause();
 
         _viewer.add_screen(new After_finish_screen(_viewer, _core, _ui_state));
-
-//        if (_ui_state == Ui_state::Editor_playing)
-//        {
-//            _viewer.add_screen(new After_finish_editor_screen(_viewer, _core, ));
-//        }
-//        else
-//        {
-//            _viewer.add_screen(new After_finish_screen(_viewer, _core, _ui_state));
-//        }
     }
 }
 

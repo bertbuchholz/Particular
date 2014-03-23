@@ -31,7 +31,7 @@ private:
 
     Screen * _calling_screen;
 
-    std::vector< boost::shared_ptr<Draggable_event> > _events;
+    std::vector< boost::shared_ptr<Draggable_event> > _draggable_events;
 
     float _stat_anim_duration;
 

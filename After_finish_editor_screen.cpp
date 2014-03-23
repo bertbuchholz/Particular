@@ -132,7 +132,7 @@ void After_finish_editor_screen::init()
 
     {
         Draggable_label * label = new Draggable_label(Eigen::Vector3f(0.75f, 0.5f, 0.0f), Eigen::Vector2f(0.3f, 0.1f), "0000000");
-        label->set_color({255 / 255.0f, 121 / 255.0f, 54 / 255.0f, 1.0f});
+        label->set_color(Score::energy_bonus_color);
         _labels.push_back(boost::shared_ptr<Draggable_label>(label));
         _penalty_label = _labels.back();
 

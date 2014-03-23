@@ -92,3 +92,26 @@ void Screen::update(const float time_step)
 
     update_event(time_step);
 }
+
+void Screen::clear_events()
+{
+    _events.clear();
+}
+
+void Screen::add_event(Event *event)
+{
+    _events.push_back(std::unique_ptr<Event>(event));
+}
+
+void Screen::update_events(const float /* time_step */)
+{
+    if (!_events.empty())
+    {
+        Event * e = _events.front().get();
+
+        if (e->trigger())
+        {
+            _events.pop_front();
+        }
+    }
+}

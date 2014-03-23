@@ -5,6 +5,11 @@
 
 #include <Utilities.h>
 
+Color4 Score::score_color        = Color4(147 / 255.0f, 232 / 255.0f, 112 / 255.0f, 1.0f);
+Color4 Score::energy_bonus_color = Color4(124 / 255.0f, 157 / 255.0f, 255 / 255.0f, 1.0f);
+Color4 Score::score_red          = Color4(255 / 255.0f, 121 / 255.0f,  54 / 255.0f, 1.0f);
+Color4 Score::score_green        = Color4(147 / 255.0f, 232 / 255.0f, 112 / 255.0f, 1.0f);
+
 void Score::calculate_score(const float time_factor, const int num_molecules_to_capture_)
 {
     float score = 0.0f;
@@ -70,6 +75,7 @@ void Score::calculate_score(const float time_factor, const int num_molecules_to_
 
     final_score = score;
     _penalty = penalty_sum;
+    _energy_bonus = sensor_data.get_energy_bonus().back();
 }
 
 std::vector<std::pair<float, int> > const& Score::get_score_at_time() const

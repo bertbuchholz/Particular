@@ -7,6 +7,7 @@ Molecule_releaser::Molecule_releaser(const Eigen::Vector3f &min, const Eigen::Ve
     _num_max_molecules(100),
     _num_released_molecules(0),
     _next_molecule_prepared(false),
+    _particle_duration(0.5f),
     _animation_count(0.0f)
 {
     set_transform(Eigen::Transform<float, 3, Eigen::Affine>::Identity());
@@ -70,7 +71,7 @@ Targeted_particle_system Molecule_releaser::init_particle_system(const Molecule 
         particles[i] = p;
     }
 
-    Targeted_particle_system p_system(1.0f);
+    Targeted_particle_system p_system(_particle_duration);
 
     p_system.init(particles);
 
@@ -84,7 +85,7 @@ bool Molecule_releaser::check_do_release(const float time)
     _particles.erase(std::remove_if(_particles.begin(), _particles.end(), Targeted_particle_system::is_dead),
                      _particles.end());
 
-    if (next_release - 1.0f < time && !_next_molecule_prepared)
+    if (next_release - _particle_duration < time && !_next_molecule_prepared)
     {
         _next_molecule_prepared = true;
 
@@ -100,11 +101,13 @@ bool Molecule_releaser::check_do_release(const float time)
         _particles.push_back(init_particle_system(_next_molecule, local_pos));
     }
 
-    return (next_release < time && _num_released_molecules < _num_max_molecules);
+    return (next_release < time && _num_released_molecules < _num_max_molecules && _next_molecule_prepared);
 }
 
 Molecule Molecule_releaser::release(const float time)
 {
+    assert(_next_molecule._x[0] < -1.0f);
+
     _last_release = time;
 
     ++_num_released_molecules;

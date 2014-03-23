@@ -76,7 +76,7 @@ void After_finish_screen::init(Main_game_screen::Ui_state const ui_state)
     }
 
     {
-        Draggable_label * label = new Draggable_label(Eigen::Vector3f(0.75f, 0.6f, 0.0f), Eigen::Vector2f(0.3f, 0.1f), "Energy Penalty");
+        Draggable_label * label = new Draggable_label(Eigen::Vector3f(0.75f, 0.6f, 0.0f), Eigen::Vector2f(0.3f, 0.1f), "Energy Bonus");
         _labels.push_back(boost::shared_ptr<Draggable_label>(label));
 
         boost::shared_ptr<Draggable_event> e(new Draggable_event(_labels.back(), Draggable_event::Type::Move));
@@ -88,7 +88,7 @@ void After_finish_screen::init(Main_game_screen::Ui_state const ui_state)
 
     {
         Draggable_label * label = new Draggable_label(Eigen::Vector3f(0.25f, 0.5f, 0.0f), Eigen::Vector2f(0.3f, 0.1f), "0000000");
-        label->set_color({147 / 255.0f, 232 / 255.0f, 112 / 255.0f, 1.0f});
+        label->set_color(Score::score_color);
         _labels.push_back(boost::shared_ptr<Draggable_label>(label));
         _score_label = _labels.back();
 
@@ -101,7 +101,7 @@ void After_finish_screen::init(Main_game_screen::Ui_state const ui_state)
 
     {
         Draggable_label * label = new Draggable_label(Eigen::Vector3f(0.75f, 0.5f, 0.0f), Eigen::Vector2f(0.3f, 0.1f), "0000000");
-        label->set_color({255 / 255.0f, 121 / 255.0f, 54 / 255.0f, 1.0f});
+        label->set_color(Score::energy_bonus_color);
         _labels.push_back(boost::shared_ptr<Draggable_label>(label));
         _penalty_label = _labels.back();
 
@@ -246,7 +246,7 @@ void After_finish_screen::start_score_animation()
 
 void After_finish_screen::add_particle_system()
 {
-    int const score = _score.final_score - _score._penalty;
+    int const score = _score.final_score + _score._energy_bonus;
 
     _score_particle_system = Targeted_particle_system(3.0f);
     _score_particle_system.generate(QString("%1").arg(score, 7, 10, QChar('0')).toStdString(), _viewer.get_particle_font(), QRectF(0.0f, 0.5f, 1.0f, 0.3f));
@@ -270,19 +270,24 @@ void After_finish_screen::update_event(const float time_step)
         int const score = _score.final_score;
         int interpolated_score = score * normalized_time;
 
-        int const penalty = _score._penalty;
-        int interpolated_penalty = penalty * normalized_time;
+//        int const penalty = _score._penalty;
+//        int interpolated_penalty = penalty * normalized_time;
+
+        int interpolated_penalty = _score._energy_bonus * normalized_time;
 
         if (normalized_time >= 1.0f)
         {
             interpolated_score = score;
-            interpolated_penalty = penalty;
+            interpolated_penalty = _score._energy_bonus;
             _animate_score_time = 101.0f;
             add_particle_system();
         }
 
         _score_label->set_text(QString("%1").arg(interpolated_score, 7, 10, QChar('0')).toStdString());
         _renderer.generate_label_texture(_score_label.get());
+
+//        _penalty_label->set_text(QString("%1").arg(interpolated_penalty, 7, 10, QChar('0')).toStdString());
+//        _renderer.generate_label_texture(_penalty_label.get());
 
         _penalty_label->set_text(QString("%1").arg(interpolated_penalty, 7, 10, QChar('0')).toStdString());
         _renderer.generate_label_texture(_penalty_label.get());

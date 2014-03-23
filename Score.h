@@ -10,6 +10,8 @@
 #include <boost/serialization/version.hpp>
 #endif
 
+#include <Color.h>
+
 struct Score
 {
     int final_score;
@@ -19,6 +21,12 @@ struct Score
     std::vector< std::pair<float, int> > penalty_at_time;
     int num_molecules_to_capture;
     int _penalty;
+    int _energy_bonus;
+
+    static Color4 score_color;
+    static Color4 energy_bonus_color;
+    static Color4 score_green;
+    static Color4 score_red;
 
     static bool score_comparer(Score const& score1, Score const& score2)
     {

@@ -7,6 +7,7 @@
 #include "Picking.h"
 #include "Draggable.h"
 #include "GL_texture.h"
+#include "Draggable_event.h"
 
 class Core;
 
@@ -25,10 +26,13 @@ public:
 
     ~Main_game_screen();
 
+    void init_labels();
+
     bool mousePressEvent(QMouseEvent *event) override;
     bool mouseMoveEvent(QMouseEvent *) override;
     bool mouseReleaseEvent(QMouseEvent * event) override;
     bool keyPressEvent(QKeyEvent * event) override;
+
 
     void draw() override;
 
@@ -45,6 +49,7 @@ public:
     void draw_draggables();
     void update_active_draggables();
     void update_draggable_to_level_element();
+    void update_score_labels();
 
     void add_element_event(QPoint const& position);
     void add_element(Eigen::Vector3f const& position, std::string const& element_type, bool const make_fully_editable = false);
@@ -109,7 +114,12 @@ protected:
     std::unordered_map<Draggable*, boost::shared_ptr<Draggable_tooltip> > _tooltips_map;
 
     boost::shared_ptr<Draggable_label> _energy_amount_label;
+    boost::shared_ptr<Draggable_label> _energy_bonus_label;
     boost::shared_ptr<Draggable_label> _time_label;
+
+    std::vector< boost::shared_ptr<Draggable_event> > _draggable_events;
+
+    int _last_updated_bonus;
 
     std::unordered_map<std::string, QImage> _element_images;
 

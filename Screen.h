@@ -3,6 +3,9 @@
 
 #include <QtGui>
 #include <memory>
+#include <deque>
+
+#include "Event.h"
 
 class My_viewer;
 
@@ -51,6 +54,10 @@ public:
     virtual void deactivate() { }
     virtual void activate() { }
 
+    void clear_events();
+    void add_event(Event * event);
+    void update_events(float const time_step);
+
     void update(float const time_step);
 
     virtual void update_event(float const /* time_step */) { }
@@ -71,6 +78,8 @@ protected:
 
 private:
     State _state;
+
+    std::deque< std::unique_ptr<Event> > _events;
 };
 
 

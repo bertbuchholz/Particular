@@ -17,7 +17,6 @@
 
 #include "Core.h"
 #include "Renderer.h"
-#include "Event.h"
 
 #include "Screen.h"
 #include "Main_game_screen.h"
@@ -64,14 +63,12 @@ public:
     void animate() override;
 
     void add_screen(Screen * s);
+    void add_screen_delayed(Screen * s);
     void kill_all_screens();
     void replace_screens(Screen * s);
     Screen * get_current_screen() const;
 
-    void clear_events();
-    void add_event(Event * event);
-
-//    void clear();
+    //    void clear();
 
     void load_defaults() override;
     void resizeEvent(QResizeEvent *ev) override;
@@ -105,7 +102,7 @@ private:
     QFont _particle_font;
 
     std::deque< std::unique_ptr<Screen> > _screen_stack;
-    std::deque< std::unique_ptr<Event> > _events;
+    std::vector<Screen*> _delayed_screen_stack;
 
     Ui_renderer _ui_renderer;
 };

@@ -149,18 +149,10 @@ public:
     void add_molecule_external_force(Molecule_external_force const& force);
 //    void add_external_force(std::string const& name, External_force const& force);
 
-//    std::vector<Force_indicator> const& get_force_indicators() const;
-
     float get_current_time() const;
 
     Molecule_external_force & get_user_force();
     Molecule_external_force const& get_user_force() const;
-
-//    std::vector<Barrier*> const& get_barriers() const;
-//    std::vector<Portal*> const& get_portals() const;
-//    std::vector<Molecule_releaser*> const& get_molecule_releasers() const;
-//    std::vector<Brownian_element*> const& get_brownian_elements() const;
-//    boost::optional<Molecule const&> get_molecule(int const id) const;
 
     Eigen::Vector3f calc_forces_between_atoms(Atom const& a_0, Atom const& a_1) const;
 
@@ -228,17 +220,6 @@ public:
     void serialize(Archive & ar, const unsigned int version)
     {
         ar & BOOST_SERIALIZATION_NVP(_level_data);
-
-        if (version > 0)
-        {
-//            ar & BOOST_SERIALIZATION_NVP(_translation_damping);
-//            ar & BOOST_SERIALIZATION_NVP(_rotation_damping);
-
-//            ar & BOOST_SERIALIZATION_NVP(_rotation_fluctuation);
-//            ar & BOOST_SERIALIZATION_NVP(_translation_fluctuation);
-
-//            ar & BOOST_SERIALIZATION_NVP(_external_forces);
-        }
     }
 
 public Q_SLOTS:
@@ -292,6 +273,9 @@ private:
 
     QTimer _physics_timer;
     std::chrono::time_point<std::chrono::system_clock> _physics_elapsed_time;
+
+    float _animation_interval;
+    float _last_animation_time;
 
     QStringList _level_names;
     std::string _current_level_name;

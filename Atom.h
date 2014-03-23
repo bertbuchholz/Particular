@@ -180,288 +180,31 @@ class Molecule
 public:
     static std::unordered_map< std::string, std::function<Molecule(Eigen::Vector3f const& position)> > _molecule_factory_map;
 
-    static bool molecule_exists(std::string const& name)
-    {
-        auto iter = Molecule::_molecule_factory_map.find(name);
-
-        return (iter != _molecule_factory_map.end());
-    }
-
-    static std::vector<std::string> get_molecule_names()
-    {
-        std::vector<std::string> result;
-
-        for (auto & iter : _molecule_factory_map)
-        {
-            result.push_back(iter.first);
-        }
-
-        return result;
-    }
-
-    static Molecule create(std::string const& name, Eigen::Vector3f const& position = Eigen::Vector3f::Zero())
-    {
-        auto iter = Molecule::_molecule_factory_map.find(name);
-
-        if (iter != _molecule_factory_map.end())
-        {
-            return iter->second(position);
-        }
-
-        assert(false);
-
-        return Molecule();
-    }
-
-    static Molecule create_water(Eigen::Vector3f const& position)
-    {
-        Molecule m(position);
-
-        m._atoms.push_back(Atom::create_oxygen(Eigen::Vector3f(0.0f, 0.0f, 0.0f)));
-//        m._atoms.back()._charge = 0.0f;
-
-        int current_connector = m.set_new_connector();
-
-
-//        {
-//            float const oxygen_charge_angle_deg = 120.0f;
-//            float const radius = 0.7f;
-//            float const angle_2 = 0.5f * oxygen_charge_angle_deg / 360.0f * 2.0f * M_PI;
-
-//            m._atoms.push_back(Atom::create_charge(Eigen::Vector3f(-std::cos( angle_2) * radius, 0.0f, std::sin( angle_2) * radius), -0.4f));
-//            m._atoms.push_back(Atom::create_charge(Eigen::Vector3f(-std::cos(-angle_2) * radius, 0.0f, std::sin(-angle_2) * radius), -0.4f));
-//        }
-
-        {
-            float const radius = 0.96f;
-            float const angle_2 = 0.5f * 104.5f / 360.0f * 2.0f * float(M_PI);
-
-            //        m._atoms.push_back(Atom::create_hydrogen(Eigen::Vector3f(radius, 0.0f, 0.0f)));
-            m._atoms.push_back(Atom::create_hydrogen(Eigen::Vector3f(std::cos( angle_2) * radius, std::sin( angle_2) * radius, 0.0f)));
-            m.add_connection(current_connector);
-            m._atoms.push_back(Atom::create_hydrogen(Eigen::Vector3f(std::cos(-angle_2) * radius, std::sin(-angle_2) * radius, 0.0f)));
-            m.add_connection(current_connector);
-        }
-
-        m.reset();
-        m.init();
-
-        return m;
-    }
-
-    static Molecule create_oxygen(Eigen::Vector3f const& position)
-    {
-        Molecule m(position);
-
-        m._atoms.push_back(Atom::create_oxygen(Eigen::Vector3f(0.3f, 0.4f, 0.0f)));
-
-//        m._atoms.push_back(Atom::create_oxygen(Eigen::Vector3f(0.0f, 0.0f, 0.0f)));
-
-//        float const radius = 1.2f;
-
-//        m._atoms.push_back(Atom::create_oxygen(Eigen::Vector3f(radius, 0.0f, 0.0f)));
-
-        m._atoms.push_back(Atom::create_oxygen(Eigen::Vector3f(1.4f, 0.5f, 0.0f)));
-
-        m.reset();
-        m.init();
-
-        return m;
-    }
-
-    static Molecule create_dipole(Eigen::Vector3f const& position)
-    {
-        Molecule m(position);
-
-
-        m._atoms.push_back(Atom::create_oxygen(Eigen::Vector3f(0.0f, 0.707f, 0.0f)));
-        m._atoms.back()._charge = -1.0f;
-        m._atoms.back()._radius = 1.0f;
-        m._atoms.back()._type = Atom::Type::H;
-        int current_connector = m.set_new_connector();
-
-        m._atoms.push_back(Atom::create_oxygen(Eigen::Vector3f(0.707f, 0.0f, 0.0f)));
-        m._atoms.back()._charge = 1.0f;
-        m._atoms.back()._radius = 1.0f;
-        m.add_connection(current_connector);
-
-        m.reset();
-        m.init();
-
-        return m;
-    }
-
-    static Molecule create_charged_natrium(Eigen::Vector3f const& position)
-    {
-        Molecule m(position);
-
-        m._atoms.push_back(Atom::create_natrium(Eigen::Vector3f(0.0f, 0.0f, 0.0f)));
-        m._atoms.back()._charge = 1.0f;
-
-        m.reset();
-        m.init();
-
-        return m;
-    }
-
-    static Molecule create_charged_chlorine(Eigen::Vector3f const& position)
-    {
-        Molecule m(position);
-
-        m._atoms.push_back(Atom::create_chlorine(Eigen::Vector3f(0.0f, 0.0f, 0.0f)));
-        m._atoms.back()._charge = -1.0f;
-
-        m.reset();
-        m.init();
-
-        return m;
-    }
-
-    static Molecule create_sulfate(Eigen::Vector3f const& position)
-    {
-        Molecule m(position);
-
-        float current_z_offset = 0.0f;
-
-        m._atoms.push_back(Atom::create_hydrogen(Eigen::Vector3f(0.0f, 0.0f, -0.5f)));
-        int current_connector = m.set_new_connector();
-
-        for (int i = 0; i < 12; ++i)
-        {
-            float const radius = 0.96f;
-            Eigen::Vector3f const offset((i % 2 == 0) ? -0.2f : 0.2f, 0.0f, current_z_offset);
-
-            Eigen::AngleAxisf const rotation_pos(50.0f / 360.0f * 2.0f * float(M_PI), Eigen::Vector3f(0.0f, 0.0f,  1.0f));
-            Eigen::AngleAxisf const rotation_neg(50.0f / 360.0f * 2.0f * float(M_PI), Eigen::Vector3f(0.0f, 0.0f, -1.0f));
-
-            m._atoms.push_back(Atom::create_carbon(offset));
-            m.add_connection(current_connector);
-            current_connector = m.set_new_connector();
-            m._atoms.push_back(Atom::create_hydrogen(rotation_pos * Eigen::Vector3f(((i % 2 == 0) ? -1.0f : 1.0f) * radius, 0.0f, 0.0f) + offset));
-            m.add_connection(current_connector);
-            m._atoms.push_back(Atom::create_hydrogen(rotation_neg * Eigen::Vector3f(((i % 2 == 0) ? -1.0f : 1.0f) * radius, 0.0f, 0.0f) + offset));
-            m.add_connection(current_connector);
-
-            current_z_offset += 1.0f;
-        }
-
-        for (Atom & a : m._atoms)
-        {
-            a._charge = 0.0f;
-        }
-
-        (m._atoms.end() - 3)->_charge = 0.137f;
-
-        Eigen::Vector3f const o_4_pos(-0.2f, 0.0f, current_z_offset);
-
-        m._atoms.push_back(Atom::create_oxygen(o_4_pos));
-        m._atoms.back()._charge = -0.459f;
-
-        m.add_connection(current_connector);
-        current_connector = m.set_new_connector();
-
-        current_z_offset += 1.0f;
-
-        Eigen::Vector3f const sulfur_pos(0.2f, 0.0f, current_z_offset);
-
-        m.add_connection(current_connector);
-        current_connector = m.set_new_connector();
-
-        m._atoms.push_back(Atom::create_sulfur(sulfur_pos));
-
-        Eigen::Vector3f const rotation_axis((sulfur_pos - o_4_pos).normalized());
-        Eigen::Vector3f const triangle_center(2.0f * sulfur_pos - o_4_pos);
-
-        Eigen::Vector3f const orthogonal_vec(rotation_axis.cross(Eigen::Vector3f(0.0f, 0.0f, 1.0f)).normalized() * 1.2f);
-
-        for (int i = 0; i < 3; ++i)
-        {
-            Eigen::AngleAxisf rotation(i * 120.0f / 360.0f * 2.0f * M_PI, rotation_axis);
-
-            Eigen::Vector3f o_1_3_pos(rotation * orthogonal_vec + triangle_center);
-
-            m._atoms.push_back(Atom::create_oxygen(o_1_3_pos));
-            m._atoms.back()._charge = -0.654f;
-
-            m.add_connection(current_connector);
-        }
-
-//        Eigen::Vector3f natrium_pos(-0.2f, 0.0f, current_z_offset + 4.0f);
-//        m._atoms.push_back(Atom::create_natrium(natrium_pos));
-
-        m.reset();
-        m.init();
-
-        return m;
-    }
+    static bool molecule_exists(std::string const& name);
+    static std::vector<std::string> get_molecule_names();
+
+    static Molecule create(std::string const& name, Eigen::Vector3f const& position = Eigen::Vector3f::Zero());
+    static Molecule create_water(Eigen::Vector3f const& position);
+    static Molecule create_oxygen(Eigen::Vector3f const& position);
+    static Molecule create_dipole(Eigen::Vector3f const& position);
+    static Molecule create_charged_natrium(Eigen::Vector3f const& position);
+    static Molecule create_charged_chlorine(Eigen::Vector3f const& position);
+    static Molecule create_sulfate(Eigen::Vector3f const& position);
 
     // last added atom becomes new connector
-    int set_new_connector()
-    {
-       int const new_connector = int(_atoms.size()) - 1;
-       _connectivity.resize(new_connector + 1);
-       return new_connector;
-    }
+    int set_new_connector();
+    void add_connection(int const connector);
 
-    void add_connection(int const connector)
-    {
-        assert(connector < int(_connectivity.size()));
-        _connectivity[connector].push_back(int(_atoms.size()) - 1);
-    }
-
-    void reset()
-    {
-        _R.setIdentity();
-        _P.setZero();
-        _L.setZero();
-        _q.setIdentity();
-
-        _v = Eigen::Vector3f::Zero();
-        _omega = Eigen::Vector3f::Zero();
-    }
-
+    void reset();
     void init();
 
-    Body_state to_state() const
-    {
-        Body_state state;
-        state._L = _L;
-        state._P = _P;
-        state._q = _q;
-        state._x = _x;
-
-        return state;
-    }
-
+    Body_state to_state() const;
     void from_state(Body_state const& /* state */, float const mass_factor);
 
-    void apply_orientation(Eigen::Quaternion<float> const& orientation)
-    {
-        _q = orientation;
-        _R = _q.normalized().toRotationMatrix();
-//        _I_inv = _R * _I_body_inv * _R.transpose();
+    void apply_orientation(Eigen::Quaternion<float> const& orientation);
 
-        for (Atom & a : _atoms)
-        {
-            a.set_position(_R * a._r_0 + _x);
-            assert(!std::isnan(a.get_position()[0]) && !std::isinf(a.get_position()[0]));
-        }
-    }
-
-    int get_id() const
-    {
-        return _id;
-    }
-
-    void set_id(int const id)
-    {
-        _id = id;
-
-        for (Atom & a : _atoms)
-        {
-            a._parent_id = _id;
-        }
-    }
+    int get_id() const { return _id; }
+    void set_id(int const id);
 
     template<class Archive>
     void serialize(Archive & ar, const unsigned int /* version */)

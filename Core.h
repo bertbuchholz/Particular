@@ -18,7 +18,7 @@
 #include <Registry_parameters.h>
 
 #include "unique_ptr_serialization.h"
-//#include "GPU_force.h"
+#include "GPU_force.h"
 #include "Atom.h"
 #include "Atomic_force.h"
 //#include "Spatial_hash.h"
@@ -64,7 +64,7 @@ public:
     std::vector<Atom const*> get_atoms_from_tree(Atom const& receiver_atom) const;
 
     Eigen::Vector3f force_on_atom(Atom const& receiver_atom) const;
-    void compute_force_and_torque(Molecule & receiver);
+    void compute_force_and_torque(Molecule & receiver, std::vector<Eigen::Vector3f> const& force_on_atoms);
 
     Eigen::Quaternion<float> scale(Eigen::Quaternion<float> const& quat, float const factor)
     {
@@ -150,6 +150,8 @@ public:
 //    void add_external_force(std::string const& name, External_force const& force);
 
     float get_current_time() const;
+
+    void gl_init(QGLContext *context);
 
     Molecule_external_force & get_user_force();
     Molecule_external_force const& get_user_force() const;
@@ -279,6 +281,8 @@ private:
 
     QStringList _level_names;
     std::string _current_level_name;
+
+    std::unique_ptr<GPU_force> _gpu_force;
 };
 
 //REGISTER_BASE_CLASS_WITH_PARAMETERS(Core);

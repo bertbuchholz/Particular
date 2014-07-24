@@ -5,6 +5,7 @@
 #include <cassert>
 #include <QCoreApplication>
 #include <QDir>
+#include <QMessageBox>
 #include <vector>
 
 class Data_config
@@ -31,37 +32,9 @@ public:
 //        return QString::fromStdString(_data_path);
 //    }
 
-    QString get_absolute_qfilename(QString const& relative_path, bool const check_existence = true) const
-    {
-        return QString::fromStdString(get_absolute_filename(relative_path, check_existence));
-    }
+    QString get_absolute_qfilename(QString const& relative_path, bool const check_existence = true) const;
 
-    std::string get_absolute_filename(QString const& relative_path, bool const check_existence = true) const
-    {
-        for (QString const& path : _data_paths)
-        {
-            QString absolute_filename = path + "/" + relative_path;
-
-            if (check_existence)
-            {
-                if (QFile::exists(absolute_filename))
-                {
-                    return absolute_filename.toStdString();
-                }
-            }
-            else
-            {
-                QDir dir(path);
-
-                if (dir.exists())
-                {
-                    return absolute_filename.toStdString();
-                }
-            }
-        }
-
-        throw std::runtime_error("No such file.");
-    }
+    std::string get_absolute_filename(QString const& relative_path, bool const check_existence = true) const;
 
 //    std::string get_absolute_filename(std::string const& relative_path) const
 //    {
@@ -69,40 +42,7 @@ public:
 //    }
 
 private:
-    void init()
-    {
-        _data_path = "";
-
-        QString app_path = QCoreApplication::applicationDirPath();
-
-        QStringList search_paths;
-        search_paths << "data" << "../data" << "../../../data";
-
-        for (QString const& path : search_paths)
-        {
-            QDir dir(app_path + "/" + path);
-
-            if (dir.exists())
-            {
-//                _data_path = dir.absolutePath().toStdString();
-//                break;
-                _data_paths.append(dir.absolutePath());
-            }
-        }
-
-        if (_data_paths.empty())
-        {
-            std::cout << __FUNCTION__ << " no data paths found" << std::endl;
-            assert(false);
-        }
-        else
-        {
-            for (QString const p : _data_paths)
-            {
-                std::cout << __FUNCTION__ << " data path found: " << p.toStdString() << std::endl;
-            }
-        }
-    }
+    void init();
 
     static Data_config * _data_config;
 

@@ -1503,11 +1503,11 @@ void Main_game_screen::handle_level_change(Main_game_screen::Level_state const l
     {
         std::cout << "Level 0, adding tutorial events" << std::endl;
         clear_events();
-        add_event(new Molecule_releaser_event(_core, _viewer));
-        add_event(new Portal_event(_core, _viewer));
-        add_event(new Heat_button_event(_core, _viewer));
-        add_event(new Heat_element_placed_event(_core, _viewer));
-        add_event(new Heat_turned_up_event(_core, _viewer));
+        add_event(new Molecule_releaser_event(_core, _viewer, *this));
+        add_event(new Portal_event(_core, _viewer, *this));
+        add_event(new Heat_button_event(_core, _viewer, *this));
+        add_event(new Heat_element_placed_event(_core, _viewer, *this));
+        add_event(new Heat_turned_up_event(_core, _viewer, *this));
     }
 
 //    if (_ui_state != Ui_state::Level_editor)

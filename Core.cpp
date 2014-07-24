@@ -586,6 +586,8 @@ void Core::update_physics_elements(const float time_step)
     _debug_leaf_usage_count = 0;
     _debug_inner_node_usage_count = 0;
 
+    _gpu_force->calc_forces(_level_data._molecules);
+
     for (Molecule & m : _level_data._molecules)
     {
         compute_force_and_torque(m);
@@ -1170,6 +1172,11 @@ Molecule_external_force &Core::get_user_force()
 float Core::get_current_time() const
 {
     return _current_time;
+}
+
+void Core::gl_init(QGLContext * context)
+{
+    _gpu_force = std::unique_ptr<GPU_force>(new GPU_force(context));
 }
 
 

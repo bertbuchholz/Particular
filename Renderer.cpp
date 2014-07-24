@@ -1,7 +1,7 @@
 #include <Renderer.h>
 
 #define GL_GLEXT_PROTOTYPES
-#include <GL/glext.h>
+//#include <GL/glext.h>
 
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>

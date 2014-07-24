@@ -31,8 +31,8 @@ int main(int argc, char** argv)
 //    application.setDoubleClickInterval(0);
 
     QGLFormat glFormat;
-    glFormat.setVersion(3, 2);
-    glFormat.setProfile(QGLFormat::CompatibilityProfile); // Requires >=Qt-4.8.0
+//    glFormat.setVersion(3, 2);
+//    glFormat.setProfile(QGLFormat::CompatibilityProfile); // Requires >=Qt-4.8.0
 //    glFormat.setSampleBuffers(true);
 
     Core core;

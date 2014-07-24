@@ -3,11 +3,15 @@
 
 class Core;
 class My_viewer;
+class Screen;
 
 class Event
 {
 public:
-    Event(Core & core, My_viewer & viewer) : _core(core), _viewer(viewer)
+    Event(Core & core, My_viewer & viewer, Screen & calling_screen) :
+        _core(core),
+        _viewer(viewer),
+        _calling_screen(calling_screen)
     { }
 
     virtual bool trigger() = 0;
@@ -15,6 +19,7 @@ public:
 protected:
     Core & _core;
     My_viewer & _viewer;
+    Screen & _calling_screen;
 };
 
 // First explain goal:
@@ -37,7 +42,7 @@ protected:
 class Molecule_releaser_event : public Event
 {
 public:
-    Molecule_releaser_event(Core & core, My_viewer & viewer) : Event(core, viewer)
+    Molecule_releaser_event(Core & core, My_viewer & viewer, Screen & calling_screen) : Event(core, viewer, calling_screen)
     { }
 
     bool trigger() override;
@@ -46,7 +51,7 @@ public:
 class Portal_event : public Event
 {
 public:
-    Portal_event(Core & core, My_viewer & viewer) : Event(core, viewer)
+    Portal_event(Core & core, My_viewer & viewer, Screen & calling_screen) : Event(core, viewer, calling_screen)
     { }
 
     bool trigger() override;
@@ -55,7 +60,7 @@ public:
 class Heat_button_event : public Event
 {
 public:
-    Heat_button_event(Core & core, My_viewer & viewer) : Event(core, viewer)
+    Heat_button_event(Core & core, My_viewer & viewer, Screen & calling_screen) : Event(core, viewer, calling_screen)
     { }
 
     bool trigger() override;
@@ -64,7 +69,7 @@ public:
 class Heat_element_placed_event : public Event
 {
 public:
-    Heat_element_placed_event(Core & core, My_viewer & viewer) : Event(core, viewer)
+    Heat_element_placed_event(Core & core, My_viewer & viewer, Screen & calling_screen) : Event(core, viewer, calling_screen)
     { }
 
     bool trigger() override;
@@ -73,7 +78,7 @@ public:
 class Heat_turned_up_event : public Event
 {
 public:
-    Heat_turned_up_event(Core & core, My_viewer & viewer) : Event(core, viewer)
+    Heat_turned_up_event(Core & core, My_viewer & viewer, Screen & calling_screen) : Event(core, viewer, calling_screen)
     { }
 
     bool trigger() override;

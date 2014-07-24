@@ -8,7 +8,11 @@
 class Molecule_releaser : public Level_element
 {
 public:
-    Molecule_releaser() {}
+    Molecule_releaser() :
+        _next_molecule_prepared(false),
+        _particle_duration(0.5f),
+        _animation_count(0.0f)
+    {}
 
     Molecule_releaser(Eigen::Vector3f const& min, Eigen::Vector3f const& max, float const first_release, float const interval);
 

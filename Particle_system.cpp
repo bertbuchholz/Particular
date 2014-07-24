@@ -129,7 +129,7 @@ void Targeted_particle_system::animate(const float timestep)
 }
 
 
-Curved_particle_system::Curved_particle_system() : _total_time(1.0f), _current_time(0.0f)
+Curved_particle_system::Curved_particle_system() : _total_time(1.0f), _current_time(0.0f), _infinite_loop(false)
 { }
 
 
@@ -142,7 +142,8 @@ Curved_particle_system::Curved_particle_system(std::vector<Eigen::Vector3f> cons
     _curve_color(1.0f, 0.0f, 0.0f, 1.0f),
     _effect_color(0.0f, 1.0f, 0.0f, 1.0f),
     _display_ratio(1.0f),
-    _use_as_diagram(false)
+    _use_as_diagram(false),
+    _infinite_loop(false)
 {
     std::random_device rd;
     _rng = std::mt19937(rd());
@@ -166,10 +167,11 @@ void Curved_particle_system::animate(float const timestep)
     for (Particle & p : _curve_particles)
     {
         p.age = std::min(1.0f, p.age + timestep);
-        p.speed += Eigen::Vector3f::Random().normalized() * 0.00001f;
+        p.speed += Eigen::Vector3f::Random().normalized() * 0.0001f;
+        p.speed[2] = 0.0f;
         p.current_color = color_aging(p.color, p.age);
 //        p.speed += Eigen::Vector3f::Zero();
-//        p.position += p.speed * timestep;
+        p.position += p.speed * timestep;
     }
 
     for (Particle & p : _effect_particles)
@@ -241,7 +243,8 @@ void Curved_particle_system::animate(float const timestep)
             }
             else
             {
-                new_particle_position = _curve.get_pos_on_curve(t);
+                float const alpha = _rng() / float(_rng.max());
+                new_particle_position = alpha * _curve.get_pos_on_curve(t) + (1.0f - alpha) * _curve.get_pos_on_curve(std::min(1.0f, t + normalized_travel_distance));
             }
 
             Particle p;
@@ -276,6 +279,10 @@ void Curved_particle_system::animate(float const timestep)
                 _effect_particles.push_back(p);
             }
         }
+    }
+    else if (_infinite_loop)
+    {
+        _current_time = 0.0f;
     }
 }
 

@@ -154,6 +154,8 @@ public:
 
     Polygonal_curve const& get_curve() const { return _curve; }
 
+    void set_infinite_loop(bool const infinite_loop) { _infinite_loop = infinite_loop; }
+
     void reset();
 
 protected:
@@ -177,6 +179,8 @@ protected:
 
     float _display_ratio;
     bool _use_as_diagram;
+
+    bool _infinite_loop;
 };
 
 //void draw_particle_system(Targeted_particle_system const& system, int const height);

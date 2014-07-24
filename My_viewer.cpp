@@ -339,6 +339,8 @@ void My_viewer::start()
 
     _screen_stack.clear();
 
+    _core.gl_init(context());
+
     Screen * s = new Main_game_screen(*this, _core);
     s->pause();
     add_screen(s);

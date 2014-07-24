@@ -3,8 +3,8 @@
 #include "Core.h"
 #include "My_viewer.h"
 
-Help_screen::Help_screen(My_viewer &viewer, Core &core, Screen *calling_state) : Menu_screen(viewer, core),
-    _calling_screen(calling_state),
+Help_screen::Help_screen(My_viewer &viewer, Core &core, Screen & calling_screen) : Menu_screen(viewer, core),
+    _calling_screen(calling_screen),
     _current_item_index(0)
 {
     _type = Screen::Type::Modal;
@@ -82,7 +82,7 @@ void Help_screen::init()
                 length += (points[i] - points[i + 1]).norm();
             }
 
-            item._particle_system = Curved_particle_system(points, 6.0f * length);
+            item._particle_system = Curved_particle_system(points, 4.0f * length);
             item._particle_system.set_tangent_speed_factor(0.2f);
             item._particle_system.set_particle_size(1.0f);
 
@@ -92,6 +92,8 @@ void Help_screen::init()
             item._particle_system.set_curve_color(curve_color);
 
             item._particle_system.set_effect_color(curve_color);
+
+            item._particle_system.set_infinite_loop(true);
         }
 
         ++index;
@@ -114,6 +116,8 @@ void Help_screen::init()
     _labels[_current_item_index]->set_visible(true);
 
     assert(_buttons.size() == _help_items.size() && _labels.size() == _help_items.size());
+
+    _calling_screen.pause();
 }
 
 void Help_screen::draw()
@@ -162,12 +166,14 @@ void Help_screen::continue_game()
 {
     kill();
 
+    _calling_screen.resume();
+
     _core.set_simulation_state(true);
 }
 
 Help_screen *Help_screen::test(My_viewer & viewer, Core & core)
 {
-    Help_screen * help_screen = new Help_screen(viewer, core, viewer.get_current_screen());
+    Help_screen * help_screen = new Help_screen(viewer, core, *viewer.get_current_screen());
 
     Help_item item;
 

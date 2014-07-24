@@ -17,7 +17,7 @@ public:
         bool _use_particle_system;
     };
 
-    Help_screen(My_viewer & viewer, Core & core, Screen * calling_state);
+    Help_screen(My_viewer & viewer, Core & core, Screen & calling_screen);
 
 //    bool keyPressEvent(QKeyEvent * event) override;
 
@@ -34,7 +34,7 @@ public:
     std::vector<Help_item> _help_items;
 
 private:
-    Screen * _calling_screen;
+    Screen & _calling_screen;
 
     int _current_item_index;
 };

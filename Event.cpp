@@ -38,7 +38,7 @@ bool Molecule_releaser_event::trigger()
 
     _core.set_simulation_state(false);
 
-    Help_screen * help_screen = new Help_screen(_viewer, _core, _viewer.get_current_screen());
+    Help_screen * help_screen = new Help_screen(_viewer, _core, _calling_screen);
 
     Help_screen::Help_item item;
     item._position = projected_position;
@@ -77,7 +77,7 @@ bool Portal_event::trigger()
 
     _core.set_simulation_state(false);
 
-    Help_screen * help_screen = new Help_screen(_viewer, _core, _viewer.get_current_screen());
+    Help_screen * help_screen = new Help_screen(_viewer, _core, _calling_screen);
 
     Help_screen::Help_item item;
     item._text_rect_size = Eigen::Vector2f(projected_position[0] - 0.2f, 1.0f - projected_position[1] - 0.2f);
@@ -120,7 +120,7 @@ bool Heat_button_event::trigger()
 
     _core.set_simulation_state(false);
 
-    Help_screen * help_screen = new Help_screen(_viewer, _core, _viewer.get_current_screen());
+    Help_screen * help_screen = new Help_screen(_viewer, _core, _calling_screen);
 
     Help_screen::Help_item item;
     item._text_rect_size = Eigen::Vector2f(0.4f, 0.4f);
@@ -175,7 +175,7 @@ bool Heat_element_placed_event::trigger()
 
     _core.set_simulation_state(false);
 
-    Help_screen * help_screen = new Help_screen(_viewer, _core, _viewer.get_current_screen());
+    Help_screen * help_screen = new Help_screen(_viewer, _core, _calling_screen);
 
     Help_screen::Help_item item;
     item._text_rect_position = Eigen::Vector2f(0.15f, (projected_position[1] < 0.5f) ? 0.9f : 0.4f);
@@ -237,7 +237,7 @@ bool Heat_turned_up_event::trigger()
 
     _core.set_simulation_state(false);
 
-    Help_screen * help_screen = new Help_screen(_viewer, _core, _viewer.get_current_screen());
+    Help_screen * help_screen = new Help_screen(_viewer, _core, _calling_screen);
 
     Help_screen::Help_item item;
     item._text_rect_size = Eigen::Vector2f(0.4f, 0.4f);

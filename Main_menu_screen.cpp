@@ -81,7 +81,12 @@ void Main_menu_screen::start_new_game()
         p.target *= 1.5f;
     }
 
-    _core.change_level_state(Main_game_screen::Level_state::Intro);
+//    _core.change_level_state(Main_game_screen::Level_state::Intro);
+    _core.load_next_level();
+
+    _viewer.add_screen(new Before_start_screen(_viewer, _core));
+
+    _core.change_level_state(Main_game_screen::Level_state::Running); // remove intro
 
     kill();
 }

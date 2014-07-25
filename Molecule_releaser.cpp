@@ -106,7 +106,7 @@ bool Molecule_releaser::check_do_release(const float time)
 
 Molecule Molecule_releaser::release(const float time)
 {
-    assert(_next_molecule._x[0] < -1.0f);
+//    assert(_next_molecule._x[0] < -1.0f);
 
     _last_release = time;
 

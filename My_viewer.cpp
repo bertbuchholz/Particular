@@ -730,6 +730,14 @@ void My_viewer::keyPressEvent(QKeyEvent *event)
 
         handled = true;
     }
+    else if (event->key() == Qt::Key_F10)
+    {
+        std::cout << __func__ << " core.gl_init()" << std::endl;
+
+        _core.gl_init(context());
+
+        handled = true;
+    }
 
     if (!handled)
     {

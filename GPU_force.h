@@ -36,9 +36,12 @@ public:
 
     void init_vertex_data();
 
-    std::vector<Eigen::Vector3f> calc_forces(std::list<Molecule> const& molecules);
+    std::vector<Eigen::Vector3f> const& calc_forces(std::list<Molecule> const& molecules);
 
 private:
+    Frame_buffer<Eigen::Vector4f> _result_fb;
+    std::vector<Eigen::Vector3f> _resulting_forces;
+
     std::unique_ptr<QGLFramebufferObject> _fbo;
     std::unique_ptr<QGLShaderProgram> _shader;
 
@@ -48,17 +51,16 @@ private:
     Frame_buffer<Eigen::Vector3f> _position_frame;
     Frame_buffer<float> _charge_frame;
     Frame_buffer<float> _radius_frame;
-    Frame_buffer<int> _parent_id_frame;
+    Frame_buffer<float> _parent_id_frame;
 
     GLuint _position_tex;
     GLuint _charge_tex;
+    GLuint _radius_tex;
+    GLuint _parent_id_tex;
+    GLuint _fbo_tex;
 
     GLuint _buffer_square_positions;
 //    GLuint _buffer_square_tex_coords;
-
-//    GLuint _position_texture;
-//    GLuint _charge_texture;
-//    GLuint _id_texture;
 };
 
 #endif // GPU_FORCE_H

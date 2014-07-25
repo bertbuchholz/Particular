@@ -303,7 +303,7 @@ Eigen::Vector3f Core::force_on_atom(const Atom &receiver_atom) const
 }
 
 
-void Core::compute_force_and_torque(Molecule &receiver)
+void Core::compute_force_and_torque(Molecule &receiver, int & atom_index, std::vector<Eigen::Vector3f> const& forces_on_atoms)
 {
 //    float const translation_to_rotation_ratio = 1.0f;
     float const translation_to_rotation_ratio = 0.05f;
@@ -313,10 +313,13 @@ void Core::compute_force_and_torque(Molecule &receiver)
 
     for (Atom const& receiver_atom : receiver._atoms)
     {
-        Eigen::Vector3f force_i = force_on_atom(receiver_atom);
+//        Eigen::Vector3f force_i = force_on_atom(receiver_atom);
+        Eigen::Vector3f const& force_i = forces_on_atoms[atom_index];
 
         receiver._force += force_i;
         receiver._torque += translation_to_rotation_ratio * (receiver_atom.get_position() - receiver._x).cross(force_i);
+
+        ++atom_index;
     }
 
     for (Barrier const* b : _level_data._barriers)
@@ -553,52 +556,56 @@ void Core::update_physics_elements(const float time_step)
     bool const time_debug = true;
 
     int elapsed_milliseconds;
-    std::chrono::time_point<std::chrono::system_clock> timer_start, timer_end;
+    std::chrono::time_point<std::chrono::steady_clock> timer_start, timer_end;
 
     if (time_debug)
     {
-        timer_start = std::chrono::system_clock::now();
+        timer_start = std::chrono::steady_clock::now();
     }
 
-//    update_tree();
+////    update_tree();
 
-//    _ann_wrapper = ANN_wrapper();
-    _ann_wrapper.generate_tree_from_molecules(_level_data._molecules);
+////    _ann_wrapper = ANN_wrapper();
+//    _ann_wrapper.generate_tree_from_molecules(_level_data._molecules);
+        std::vector<Eigen::Vector3f> const& forces_on_atoms = _gpu_force->calc_forces(_level_data._molecules);
 
     if (time_debug)
     {
-        timer_end = std::chrono::system_clock::now();
+        timer_end = std::chrono::steady_clock::now();
 
         elapsed_milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>
                 (timer_end-timer_start).count();
 
         if (elapsed_milliseconds > 1)
         {
-            std::cout << "ann_wrapper update: " << elapsed_milliseconds << std::endl;
+            std::cout << "gpu_force update: " << elapsed_milliseconds << std::endl;
+//            std::cout << "ann_wrapper update: " << elapsed_milliseconds << std::endl;
         }
     }
 
     if (time_debug)
     {
-        timer_start = std::chrono::system_clock::now();
+        timer_start = std::chrono::steady_clock::now();
     }
 
     _debug_leaf_usage_count = 0;
     _debug_inner_node_usage_count = 0;
 
-    _gpu_force->calc_forces(_level_data._molecules);
+    int atom_index = 0;
 
     for (Molecule & m : _level_data._molecules)
     {
-        compute_force_and_torque(m);
+        compute_force_and_torque(m, atom_index, forces_on_atoms);
     }
 
     if (time_debug)
     {
-        timer_end = std::chrono::system_clock::now();
+        timer_end = std::chrono::steady_clock::now();
 
-        elapsed_milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>
-                (timer_end-timer_start).count();
+//        elapsed_milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>
+//                (timer_end-timer_start).count();
+
+        elapsed_milliseconds = std::chrono::duration <double, std::milli>(timer_end - timer_start).count();
 
         if (elapsed_milliseconds > 1)
         {
@@ -613,7 +620,7 @@ void Core::update_physics_elements(const float time_step)
 
     if (time_debug)
     {
-        timer_start = std::chrono::system_clock::now();
+        timer_start = std::chrono::steady_clock::now();
     }
 
     for (Molecule & molecule : _level_data._molecules)
@@ -654,7 +661,7 @@ void Core::update_physics_elements(const float time_step)
 
     if (time_debug)
     {
-        timer_end = std::chrono::system_clock::now();
+        timer_end = std::chrono::steady_clock::now();
 
         elapsed_milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>
                 (timer_end-timer_start).count();
@@ -1046,7 +1053,7 @@ void Core::toggle_simulation()
     else
     {
         _physics_timer.start();
-        _physics_elapsed_time = std::chrono::system_clock::now();
+        _physics_elapsed_time = std::chrono::steady_clock::now();
     }
 }
 
@@ -1115,19 +1122,19 @@ const QStringList &Core::get_level_names() const
 
 void Core::update_physics()
 {
-    std::chrono::time_point<std::chrono::system_clock> const timer_start = std::chrono::system_clock::now();
+    std::chrono::time_point<std::chrono::steady_clock> const timer_start = std::chrono::steady_clock::now();
 
     //        int const elapsed_milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>
-    //                (std::chrono::system_clock::now() - _physics_elapsed_time).count();
+    //                (std::chrono::steady_clock::now() - _physics_elapsed_time).count();
 
-    //        _physics_elapsed_time = std::chrono::system_clock::now();
+    //        _physics_elapsed_time = std::chrono::steady_clock::now();
 
     // FIXME: currently constant update time step, not regarding at all the actually elapsed time
     // some updates are really far away from the set time step, not sure why
     update(_parameters["physics_timestep_ms"]->get_value<int>() / 1000.0f * _parameters["physics_speed"]->get_value<float>());
     //        _core.update(elapsed_milliseconds / 1000.0f * _parameters["physics_speed"]->get_value<float>());
 
-    std::chrono::time_point<std::chrono::system_clock> const timer_end = std::chrono::system_clock::now();
+    std::chrono::time_point<std::chrono::steady_clock> const timer_end = std::chrono::steady_clock::now();
 
     int const elapsed_milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>
             (timer_end-timer_start).count();

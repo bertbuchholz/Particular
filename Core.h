@@ -64,7 +64,7 @@ public:
     std::vector<Atom const*> get_atoms_from_tree(Atom const& receiver_atom) const;
 
     Eigen::Vector3f force_on_atom(Atom const& receiver_atom) const;
-    void compute_force_and_torque(Molecule & receiver, std::vector<Eigen::Vector3f> const& force_on_atoms);
+    void compute_force_and_torque(Molecule & receiver, int & atom_index, std::vector<Eigen::Vector3f> const& forces_on_atoms);
 
     Eigen::Quaternion<float> scale(Eigen::Quaternion<float> const& quat, float const factor)
     {
@@ -274,7 +274,7 @@ private:
     Progress _progress;
 
     QTimer _physics_timer;
-    std::chrono::time_point<std::chrono::system_clock> _physics_elapsed_time;
+    std::chrono::time_point<std::chrono::steady_clock> _physics_elapsed_time;
 
     float _animation_interval;
     float _last_animation_time;

@@ -17,13 +17,6 @@ CONFIG += qt \
     ANN \
     c++11
 
-DebugBuild {
-    message(Debug Build)
-}
-ReleaseBuild {
-    message(Release Build)
-}
-
 # to relink external libs used by the exetubale to copies inside of the bundle Contents/Frameworks dir
 #    BUNDLE_DIR = chemo.app/Contents/
 #    install_name_tool -change libboost_serialization.dylib @executable_path/../Frameworks/libboost_serialization.dylib $${BUNDLE_DIR}/MacOS/chemo
@@ -49,19 +42,13 @@ INCLUDEPATH += . \
     $${BERT_SHARED_DIR} \
     $${EXT_DIR}
 
-win32 {
-    DebugBuild {
-        MOC_DIR = debug/moc
-        OBJECTS_DIR = debug/obj
-    }
-    ReleaseBuild {
-        MOC_DIR = release/moc
-        OBJECTS_DIR = release/obj
-    }
+CONFIG(debug, debug|release) {
+    MOC_DIR = debug/moc
+    OBJECTS_DIR = debug/obj
 }
 else {
-    MOC_DIR = ./moc
-    OBJECTS_DIR = ./obj
+    MOC_DIR = release/moc
+    OBJECTS_DIR = release/obj
 }
 
 !win32 {
@@ -71,6 +58,9 @@ QMAKE_CXXFLAGS += -Wall \
 #    -std=c++11 \
 #    -ftemplate-depth=1024 # \
 #    -ferror-limit=1
+    QMAKE_CXXFLAGS_RELEASE -= -O2
+    QMAKE_CXXFLAGS_RELEASE += -O3
+    QMAKE_LFLAGS_RELEASE -= -O1
 }
 
 win32 {

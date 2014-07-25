@@ -201,7 +201,7 @@ bool Editor_screen::mouseMoveEvent(QMouseEvent * event)
                 _picked_index = -1;
             }
 
-            if (new_picking_index != -1)
+            if (new_picking_index != -1 && new_picking_index < int(_active_draggables.size()))
             {
                 // entered new picked item
 

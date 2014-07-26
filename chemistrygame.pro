@@ -65,6 +65,8 @@ QMAKE_CXXFLAGS += -Wall \
 
 win32 {
     QMAKE_CXXFLAGS += /bigobj /FS
+    QMAKE_CFLAGS_RELEASE    = /Zi
+    QMAKE_LFLAGS_RELEASE    = /MAP /DEBUG /OPT:REF
 }
 
 macx {
@@ -134,7 +136,9 @@ OTHER_FILES += TODO.txt \
     data/shaders/drop_shadow.frag \
     data/shaders/particle.vert \
     data/shaders/particle.frag \
-    data/shaders/distance_particle.vert
+    data/shaders/distance_particle.vert \
+    data/shaders/mesh.vert \
+    data/shaders/molecule_new.frag
 
 HEADERS += \
     My_viewer.h \

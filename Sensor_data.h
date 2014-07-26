@@ -36,7 +36,7 @@ public:
 
         int const penalty_per_second = 5000;
 
-        int const penalty = std::round(penalty_per_second * std::max(0.0f, energy_consumption - 1.0001f) * _check_interval / 100.0f) * 100;
+        int const penalty = std::round(penalty_per_second * std::max(0.0f, energy_consumption - 1.0001f) * _check_interval / 100.0f) * 100.0;
 
         int const new_energy_bonus = std::max(0, _energy_bonus.back() - penalty);
 

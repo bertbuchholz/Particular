@@ -14,7 +14,7 @@ Menu_screen::Menu_screen(My_viewer & viewer, Core & core) : Screen(viewer), _cor
 
     _picking.init(_viewer.context());
 
-    _gl_functions.init(_viewer.context());
+    _gl_functions.init();
 
     _heat_program = std::unique_ptr<QGLShaderProgram>(init_program(_viewer.context(),
                                                                           Data_config::get_instance()->get_absolute_qfilename("shaders/temperature.vert"),

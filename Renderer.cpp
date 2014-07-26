@@ -74,7 +74,7 @@ void World_renderer::init(QGLContext const* context, QSize const& size)
 
     initializeGLFunctions(_context);
 
-    _gl_functions.init(_context);
+    _gl_functions.init();
 
     _screen_size = size;
 
@@ -163,7 +163,7 @@ void World_renderer::draw_particle_system(Targeted_particle_system const& system
     glEnableClientState(GL_COLOR_ARRAY);
     glVertexPointer(3, GL_FLOAT, offset, &system.get_particles()[0].position);
     glColorPointer(4, GL_FLOAT, offset, &system.get_particles()[0].color);
-    glDrawArrays(GL_POINTS, 0, system.get_particles().size());
+    glDrawArrays(GL_POINTS, 0, int(system.get_particles().size()));
     glDisableClientState(GL_VERTEX_ARRAY);
     glDisableClientState(GL_COLOR_ARRAY);
     _particle_program->disableAttributeArray("particle_size");
@@ -224,12 +224,12 @@ void World_renderer::draw_curved_particle_system_in_existing_coord_sys(const Cur
 
     glVertexPointer(3, GL_FLOAT, offset, &system.get_curve_particles()[0].position);
     glColorPointer(4, GL_FLOAT, offset, &system.get_curve_particles()[0].current_color);
-    glDrawArrays(GL_POINTS, 0, system.get_curve_particles().size());
+    glDrawArrays(GL_POINTS, 0, int(system.get_curve_particles().size()));
 
     _particle_program->setAttributeArray("particle_size", GL_FLOAT, &system.get_effect_particles()[0].size_factor, 1, offset);
     glVertexPointer(3, GL_FLOAT, offset, &system.get_effect_particles()[0].position);
     glColorPointer(4, GL_FLOAT, offset, &system.get_effect_particles()[0].current_color);
-    glDrawArrays(GL_POINTS, 0, system.get_effect_particles().size());
+    glDrawArrays(GL_POINTS, 0, int(system.get_effect_particles().size()));
 
     glDisableClientState(GL_VERTEX_ARRAY);
     glDisableClientState(GL_COLOR_ARRAY);
@@ -421,7 +421,8 @@ void Ui_renderer::generate_button_texture(Draggable_button *b) const
 
     p.end();
 
-    GL_functions f(_context);
+    GL_functions f;
+    f.init();
 
     f.delete_texture(b->get_texture());
     Frame_buffer<Color4> texture_fb = convert<QRgb_to_Color4_converter, Color4>(img);
@@ -464,7 +465,8 @@ void Ui_renderer::generate_label_texture(Draggable_label *b, int const text_alig
 
     p.end();
 
-    GL_functions f(_context);
+    GL_functions f;
+    f.init();
 
     f.delete_texture(b->get_texture());
     Frame_buffer<Color4> texture_fb = convert<QRgb_to_Color4_converter, Color4>(img);
@@ -583,7 +585,8 @@ void Ui_renderer::generate_statistics_texture(Draggable_statistics &b, float con
 
     p.end();
 
-    GL_functions f(_context);
+    GL_functions f;
+    f.init();
 
     f.delete_texture(b.get_texture());
     Frame_buffer<Color4> texture_fb = convert<QRgb_to_Color4_converter, Color4>(img);
@@ -628,7 +631,8 @@ Eigen::Vector2f Ui_renderer::generate_flowing_text_label(Draggable_label * label
     Eigen::Vector2f const uniform_bb(final_text_bb.width() / float(_screen_size.width()),
                                      final_text_bb.height() / float(_screen_size.height()));
 
-    GL_functions f(_context);
+    GL_functions f;
+    f.init();
 
     f.delete_texture(label->get_texture());
     Frame_buffer<Color4> texture_fb = convert<QRgb_to_Color4_converter, Color4>(text_image);
@@ -700,7 +704,8 @@ Draggable_tooltip *Ui_renderer::generate_tooltip(const Eigen::Vector3f &screen_p
 //    tooltip->set_texture(bindTexture(text_image));
 //    text_image.save(QDir::tempPath() + "/tooltip.png");
 
-    GL_functions f(_context);
+    GL_functions f;
+    f.init();
 
     Frame_buffer<Color4> texture_fb = convert<QRgb_to_Color4_converter, Color4>(text_image);
     tooltip->set_texture(f.create_texture(texture_fb));
@@ -727,8 +732,10 @@ void Shader_renderer::init(const QGLContext *context, const QSize &size)
     World_renderer::init(context, size);
 
     _molecule_program = std::unique_ptr<QGLShaderProgram>(init_program(context,
-                                                                       Data_config::get_instance()->get_absolute_qfilename("shaders/simple.vert"),
-                                                                       Data_config::get_instance()->get_absolute_qfilename("shaders/molecule.frag")));
+                                                                       Data_config::get_instance()->get_absolute_qfilename("shaders/mesh.vert"),
+                                                                       Data_config::get_instance()->get_absolute_qfilename("shaders/molecule_new.frag")));
+//                                                                       Data_config::get_instance()->get_absolute_qfilename("shaders/simple.vert"),
+//                                                                       Data_config::get_instance()->get_absolute_qfilename("shaders/molecule.frag")));
     _temperature_program = std::unique_ptr<QGLShaderProgram>(init_program(context,
                                                                           Data_config::get_instance()->get_absolute_qfilename("shaders/temperature.vert"),
                                                                           Data_config::get_instance()->get_absolute_qfilename("shaders/temperature.frag")));
@@ -742,7 +749,7 @@ void Shader_renderer::init(const QGLContext *context, const QSize &size)
                                                                    Data_config::get_instance()->get_absolute_qfilename("shaders/fullscreen_square.vert"),
                                                                    Data_config::get_instance()->get_absolute_qfilename("shaders/depth_blur_1D.frag")));
 
-    _sphere_mesh = load_mesh<MyMesh>(Data_config::get_instance()->get_absolute_filename("meshes/icosphere_3.obj"));
+    _sphere_mesh.init(load_mesh<MyMesh>(Data_config::get_instance()->get_absolute_filename("meshes/icosphere_3.obj")));
     _grid_mesh = load_mesh<MyMesh>(Data_config::get_instance()->get_absolute_filename("meshes/grid_10x10.obj"));
     _cube_grid_mesh = load_mesh<MyMesh>(Data_config::get_instance()->get_absolute_filename("meshes/grid_cube.obj"));
     _bg_hemisphere_mesh = load_mesh<MyMesh>(Data_config::get_instance()->get_absolute_filename("meshes/bg_hemisphere.obj"));
@@ -751,10 +758,10 @@ void Shader_renderer::init(const QGLContext *context, const QSize &size)
 
     for (; vIt!=vEnd; ++vIt)
     {
-        MyMesh::Point const& v = _grid_mesh.point(vIt.handle());
+        MyMesh::Point const& v = _grid_mesh.point(*vIt);
 
         MyMesh::TexCoord2D t(v[0] * 0.5f + 0.5f, v[2] * 0.5f + 0.5f);
-        _grid_mesh.set_texcoord2D(vIt.handle(), t);
+        _grid_mesh.set_texcoord2D(*vIt, t);
     }
 
     Frame_buffer<Color> ice_tex_fb = convert<QColor_to_Color_converter, Color>(QImage(Data_config::get_instance()->get_absolute_qfilename("textures/ice_texture.png")));
@@ -772,7 +779,7 @@ void Shader_renderer::init(const QGLContext *context, const QSize &size)
     resize(size);
 
     _level_element_draw_visitor.init(context, size);
-    _level_element_ui_draw_visitor.init(context);
+    _level_element_ui_draw_visitor.init();
 }
 
 void Shader_renderer::resize(const QSize &size)
@@ -838,7 +845,8 @@ void Shader_renderer::draw_atom(const Atom &atom, const float scale, const float
 
     glUniform4fv(_molecule_program->uniformLocation("color"), 1, color.data());
 
-    draw_mesh(_sphere_mesh);
+//    draw_mesh(_sphere_mesh);
+    _sphere_mesh.draw();
 }
 
 void Shader_renderer::draw_molecule(const Molecule &molecule, const float scale, const float alpha)
@@ -907,26 +915,26 @@ void Shader_renderer::draw_temperature_mesh(const MyMesh &mesh, const Level_data
     glBegin(GL_TRIANGLES);
     for (; fIt!=fEnd; ++fIt)
     {
-        MyMesh::ConstFaceVertexIter fvIt = mesh.cfv_iter(fIt.handle());
+        MyMesh::ConstFaceVertexIter fvIt = mesh.cfv_iter(*fIt);
 
-        Eigen::Vector3f p = OM2Eigen(mesh.point(fvIt.handle()));
+        Eigen::Vector3f p = OM2Eigen(mesh.point(*fvIt));
         p = p.cwiseProduct(extent) + front_face->get_position();
         //            glColor4f(1.0f, 0.0f, 0.0f, 1.0f);
-        glTexCoord2fv(mesh.texcoord2D(fvIt.handle()).data());
+        glTexCoord2fv(mesh.texcoord2D(*fvIt).data());
         glColor3fv(Color(get_brownian_strength(p, elements, general_temperature)).data());
         glVertex3fv(p.data());
         ++fvIt;
-        p = OM2Eigen(mesh.point(fvIt.handle()));
+        p = OM2Eigen(mesh.point(*fvIt));
         p = p.cwiseProduct(extent) + front_face->get_position();
         //            glColor4f(1.0f, 0.0f, 0.0f, 1.0f);
-        glTexCoord2fv(mesh.texcoord2D(fvIt.handle()).data());
+        glTexCoord2fv(mesh.texcoord2D(*fvIt).data());
         glColor3fv(Color(get_brownian_strength(p, elements, general_temperature)).data());
         glVertex3fv(p.data());
         ++fvIt;
-        p = OM2Eigen(mesh.point(fvIt.handle()));
+        p = OM2Eigen(mesh.point(*fvIt));
         p = p.cwiseProduct(extent) + front_face->get_position();
         //            glColor4f(1.0f, 0.0f, 0.0f, 1.0f);
-        glTexCoord2fv(mesh.texcoord2D(fvIt.handle()).data());
+        glTexCoord2fv(mesh.texcoord2D(*fvIt).data());
         glColor3fv(Color(get_brownian_strength(p, elements, general_temperature)).data());
         glVertex3fv(p.data());
     }
@@ -990,11 +998,11 @@ void Shader_renderer::draw_temperature_cube(MyMesh const& mesh, Level_data const
     glBegin(GL_TRIANGLES);
     for (; fIt!=fEnd; ++fIt)
     {
-        MyMesh::ConstFaceVertexIter fvIt = mesh.cfv_iter(fIt.handle());
+        MyMesh::ConstFaceVertexIter fvIt = mesh.cfv_iter(*fIt);
 
-        Eigen::Vector3f p = cube_system * OM2Eigen(mesh.point(fvIt.handle()));
+        Eigen::Vector3f p = cube_system * OM2Eigen(mesh.point(*fvIt));
         //            glColor4f(1.0f, 0.0f, 0.0f, 1.0f);
-        glTexCoord2fv(mesh.texcoord2D(fvIt.handle()).data());
+        glTexCoord2fv(mesh.texcoord2D(*fvIt).data());
 //        glColor3fv(Color(get_brownian_strength(p, elements, general_temperature)).data());
 
         float strength = level_data.get_temperature(p);
@@ -1005,9 +1013,9 @@ void Shader_renderer::draw_temperature_cube(MyMesh const& mesh, Level_data const
         glVertex3fv(p.data());
 
         ++fvIt;
-        p = cube_system * OM2Eigen(mesh.point(fvIt.handle()));
+        p = cube_system * OM2Eigen(mesh.point(*fvIt));
         //            glColor4f(1.0f, 0.0f, 0.0f, 1.0f);
-        glTexCoord2fv(mesh.texcoord2D(fvIt.handle()).data());
+        glTexCoord2fv(mesh.texcoord2D(*fvIt).data());
 //        glColor3fv(Color(get_brownian_strength(p, elements, general_temperature)).data());
 
         strength = level_data.get_temperature(p);
@@ -1018,9 +1026,9 @@ void Shader_renderer::draw_temperature_cube(MyMesh const& mesh, Level_data const
         glVertex3fv(p.data());
 
         ++fvIt;
-        p = cube_system * OM2Eigen(mesh.point(fvIt.handle()));
+        p = cube_system * OM2Eigen(mesh.point(*fvIt));
         //            glColor4f(1.0f, 0.0f, 0.0f, 1.0f);
-        glTexCoord2fv(mesh.texcoord2D(fvIt.handle()).data());
+        glTexCoord2fv(mesh.texcoord2D(*fvIt).data());
 //        glColor3fv(Color(get_brownian_strength(p, elements, general_temperature)).data());
 
         strength = level_data.get_temperature(p);
@@ -1338,7 +1346,7 @@ void Editor_renderer::init(const QGLContext *context, const QSize &size)
     World_renderer::init(context, size);
 
     GL_functions f;
-    f.init(_context);
+    f.init();
 
     _molecule_program = std::unique_ptr<QGLShaderProgram>(init_program(context,
                                                                        Data_config::get_instance()->get_absolute_qfilename("shaders/simple.vert"),
@@ -1363,10 +1371,10 @@ void Editor_renderer::init(const QGLContext *context, const QSize &size)
 
     for (; vIt!=vEnd; ++vIt)
     {
-        MyMesh::Point const& v = _grid_mesh.point(vIt.handle());
+        MyMesh::Point const& v = _grid_mesh.point(*vIt);
 
         MyMesh::TexCoord2D t(v[0] * 0.5f + 0.5f, v[2] * 0.5f + 0.5f);
-        _grid_mesh.set_texcoord2D(vIt.handle(), t);
+        _grid_mesh.set_texcoord2D(*vIt, t);
     }
 
     Frame_buffer<Color> ice_tex_fb = convert<QColor_to_Color_converter, Color>(QImage(Data_config::get_instance()->get_absolute_qfilename("textures/ice_texture.png")));
@@ -1378,13 +1386,13 @@ void Editor_renderer::init(const QGLContext *context, const QSize &size)
     resize(size);
 
     _level_element_draw_visitor.init(context, size);
-    _level_element_ui_draw_visitor.init(context);
+    _level_element_ui_draw_visitor.init();
 }
 
 void Editor_renderer::resize(const QSize &size)
 {
     GL_functions f;
-    f.init(_context);
+    f.init();
 
     //        _scene_fbo = std::unique_ptr<QGLFramebufferObject>(new QGLFramebufferObject(size, QGLFramebufferObject::Depth));
     _scene_fbo = std::unique_ptr<QGLFramebufferObject>(new QGLFramebufferObject(size));
@@ -1499,26 +1507,26 @@ void Editor_renderer::draw_temperature_mesh(const MyMesh &mesh, const Level_data
     glBegin(GL_TRIANGLES);
     for (; fIt!=fEnd; ++fIt)
     {
-        MyMesh::ConstFaceVertexIter fvIt = mesh.cfv_iter(fIt.handle());
+        MyMesh::ConstFaceVertexIter fvIt = mesh.cfv_iter(*fIt);
 
-        Eigen::Vector3f p = OM2Eigen(mesh.point(fvIt.handle()));
+        Eigen::Vector3f p = OM2Eigen(mesh.point(*fvIt));
         p = p.cwiseProduct(extent) + front_face->get_position();
         //            glColor4f(1.0f, 0.0f, 0.0f, 1.0f);
-        glTexCoord2fv(mesh.texcoord2D(fvIt.handle()).data());
+        glTexCoord2fv(mesh.texcoord2D(*fvIt).data());
         glColor3fv(Color(get_brownian_strength(p, elements, general_temperature)).data());
         glVertex3fv(p.data());
         ++fvIt;
-        p = OM2Eigen(mesh.point(fvIt.handle()));
+        p = OM2Eigen(mesh.point(*fvIt));
         p = p.cwiseProduct(extent) + front_face->get_position();
         //            glColor4f(1.0f, 0.0f, 0.0f, 1.0f);
-        glTexCoord2fv(mesh.texcoord2D(fvIt.handle()).data());
+        glTexCoord2fv(mesh.texcoord2D(*fvIt).data());
         glColor3fv(Color(get_brownian_strength(p, elements, general_temperature)).data());
         glVertex3fv(p.data());
         ++fvIt;
-        p = OM2Eigen(mesh.point(fvIt.handle()));
+        p = OM2Eigen(mesh.point(*fvIt));
         p = p.cwiseProduct(extent) + front_face->get_position();
         //            glColor4f(1.0f, 0.0f, 0.0f, 1.0f);
-        glTexCoord2fv(mesh.texcoord2D(fvIt.handle()).data());
+        glTexCoord2fv(mesh.texcoord2D(*fvIt).data());
         glColor3fv(Color(get_brownian_strength(p, elements, general_temperature)).data());
         glVertex3fv(p.data());
     }

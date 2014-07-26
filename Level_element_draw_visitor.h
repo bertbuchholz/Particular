@@ -128,10 +128,10 @@ public:
         glPopMatrix();
     }
 
-    void init(QGLContext const* context)
+    void init()
     {
         GL_functions f;
-        f.init(context);
+        f.init();
 
         Frame_buffer<Color4> brownian_panel_tex_fb = convert<QRgb_to_Color4_converter, Color4>(QImage(Data_config::get_instance()->get_absolute_qfilename("textures/brownian_panel.png")));
         _brownian_panel_tex = f.create_texture(brownian_panel_tex_fb);

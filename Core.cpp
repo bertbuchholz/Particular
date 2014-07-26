@@ -556,7 +556,7 @@ void Core::update_physics_elements(const float time_step)
     bool const time_debug = true;
 
     int elapsed_milliseconds;
-    std::chrono::time_point<std::chrono::steady_clock> timer_start, timer_end;
+    std::chrono::steady_clock::time_point timer_start, timer_end;
 
     if (time_debug)
     {
@@ -1122,7 +1122,7 @@ const QStringList &Core::get_level_names() const
 
 void Core::update_physics()
 {
-    std::chrono::time_point<std::chrono::steady_clock> const timer_start = std::chrono::steady_clock::now();
+    std::chrono::steady_clock::time_point const timer_start = std::chrono::steady_clock::now();
 
     //        int const elapsed_milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>
     //                (std::chrono::steady_clock::now() - _physics_elapsed_time).count();
@@ -1134,7 +1134,7 @@ void Core::update_physics()
     update(_parameters["physics_timestep_ms"]->get_value<int>() / 1000.0f * _parameters["physics_speed"]->get_value<float>());
     //        _core.update(elapsed_milliseconds / 1000.0f * _parameters["physics_speed"]->get_value<float>());
 
-    std::chrono::time_point<std::chrono::steady_clock> const timer_end = std::chrono::steady_clock::now();
+    std::chrono::steady_clock::time_point const timer_end = std::chrono::steady_clock::now();
 
     int const elapsed_milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>
             (timer_end-timer_start).count();

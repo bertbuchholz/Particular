@@ -18,7 +18,7 @@ void Score::calculate_score(const float time_factor, const int num_molecules_to_
 
     num_molecules_to_capture = num_molecules_to_capture_;
 
-    int const points_per_molecule = 1e6 / num_molecules_to_capture;
+    int const points_per_molecule = int(1e6 / num_molecules_to_capture);
 
     int highest_num_captured = 0;
 
@@ -28,7 +28,7 @@ void Score::calculate_score(const float time_factor, const int num_molecules_to_
     {
         float const current_time = i * sensor_data.get_check_interval();
 
-        int const current_captured = collected_molecules[i];
+        int const current_captured = int(collected_molecules[i]);
 
         if (current_captured > highest_num_captured)
         {
@@ -73,7 +73,7 @@ void Score::calculate_score(const float time_factor, const int num_molecules_to_
 //        assert(std::abs(sum - avg_penalty * score) < avg_penalty * score * 0.01f);
 //    }
 
-    final_score = score;
+    final_score = int(score);
     _penalty = penalty_sum;
     _energy_bonus = sensor_data.get_energy_bonus().back();
 }

@@ -4,14 +4,14 @@
 int Polygonal_curve::add_vertex_at_back(const Polygonal_curve::Point &vertex)
 {
     _vertices.push_back(vertex);
-    return _vertices.size() - 1;
+    return int(_vertices.size()) - 1;
 }
 
 
 int Polygonal_curve::addVertexAtFront(const Polygonal_curve::Point &vertex)
 {
     _vertices.insert(_vertices.begin(), vertex);
-    return _vertices.size() - 1;
+    return int(_vertices.size()) - 1;
 }
 
 
@@ -28,7 +28,7 @@ Polygonal_curve::Point Polygonal_curve::get_pos_on_curve(const float s) const
 
     if (s < 0.0001f) return _vertices.front();
 
-    int i = std::lower_bound(_lengths_at_points.begin(), _lengths_at_points.end(), _length * s) - _lengths_at_points.begin();
+    int i = int(std::lower_bound(_lengths_at_points.begin(), _lengths_at_points.end(), _length * s) - _lengths_at_points.begin());
 
     if (i > int(_vertices.size()) - 1) return _vertices.back();
 
@@ -52,7 +52,7 @@ Polygonal_curve::Point Polygonal_curve::get_pos_on_curve_y_over_x(const float s)
 
     if (s < 0.0001f) return _vertices.front();
 
-    int i = std::lower_bound(_lengths_at_points_y_over_x.begin(), _lengths_at_points_y_over_x.end(), _length_y_over_x * s) - _lengths_at_points_y_over_x.begin();
+    int i = int(std::lower_bound(_lengths_at_points_y_over_x.begin(), _lengths_at_points_y_over_x.end(), _length_y_over_x * s) - _lengths_at_points_y_over_x.begin());
 
     if (i > int(_vertices.size()) - 1) return _vertices.back();
 
@@ -86,7 +86,7 @@ void Polygonal_curve::get_vertex_and_offset_at_length(float s, int &vertexIndex,
 
     if (vertexIndex >= int(_vertices.size()) - 1)
     {
-        vertexIndex = _vertices.size() - 1;
+        vertexIndex = int(_vertices.size()) - 1;
         return;
     }
 
@@ -119,7 +119,7 @@ void Polygonal_curve::get_vertex_and_offset_at_length_y_over_x(float s, int & ve
 
     if (vertexIndex >= int(_vertices.size()) - 1)
     {
-        vertexIndex = _vertices.size() - 1;
+        vertexIndex = int(_vertices.size()) - 1;
         return;
     }
 
@@ -148,7 +148,10 @@ int Polygonal_curve::getClosestVertexIndexOnCurve(float s) const
         ++i;
     }
 
-    if (i >= _vertices.size() - 1) return _vertices.size() - 1;
+    if (i >= _vertices.size() - 1)
+    {
+        return int(_vertices.size()) - 1;
+    }
 
     assert(i < _vertices.size());
 

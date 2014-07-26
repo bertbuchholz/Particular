@@ -274,7 +274,7 @@ private:
     Progress _progress;
 
     QTimer _physics_timer;
-    std::chrono::time_point<std::chrono::steady_clock> _physics_elapsed_time;
+    std::chrono::steady_clock::time_point _physics_elapsed_time;
 
     float _animation_interval;
     float _last_animation_time;

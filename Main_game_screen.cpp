@@ -40,7 +40,7 @@ Main_game_screen::Main_game_screen(My_viewer &viewer, Core &core, Ui_state ui_st
     std::cout << __FUNCTION__ << std::endl;
 
     GL_functions f;
-    f.init(_viewer.context());
+    f.init();
 
     _type = Screen::Type::Fullscreen;
 //    _state = State::Running;
@@ -1473,7 +1473,8 @@ void Main_game_screen::resize(QSize const& size)
 
     _main_fbo = std::unique_ptr<QGLFramebufferObject>(new QGLFramebufferObject(size, QGLFramebufferObject::Depth));
 
-    GL_functions f(_viewer.context());
+    GL_functions f;
+    f.init();
 
     _tmp_screen_texture[0].reset(f.create_texture(size.width(), size.height()));
     _tmp_screen_texture[1].reset(f.create_texture(size.width(), size.height()));

@@ -191,7 +191,7 @@ void Level_element_draw_visitor::visit(Molecule_releaser *b) const
 
         glVertexPointer(3, GL_FLOAT, offset, &p_system.get_particles()[0].position);
         glColorPointer(4, GL_FLOAT, offset, &p_system.get_particles()[0].color);
-        glDrawArrays(GL_POINTS, 0, p_system.get_particles().size());
+        glDrawArrays(GL_POINTS, 0, int(p_system.get_particles().size()));
     }
 
     glDisableClientState(GL_VERTEX_ARRAY);
@@ -296,7 +296,7 @@ void Level_element_draw_visitor::visit(Brownian_box *b) const
 
     glVertexPointer(3, GL_FLOAT, offset, &b->get_particles()[0].position);
 //    glColorPointer(4, GL_FLOAT, offset, &b->get_particles()[0].color);
-    glDrawArrays(GL_POINTS, 0, b->get_particles().size());
+    glDrawArrays(GL_POINTS, 0, int(b->get_particles().size()));
 
     glDisableClientState(GL_VERTEX_ARRAY);
 //    glDisableClientState(GL_COLOR_ARRAY);
@@ -458,7 +458,7 @@ void Level_element_draw_visitor::visit(Box_portal *b) const
 
     glVertexPointer(3, GL_FLOAT, offset, &b->get_particles()[0].position);
     glColorPointer(4, GL_FLOAT, offset, &b->get_particles()[0].color);
-    glDrawArrays(GL_POINTS, 0, b->get_particles().size());
+    glDrawArrays(GL_POINTS, 0, int(b->get_particles().size()));
 
     glDisableClientState(GL_VERTEX_ARRAY);
     glDisableClientState(GL_COLOR_ARRAY);
@@ -551,7 +551,7 @@ void Level_element_draw_visitor::visit(Sphere_portal *b) const
 
     glVertexPointer(3, GL_FLOAT, offset, &b->get_particles()[0].position);
     glColorPointer(4, GL_FLOAT, offset, &b->get_particles()[0].color);
-    glDrawArrays(GL_POINTS, 0, b->get_particles().size());
+    glDrawArrays(GL_POINTS, 0, int(b->get_particles().size()));
 
     glDisableClientState(GL_VERTEX_ARRAY);
     glDisableClientState(GL_COLOR_ARRAY);
@@ -613,7 +613,7 @@ void Level_element_draw_visitor::visit(Particle_system_element *system) const
 
     glVertexPointer(3, GL_FLOAT, offset, &system->get_particles()[0].position);
     glColorPointer(4, GL_FLOAT, offset, &system->get_particles()[0].color);
-    glDrawArrays(GL_POINTS, 0, system->get_particles().size());
+    glDrawArrays(GL_POINTS, 0, int(system->get_particles().size()));
 
     glDisableClientState(GL_VERTEX_ARRAY);
     glDisableClientState(GL_COLOR_ARRAY);
@@ -641,7 +641,7 @@ void Level_element_draw_visitor::visit(Particle_system_element *system) const
 void Level_element_draw_visitor::init(const QGLContext *context, const QSize &size)
 {
     GL_functions f;
-    f.init(context);
+    f.init();
 
     Frame_buffer<Color> molecule_releaser_tex_fb = convert<QColor_to_Color_converter, Color>(QImage(Data_config::get_instance()->get_absolute_qfilename("textures/molecule_releaser.png")));
     _molecule_releaser_tex = f.create_texture(molecule_releaser_tex_fb);

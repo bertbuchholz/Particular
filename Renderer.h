@@ -172,11 +172,6 @@ REGISTER_CLASS_WITH_PARAMETERS(World_renderer, Editor_renderer);
 class Shader_renderer : public World_renderer
 {
 public:
-    Shader_renderer()
-    {
-        _icosphere = IcoSphere<OpenMesh::Vec3f, Color>(2);
-    }
-
     ~Shader_renderer();
 
     void init(QGLContext const* context, QSize const& size) override;
@@ -223,8 +218,8 @@ public:
 private:
     float _scale;
 
-    IcoSphere<OpenMesh::Vec3f, Color> _icosphere;
-    MyMesh _sphere_mesh;
+//    MyMesh _sphere_mesh;
+    GL_mesh2 _sphere_mesh;
     MyMesh _grid_mesh;
     MyMesh _cube_grid_mesh;
     MyMesh _bg_hemisphere_mesh;

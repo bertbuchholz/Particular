@@ -97,8 +97,8 @@ GPU_force::GPU_force(QGLContext * context)
 {
     initializeOpenGLFunctions();
 
-    _max_num_atoms = 100 * 100;
-    _size = std::sqrt(_max_num_atoms);
+    _size = 40;
+    _max_num_atoms = _size * _size;
 
     _fbo = std::unique_ptr<QGLFramebufferObject>(new QGLFramebufferObject(_size, _size, QGLFramebufferObject::NoAttachment, GL_TEXTURE_2D, GL_RGBA));
     glBindTexture(GL_TEXTURE_2D, _fbo->texture());
@@ -176,17 +176,20 @@ std::vector<Eigen::Vector3f> const& GPU_force::calc_forces(std::list<Molecule> c
 
     assert(num_atoms < _max_num_atoms);
 
+
+    int needed_height = (num_atoms / _size) + 1;
+
     glBindTexture(GL_TEXTURE_2D, _position_tex);
-    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, _size, _size, GL_RGB, GL_FLOAT, _position_frame.get_raw_data());
+    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, _size, needed_height, GL_RGB, GL_FLOAT, _position_frame.get_raw_data());
 
     glBindTexture(GL_TEXTURE_2D, _charge_tex);
-    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, _size, _size, GL_RED, GL_FLOAT, _charge_frame.get_raw_data());
+    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, _size, needed_height, GL_RED, GL_FLOAT, _charge_frame.get_raw_data());
 
     glBindTexture(GL_TEXTURE_2D, _radius_tex);
-    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, _size, _size, GL_RED, GL_FLOAT, _radius_frame.get_raw_data());
+    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, _size, needed_height, GL_RED, GL_FLOAT, _radius_frame.get_raw_data());
 
     glBindTexture(GL_TEXTURE_2D, _parent_id_tex);
-    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, _size, _size, GL_RED, GL_FLOAT, _parent_id_frame.get_raw_data());
+    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, _size, needed_height, GL_RED, GL_FLOAT, _parent_id_frame.get_raw_data());
 
     glBindTexture(GL_TEXTURE_2D, 0);
 

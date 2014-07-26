@@ -339,7 +339,7 @@ void Editor_screen::init_controls()
     int i = 0;
 
     GL_functions f;
-    f.init(_viewer.context());
+    f.init();
 
     for (auto const& iter : _core.get_level_data()._available_elements)
     {

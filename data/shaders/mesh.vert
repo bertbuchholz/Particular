@@ -11,11 +11,16 @@ layout(location = 3) in vec3 in_color;
 
 out vec3 world_pos;
 out vec3 world_normal;
+out vec2 uv;
+out vec3 color;
 
 void main(void)
 {
     world_pos = vec4(m_model * vec4(in_pos, 1.0)).xyz;
     world_normal = normalize(vec4(m_model * vec4(in_normal, 0.0)).xyz);
+
+    uv = in_uv;
+    color = in_color;
 
     gl_Position = m_projection * m_view * m_model * vec4(in_pos, 1.0);
 }

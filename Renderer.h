@@ -182,8 +182,7 @@ public:
 
     void draw_atom(Atom const& atom, float const scale, float const alpha = 1.0f);
     void draw_molecule(Molecule const& molecule, float const scale, float const alpha = 1.0f);
-    void draw_temperature_mesh(MyMesh const& mesh, Level_data const& level_data, GLuint const bg_texture, QSize const& screen_size, const float time);
-    void draw_temperature_cube(const MyMesh &mesh, const Level_data &level_data, const GLuint bg_texture, const QSize &screen_size, const float time);
+    void draw_temperature_cube(GL_mesh2 & mesh, const Level_data &level_data, const GLuint bg_texture, const QSize &screen_size, const float time);
     void draw_temperature(Level_data const& level_data) const;
     void draw_level_elements(Level_data const& level_data) const;
     void draw_particle_systems(Level_data const& level_data) const;
@@ -221,7 +220,7 @@ private:
 //    MyMesh _sphere_mesh;
     GL_mesh2 _sphere_mesh;
     MyMesh _grid_mesh;
-    MyMesh _cube_grid_mesh;
+    GL_mesh2 _cube_grid_mesh;
     MyMesh _bg_hemisphere_mesh;
 
     GLuint _ice_texture;

@@ -494,7 +494,7 @@ void Core::update(const float time_step)
 
     if (time_since_animation_update > _animation_interval)
     {
-        std::cout << __FUNCTION__ << " " << time_since_animation_update << std::endl;
+//        std::cout << __FUNCTION__ << " " << time_since_animation_update << std::endl;
 
         _last_animation_time = _current_time;
 

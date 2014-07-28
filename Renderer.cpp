@@ -734,10 +734,8 @@ void Shader_renderer::init(const QGLContext *context, const QSize &size)
     _molecule_program = std::unique_ptr<QGLShaderProgram>(init_program(context,
                                                                        Data_config::get_instance()->get_absolute_qfilename("shaders/mesh.vert"),
                                                                        Data_config::get_instance()->get_absolute_qfilename("shaders/molecule_new.frag")));
-//                                                                       Data_config::get_instance()->get_absolute_qfilename("shaders/simple.vert"),
-//                                                                       Data_config::get_instance()->get_absolute_qfilename("shaders/molecule.frag")));
     _temperature_program = std::unique_ptr<QGLShaderProgram>(init_program(context,
-                                                                          Data_config::get_instance()->get_absolute_qfilename("shaders/temperature.vert"),
+                                                                          Data_config::get_instance()->get_absolute_qfilename("shaders/mesh.vert"),
                                                                           Data_config::get_instance()->get_absolute_qfilename("shaders/temperature.frag")));
     _screen_quad_program = std::unique_ptr<QGLShaderProgram>(init_program(context,
                                                                           Data_config::get_instance()->get_absolute_qfilename("shaders/fullscreen_square.vert"),
@@ -751,7 +749,7 @@ void Shader_renderer::init(const QGLContext *context, const QSize &size)
 
     _sphere_mesh.init(load_mesh<MyMesh>(Data_config::get_instance()->get_absolute_filename("meshes/icosphere_3.obj")));
     _grid_mesh = load_mesh<MyMesh>(Data_config::get_instance()->get_absolute_filename("meshes/grid_10x10.obj"));
-    _cube_grid_mesh = load_mesh<MyMesh>(Data_config::get_instance()->get_absolute_filename("meshes/grid_cube.obj"));
+    _cube_grid_mesh.init(load_mesh<MyMesh>(Data_config::get_instance()->get_absolute_filename("meshes/grid_cube.obj")), true);
     _bg_hemisphere_mesh = load_mesh<MyMesh>(Data_config::get_instance()->get_absolute_filename("meshes/bg_hemisphere.obj"));
 
     MyMesh::ConstVertexIter vIt(_grid_mesh.vertices_begin()), vEnd(_grid_mesh.vertices_end());
@@ -876,17 +874,14 @@ float Shader_renderer::get_brownian_strength(const Eigen::Vector3f &pos, const s
     return strength;
 }
 
-void Shader_renderer::draw_temperature_mesh(const MyMesh &mesh, const Level_data &level_data, const GLuint bg_texture, const QSize &screen_size, const float time)
+
+void Shader_renderer::draw_temperature_cube(GL_mesh2 & gl_mesh, Level_data const& level_data, GLuint const bg_texture, QSize const& screen_size, float const time)
 {
     if (level_data._game_field_borders.size() != 6)
     {
         std::cout << __FUNCTION__ << " no game field borders or too many/few, not drawing temperature mesh" << std::endl;
         return;
     }
-
-    float const general_temperature = 0.5f * (level_data._translation_fluctuation + level_data._rotation_fluctuation);
-
-    glDisable(GL_DEPTH_TEST);
 
     _temperature_program->bind();
 
@@ -900,148 +895,49 @@ void Shader_renderer::draw_temperature_mesh(const MyMesh &mesh, const Level_data
 
     _temperature_program->setUniformValue("screen_size", screen_size);
     _temperature_program->setUniformValue("time", time);
-
-    //        glColor3f(0.5f, 0.5f, 0.5f);
-    //        draw_backdrop_quad();
-
-    std::vector<Brownian_element*> const& elements = level_data._brownian_elements;
-
-    auto front_face_iter = level_data._game_field_borders.find(Level_data::Plane::Neg_Y);
-
-    assert(front_face_iter != level_data._game_field_borders.end());
-
-    Plane_barrier const* front_face = front_face_iter->second;
-    Eigen::Vector3f extent(front_face->get_extent().get()[0] * 0.5f, 0.0f, front_face->get_extent().get()[1] * 0.5f);
-
-    MyMesh::ConstFaceIter fIt(mesh.faces_begin()), fEnd(mesh.faces_end());
-
-    glBegin(GL_TRIANGLES);
-    for (; fIt!=fEnd; ++fIt)
-    {
-        MyMesh::ConstFaceVertexIter fvIt = mesh.cfv_iter(*fIt);
-
-        Eigen::Vector3f p = OM2Eigen(mesh.point(*fvIt));
-        p = p.cwiseProduct(extent) + front_face->get_position();
-        //            glColor4f(1.0f, 0.0f, 0.0f, 1.0f);
-        glTexCoord2fv(mesh.texcoord2D(*fvIt).data());
-        glColor3fv(Color(get_brownian_strength(p, elements, general_temperature)).data());
-        glVertex3fv(p.data());
-        ++fvIt;
-        p = OM2Eigen(mesh.point(*fvIt));
-        p = p.cwiseProduct(extent) + front_face->get_position();
-        //            glColor4f(1.0f, 0.0f, 0.0f, 1.0f);
-        glTexCoord2fv(mesh.texcoord2D(*fvIt).data());
-        glColor3fv(Color(get_brownian_strength(p, elements, general_temperature)).data());
-        glVertex3fv(p.data());
-        ++fvIt;
-        p = OM2Eigen(mesh.point(*fvIt));
-        p = p.cwiseProduct(extent) + front_face->get_position();
-        //            glColor4f(1.0f, 0.0f, 0.0f, 1.0f);
-        glTexCoord2fv(mesh.texcoord2D(*fvIt).data());
-        glColor3fv(Color(get_brownian_strength(p, elements, general_temperature)).data());
-        glVertex3fv(p.data());
-    }
-    glEnd();
-
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, 0);
-    glActiveTexture(GL_TEXTURE1);
-    glBindTexture(GL_TEXTURE_2D, 0);
-
-    _temperature_program->release();
-}
-
-
-void Shader_renderer::draw_temperature_cube(MyMesh const& mesh, Level_data const& level_data, GLuint const bg_texture, QSize const& screen_size, float const time)
-{
-    if (level_data._game_field_borders.size() != 6)
-    {
-        std::cout << __FUNCTION__ << " no game field borders or too many/few, not drawing temperature mesh" << std::endl;
-        return;
-    }
-
-//    glDisable(GL_DEPTH_TEST);
-
-    _temperature_program->bind();
-
-    _temperature_program->setUniformValue("ice_texture", 0);
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, _ice_texture);
-
-    _temperature_program->setUniformValue("scene_texture", 1);
-    glActiveTexture(GL_TEXTURE1);
-    glBindTexture(GL_TEXTURE_2D, bg_texture);
-
-    _temperature_program->setUniformValue("screen_size", screen_size);
-    _temperature_program->setUniformValue("time", time);
-
-    //        glColor3f(0.5f, 0.5f, 0.5f);
-    //        draw_backdrop_quad();
-
-//    auto front_face_iter = level_data._game_field_borders.find(Level_data::Plane::Neg_Y);
-
-//    assert(front_face_iter != level_data._game_field_borders.end());
-
-//    Plane_barrier const* front_face = front_face_iter->second;
-//    Eigen::Vector3f extent(front_face->get_extent().get()[0] * 0.5f, 0.0f, front_face->get_extent().get()[1] * 0.5f);
 
     Eigen::Vector3f game_field_size(
                 level_data._parameters["Game Field Width"]->get_value<float>(),
             level_data._parameters["Game Field Depth"]->get_value<float>(),
             level_data._parameters["Game Field Height"]->get_value<float>());
 
+    GLfloat m_projection[16];
+    glGetFloatv(GL_PROJECTION_MATRIX, m_projection);
+
+    GLfloat m_view[16];
+    glGetFloatv(GL_MODELVIEW_MATRIX, m_view);
+
+    _temperature_program->setUniformValue("m_projection", QMatrix4x4(m_projection).transposed());
+    _temperature_program->setUniformValue("m_view", QMatrix4x4(m_view).transposed());
+
     Eigen::Transform<float, 3, Eigen::Affine> cube_system = Eigen::Transform<float, 3, Eigen::Affine>::Identity();
     cube_system.scale(game_field_size * 0.5f);
-//            Eigen::Scaling(game_field_size * 0.5f);
+
+    glUniformMatrix4fv(_temperature_program->uniformLocation("m_model"), 1, GL_FALSE, cube_system.data());
 
     float const max_strength = 50.0f;
 
-    MyMesh::ConstFaceIter fIt(mesh.faces_begin()), fEnd(mesh.faces_end());
+    MyMesh const& mesh = gl_mesh.get_mesh();
 
-    glBegin(GL_TRIANGLES);
-    for (; fIt!=fEnd; ++fIt)
+    MyMesh::ConstVertexIter vIt(mesh.vertices_begin()), vEnd(mesh.vertices_end());
+
+    std::vector<Eigen::Vector3f> vertex_colors(mesh.n_vertices(), { 0.0f, 0.0f, 0.0f });
+
+    int i = 0;
+
+    for (; vIt != vEnd; ++vIt)
     {
-        MyMesh::ConstFaceVertexIter fvIt = mesh.cfv_iter(*fIt);
+        Eigen::Vector3f p = cube_system * OM2Eigen(mesh.point(*vIt));
+        float const strength = into_range(level_data.get_temperature(p) / max_strength, -1.0f, 1.0f) * 0.5f + 0.5f;
 
-        Eigen::Vector3f p = cube_system * OM2Eigen(mesh.point(*fvIt));
-        //            glColor4f(1.0f, 0.0f, 0.0f, 1.0f);
-        glTexCoord2fv(mesh.texcoord2D(*fvIt).data());
-//        glColor3fv(Color(get_brownian_strength(p, elements, general_temperature)).data());
+        vertex_colors[i].x() = strength;
 
-        float strength = level_data.get_temperature(p);
-        strength = into_range(strength / max_strength, -1.0f, 1.0f) * 0.5f + 0.5f;
-
-        glColor3fv(Color(strength).data());
-
-        glVertex3fv(p.data());
-
-        ++fvIt;
-        p = cube_system * OM2Eigen(mesh.point(*fvIt));
-        //            glColor4f(1.0f, 0.0f, 0.0f, 1.0f);
-        glTexCoord2fv(mesh.texcoord2D(*fvIt).data());
-//        glColor3fv(Color(get_brownian_strength(p, elements, general_temperature)).data());
-
-        strength = level_data.get_temperature(p);
-        strength = into_range(strength / max_strength, -1.0f, 1.0f) * 0.5f + 0.5f;
-
-        glColor3fv(Color(strength).data());
-
-        glVertex3fv(p.data());
-
-        ++fvIt;
-        p = cube_system * OM2Eigen(mesh.point(*fvIt));
-        //            glColor4f(1.0f, 0.0f, 0.0f, 1.0f);
-        glTexCoord2fv(mesh.texcoord2D(*fvIt).data());
-//        glColor3fv(Color(get_brownian_strength(p, elements, general_temperature)).data());
-
-        strength = level_data.get_temperature(p);
-        strength = into_range(strength / max_strength, -1.0f, 1.0f) * 0.5f + 0.5f;
-
-        glColor3fv(Color(strength).data());
-
-        glVertex3fv(p.data());
+        ++i;
     }
-    glEnd();
+
+    gl_mesh.set_vertex_colors(vertex_colors.data()->data(), GL_FLOAT);
+
+    gl_mesh.draw();
 
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, 0);
@@ -1157,13 +1053,12 @@ void Shader_renderer::draw_gravity(Level_data const& l) const
 
 void Shader_renderer::render(QGLFramebufferObject *main_fbo, const Level_data &level_data, const float time, const qglviewer::Camera *camera)
 {
-//    glViewport(0.0f, 0.0f, camera->screenWidth(), camera->screenHeight());
-
     glEnable(GL_DEPTH_TEST);
 
-    glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
+//    glViewport(0.0f, 0.0f, camera->screenWidth(), camera->screenHeight());
 
-//    QSize _screen_size(camera->screenWidth(), camera->screenHeight());
+
+    glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
 
     _scene_fbo->bind();
 

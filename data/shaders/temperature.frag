@@ -1,8 +1,17 @@
+#version 330
+
 uniform sampler2D ice_texture;
 uniform sampler2D scene_texture;
 
 uniform float time;
 uniform vec2 screen_size;
+
+in vec3 world_pos;
+in vec3 world_normal;
+in vec2 uv;
+in vec3 color;
+
+out vec4 out_color;
 
 vec3 screen(vec3 base, vec3 blend)
 {
@@ -16,28 +25,16 @@ float sign(float x)
 
 void main(void)
 {
-    vec2 tex_coord = gl_TexCoord[0].st;
-
-    vec4 color;
-    color.a = 1.0;
-//    vec4 color = vec4(1.0, 0.0, 0.0, 1.0);
-
-//    color = vec4(gl_FragCoord.x / screen_size.x, gl_FragCoord.y / screen_size.y, 0.0, 1.0);
-//    gl_FragColor = color;
-//    return;
-//    vec4 color = vec4(tex_coord.s, tex_coord.t, 0.0, 1.0);
-    vec2 screen_coords = vec2(gl_FragCoord.x / screen_size.x, gl_FragCoord.y / screen_size.y);
-
-//    color = texture2D(scene_texture, screen_coords);
-//    color.a = 1.0;
-//    gl_FragColor = color;
+    out_color.a = 1.0;
+//    out_color = vec4(uv, 0.0, 1.0);
+//    out_color = vec4(1.0, 0.0, 0.0, 1.0);
 //    return;
 
-//    color = vec4(tex_coord.s, tex_coord.t, 0.0, 1.0);
-//    gl_FragColor = color;
-//    return;
+    vec2 tex_coord = uv;
 
-    float mix_factor = gl_Color.x;
+    vec2 screen_coords = gl_FragCoord.xy / screen_size;
+
+    float mix_factor = color.x;
 
     // if < 0.5 -> ice, > 0.5 -> heat
 
@@ -62,7 +59,7 @@ void main(void)
 
 
 //        color = ice_color * f + scene_color * (1.0 - f);
-        color.rgb = scene_color.rgb * tint.rgb; // * tex_value;
+        out_color.rgb = scene_color.rgb * tint.rgb; // * tex_value;
 //        color = scene_color * tex_value;
 
 //        color = vec4(tex_value, tex_value, tex_value, 1.0);
@@ -90,19 +87,17 @@ void main(void)
 
         vec2 refracted_coord = screen_coords + refraction; // vec2(screen_coords.x + refraction, screen_coords.y + refraction2);
 
-        color = texture2D(scene_texture, refracted_coord); // + color * (1.0 - f);
-        color.a = 1.0;
+        out_color = texture2D(scene_texture, refracted_coord); // + color * (1.0 - f);
+        out_color.a = 1.0;
 
         vec4 tint = vec4(1.0, 0.1, 0.1, f * 0.5) * (1.0 - f) + vec4(1.0, 0.7, 0.1, f * 0.5) * f;
 
-        color = vec4(color.rgb * (1.0 - tint.a) + tint.rgb * tint.a, 1.0);
+        out_color = vec4(out_color.rgb * (1.0 - tint.a) + tint.rgb * tint.a, 1.0);
 //        color = vec4(color.rgb * (1.0 - sqrt(tint.a)) + screen(color.rgb, tint.rgb) * sqrt(tint.a), 1.0);
     }
     else
     {
-        color = texture2D(scene_texture, screen_coords);
-        color.a = 1.0;
+        out_color = texture2D(scene_texture, screen_coords);
+        out_color.a = 1.0;
     }
-
-    gl_FragColor = color;
 }

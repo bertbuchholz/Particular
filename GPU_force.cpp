@@ -237,21 +237,16 @@ std::vector<Eigen::Vector3f> const& GPU_force::calc_forces(std::list<Molecule> c
     glDisableVertexAttribArray(0);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 
+    glReadPixels(0, 0, _size, needed_height, GL_RGBA, GL_FLOAT, _result_fb.get_raw_data());
+
     _fbo->release();
 
     glPopAttrib();
 
-//    std::cout << __func__ << " path: " << (QDir::tempPath() + "/" + QString("force_calc.png")).toStdString() << std::endl;
-//    _fbo->toImage().save(QDir::tempPath() + "/" + QString("force_calc.png"));
 
-//    std::vector<Eigen::Vector3f> resulting_forces;
-//    resulting_forces.reserve(num_atoms);
-//    resulting_forces.resize(num_atoms, Eigen::Vector3f::Zero());
-
-    glBindTexture(GL_TEXTURE_2D, _fbo_tex);
-//    glBindTexture(GL_TEXTURE_2D, _fbo->texture());
-    glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_FLOAT, _result_fb.get_raw_data());
-    glBindTexture(GL_TEXTURE_2D, 0);
+//    glBindTexture(GL_TEXTURE_2D, _fbo_tex);
+//    glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_FLOAT, _result_fb.get_raw_data());
+//    glBindTexture(GL_TEXTURE_2D, 0);
 
     for (int i = 0; i < num_atoms; ++i)
     {

@@ -86,7 +86,7 @@ protected:
     Parameter_list _parameters;
 
     std::unique_ptr<World_renderer> _renderer;
-    Ui_renderer const& _ui_renderer;
+    Ui_renderer & _ui_renderer;
 
     Picking _picking;
 

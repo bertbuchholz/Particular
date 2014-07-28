@@ -1,6 +1,6 @@
-#include <Renderer.h>
+#include "Renderer.h"
 
-#define GL_GLEXT_PROTOTYPES
+//#define GL_GLEXT_PROTOTYPES
 //#include <GL/glext.h>
 
 #include <glm/glm.hpp>
@@ -72,7 +72,7 @@ void World_renderer::init(QGLContext const* context, QSize const& size)
 {
     _context = context;
 
-    initializeGLFunctions(_context);
+    initializeOpenGLFunctions();
 
     _gl_functions.init();
 
@@ -90,15 +90,15 @@ void World_renderer::resize(QSize const& size)
     _screen_size = size;
 }
 
-void World_renderer::setup_gl_points(bool const distance_dependent) const
+void World_renderer::setup_gl_points(bool const distance_dependent)
 {
-#if defined WIN32 || defined __linux__
-    typedef void (*_glPointParameterfv) (GLenum pname, const GLfloat *params);
-    typedef void (*_glPointParameterf)  (GLenum pname, GLfloat param);
+//#if defined WIN32 || defined __linux__
+//    typedef void (*_glPointParameterfv) (GLenum pname, const GLfloat *params);
+//    typedef void (*_glPointParameterf)  (GLenum pname, GLfloat param);
 
-    _glPointParameterfv glPointParameterfv = (_glPointParameterfv) _context->getProcAddress("glPointParameterfv");
-    _glPointParameterf  glPointParameterf  = (_glPointParameterf)  _context->getProcAddress("glPointParameterf");
-#endif
+//    _glPointParameterfv glPointParameterfv = (_glPointParameterfv) _context->getProcAddress("glPointParameterfv");
+//    _glPointParameterf  glPointParameterf  = (_glPointParameterf)  _context->getProcAddress("glPointParameterf");
+//#endif
 
     if (distance_dependent)
     {
@@ -176,7 +176,7 @@ void World_renderer::draw_particle_system(Targeted_particle_system const& system
     glPopMatrix();
 }
 
-void World_renderer::draw_curved_particle_system(Curved_particle_system const& system, int const height) const
+void World_renderer::draw_curved_particle_system(Curved_particle_system const& system, int const height)
 {
     glDisable(GL_DEPTH_TEST);
     glDisable(GL_LIGHTING);
@@ -205,7 +205,7 @@ void World_renderer::draw_curved_particle_system(Curved_particle_system const& s
     glPopMatrix();
 }
 
-void World_renderer::draw_curved_particle_system_in_existing_coord_sys(const Curved_particle_system &system, const int height) const
+void World_renderer::draw_curved_particle_system_in_existing_coord_sys(const Curved_particle_system &system, const int height)
 {
     if (system.get_curve_particles().size() == 0) return;
 
@@ -238,7 +238,7 @@ void World_renderer::draw_curved_particle_system_in_existing_coord_sys(const Cur
     _particle_program->release();
 }
 
-void World_renderer::draw_textured_quad(const GLuint tex_id) const
+void World_renderer::draw_textured_quad(const GLuint tex_id)
 {
     glBindTexture(GL_TEXTURE_2D, tex_id);
 //    draw_quad_with_tex_coords();
@@ -317,7 +317,7 @@ void Ui_renderer::init(const QGLContext *context, const QSize &size)
     _spinbox_arrowdown_texture = _gl_functions.create_texture(Data_config::get_instance()->get_absolute_qfilename("textures/spinbox_arrowdown.png"));
 }
 
-void Ui_renderer::draw_spinbox(const Draggable_spinbox &s, const bool for_picking, const float alpha) const
+void Ui_renderer::draw_spinbox(const Draggable_spinbox &s, const bool for_picking, const float alpha)
 {
     glPushMatrix();
 
@@ -1160,7 +1160,7 @@ void Shader_renderer::render(QGLFramebufferObject *main_fbo, const Level_data &l
 
     glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
 
-    QSize screen_size(camera->screenWidth(), camera->screenHeight());
+//    QSize _screen_size(camera->screenWidth(), camera->screenHeight());
 
     _scene_fbo->bind();
 
@@ -1251,7 +1251,7 @@ void Shader_renderer::render(QGLFramebufferObject *main_fbo, const Level_data &l
     glActiveTexture(GL_TEXTURE1);
     glBindTexture(GL_TEXTURE_2D, _depth_texture);
     _blur_program->setUniformValue("clip_distances", QVector2D(camera->zNear(), camera->zFar()));
-    _blur_program->setUniformValue("tex_size", screen_size);
+    _blur_program->setUniformValue("tex_size", _screen_size);
 //    _blur_program->setUniformValue("focus_distance", float(camera->position()[1]));
     _blur_program->setUniformValue("focus_distance", float(camera->position().norm()));
     _blur_program->setUniformValue("direction", QVector2D(1.0, 0.0));
@@ -1286,8 +1286,8 @@ void Shader_renderer::render(QGLFramebufferObject *main_fbo, const Level_data &l
     _temperature_fbo->bind();
 
 
-    QGLFramebufferObject::blitFramebuffer(_temperature_fbo.get(), QRect(0, 0, screen_size.width(), screen_size.height()),
-                                          _post_fbo.get(), QRect(0, 0, screen_size.width(), screen_size.height()),
+    QGLFramebufferObject::blitFramebuffer(_temperature_fbo.get(), QRect(0, 0, _screen_size.width(), _screen_size.height()),
+                                          _post_fbo.get(), QRect(0, 0, _screen_size.width(), _screen_size.height()),
 //                                          GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
                                           GL_COLOR_BUFFER_BIT);
 
@@ -1296,7 +1296,7 @@ void Shader_renderer::render(QGLFramebufferObject *main_fbo, const Level_data &l
 
 //    draw_temperature_mesh(_grid_mesh, level_data, _tmp_screen_texture[1], screen_size, time);
 
-    draw_temperature_cube(_cube_grid_mesh, level_data, _tmp_screen_texture[1].get_id(), screen_size, time);
+    draw_temperature_cube(_cube_grid_mesh, level_data, _tmp_screen_texture[1].get_id(), _screen_size, time);
 
 
     _temperature_fbo->release();
@@ -1318,8 +1318,8 @@ void Shader_renderer::render(QGLFramebufferObject *main_fbo, const Level_data &l
     glPopAttrib();
 
     // put the depth buffer from the scene drawing into the returned buffer to draw the ui elements correctly
-    QGLFramebufferObject::blitFramebuffer(main_fbo, QRect(0, 0, screen_size.width(), screen_size.height()),
-                                          _scene_fbo.get(), QRect(0, 0, screen_size.width(), screen_size.height()),
+    QGLFramebufferObject::blitFramebuffer(main_fbo, QRect(0, 0, _screen_size.width(), _screen_size.height()),
+                                          _scene_fbo.get(), QRect(0, 0, _screen_size.width(), _screen_size.height()),
                                           GL_DEPTH_BUFFER_BIT);
 
     glEnable(GL_TEXTURE_2D);
@@ -1649,7 +1649,7 @@ void Editor_renderer::render(QGLFramebufferObject *main_fbo, const Level_data &l
 
     glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
 
-    QSize screen_size(camera->screenWidth(), camera->screenHeight());
+//    QSize _screen_size(camera->screenWidth(), camera->screenHeight());
 
     _scene_fbo->bind();
 
@@ -1704,11 +1704,11 @@ void Editor_renderer::render(QGLFramebufferObject *main_fbo, const Level_data &l
 
     _temperature_fbo->bind();
 
-    QGLFramebufferObject::blitFramebuffer(_temperature_fbo.get(), QRect(0, 0, screen_size.width(), screen_size.height()),
-                                          _scene_fbo.get(), QRect(0, 0, screen_size.width(), screen_size.height()),
+    QGLFramebufferObject::blitFramebuffer(_temperature_fbo.get(), QRect(0, 0, _screen_size.width(), _screen_size.height()),
+                                          _scene_fbo.get(), QRect(0, 0, _screen_size.width(), _screen_size.height()),
                                           GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    draw_temperature_mesh(_grid_mesh, level_data, _scene_fbo->texture(), screen_size, time);
+    draw_temperature_mesh(_grid_mesh, level_data, _scene_fbo->texture(), _screen_size, time);
 
     _temperature_fbo->release();
 
@@ -1729,8 +1729,8 @@ void Editor_renderer::render(QGLFramebufferObject *main_fbo, const Level_data &l
     glPopAttrib();
 
     // put the depth buffer from the scene drawing into the returned buffer to draw the ui elements correctly
-    QGLFramebufferObject::blitFramebuffer(main_fbo, QRect(0, 0, screen_size.width(), screen_size.height()),
-                                          _scene_fbo.get(), QRect(0, 0, screen_size.width(), screen_size.height()),
+    QGLFramebufferObject::blitFramebuffer(main_fbo, QRect(0, 0, _screen_size.width(), _screen_size.height()),
+                                          _scene_fbo.get(), QRect(0, 0, _screen_size.width(), _screen_size.height()),
                                           GL_DEPTH_BUFFER_BIT);
 
     glEnable(GL_TEXTURE_2D);

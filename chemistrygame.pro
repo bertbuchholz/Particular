@@ -5,10 +5,11 @@ TARGET = chemistrygame
 DEPENDPATH += .
 
 QT += opengl \
-    xml
+    xml \
+    widgets
 CONFIG += qt \
     warn_on \
-    thread \
+#    thread \
     QGLViewer \
     OpenMesh \
     eigen3 \

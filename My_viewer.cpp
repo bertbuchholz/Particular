@@ -297,11 +297,15 @@ void My_viewer::init()
 {
     std::cout << __FUNCTION__ << std::endl;
 
-    //        initializeGLFunctions();
+    initializeOpenGLFunctions();
 
     Base::init();
 
-    restoreStateFromFile();
+//    restoreStateFromFile();
+
+//    resize(1280, 720);
+//    adjustSize();
+    move(QApplication::desktop()->screen()->rect().center() - rect().center());
 
     qglviewer::ManipulatedCameraFrame * frame = camera()->frame();
     frame->setSpinningSensitivity(1000.0f);
@@ -320,9 +324,6 @@ void My_viewer::init()
 
     std::cout << __FUNCTION__ << " opengl version: " << opengl_version << std::endl;
     std::cout << __FUNCTION__ << " shader version: " << shader_version << std::endl;
-
-    //        GPU_force * gpu_force = new GPU_force(context());
-    //        gpu_force->calc_forces(_core.get_molecules());
 
     glEnable(GL_TEXTURE_2D);
 
@@ -851,6 +852,8 @@ void My_viewer::resizeEvent(QResizeEvent *ev)
 
     Base::resizeEvent(ev);
 
+    glViewport(0, 0, ev->size().width(), ev->size().height());
+
     _ui_renderer.resize(ev->size());
 
     for (std::unique_ptr<Screen> const& screen : _screen_stack)
@@ -860,8 +863,8 @@ void My_viewer::resizeEvent(QResizeEvent *ev)
 
     if (camera()->screenHeight() != ev->size().height())
     {
-        std::cout << __FUNCTION__ << " size mismatch: " << camera()->screenHeight() << " " << ev->size().height() << std::endl;
         std::cout << __FUNCTION__ << " size mismatch: " << camera()->screenWidth() << " " << ev->size().width() << std::endl;
+        std::cout << __FUNCTION__ << " size mismatch: " << camera()->screenHeight() << " " << ev->size().height() << std::endl;
 
 //        assert(false);
     }

@@ -4,7 +4,7 @@
 #include <QGLShaderProgram>
 #include <QGLFramebufferObject>
 
-#include <QGLFunctions>
+#include <QOpenGLFunctions_4_2_Core>
 
 #include <MyOpenMesh.h>
 #include <Icosphere.h>
@@ -16,7 +16,7 @@
 
 //void setup_gl_points(bool const distance_dependent);
 
-class World_renderer : public QGLFunctions
+class World_renderer : public QOpenGLFunctions_4_2_Core
 {
 public:
     virtual ~World_renderer() {}
@@ -31,14 +31,14 @@ public:
 
     virtual void update(Level_data const& /* level_data */) {}
 
-    void setup_gl_points(bool const distance_dependent) const;
+    void setup_gl_points(bool const distance_dependent);
 
     void draw_particle_system(Targeted_particle_system const& system, int const height);
-    void draw_curved_particle_system(Curved_particle_system const& system, int const height) const;
-    void draw_curved_particle_system_in_existing_coord_sys(Curved_particle_system const& system, int const height) const;
+    void draw_curved_particle_system(Curved_particle_system const& system, int const height);
+    void draw_curved_particle_system_in_existing_coord_sys(Curved_particle_system const& system, int const height);
 
 
-    void draw_textured_quad(const GLuint tex_id) const;
+    void draw_textured_quad(const GLuint tex_id);
 
     virtual void set_parameters(Parameter_list const& /* parameters */)
     { }
@@ -68,7 +68,7 @@ class Ui_renderer : public World_renderer
 public:
     virtual void init(QGLContext const* context, QSize const& size) override;
 
-    void draw_spinbox(Draggable_spinbox const& s, const bool for_picking, float const alpha = 1.0f) const;
+    void draw_spinbox(Draggable_spinbox const& s, const bool for_picking, float const alpha = 1.0f);
 
     void generate_button_texture(Draggable_button *b) const;
     void generate_label_texture(Draggable_label *b, const int text_alignment = Qt::AlignCenter) const;

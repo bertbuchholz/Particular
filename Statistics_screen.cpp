@@ -189,7 +189,7 @@ void Statistics_screen::setup_statistics(Sensor_data const& sensor_data, Score c
 //        float const stretched_curve_time = stat->get_particle_system().get_curve().get_absolute_length_at_uniform_length(normalized_time) /
 //                stat->get_particle_system().get_curve().get_absolute_length_at_uniform_length_y_over_x(normalized_time);
 
-        assert(stretched_curve_time >= 1.0f);
+//        assert(stretched_curve_time >= 1.0f);
 
         float const event_time = _stat_anim_duration * stat->get_particle_system().get_curve().get_absolute_length_at_uniform_length(normalized_time) / stat->get_particle_system().get_curve().get_length();
 

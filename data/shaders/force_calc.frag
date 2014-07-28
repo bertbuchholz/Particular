@@ -75,15 +75,15 @@ void main(void)
         float distance = length(direction);
         direction = normalize(direction);
 
-//        force += direction * calc_coulomb_force(distance, charge_sender, charge_receiver);
+        force += direction * calc_coulomb_force(distance, charge_sender, charge_receiver);
         force += direction * calc_van_der_waals_force(distance, radius_sender, radius_receiver);
     }
 
 //    out_force = vec4(gl_FragCoord.x, 0.0, 0.0, 1.0);
 //    out_force = vec4(20.0 * charge_receiver, 0.0, 0.0, 1.0);
 //    out_force = vec4(10.0, 0.0, 0.0, 1.0);
-//    out_force = vec4(1.0 * float(receiver_parent_id), 0.0, 0.0, 1.0);
+    out_force = vec4(1.0 * float(receiver_parent_id), 0.0, 0.0, 1.0);
 //    out_force = vec4(float(receiving_atom_index), 0.0, 0.0, 1.0);
 //    out_force = vec4(float(debug_num_encountered_atoms), 0.0, 0.0, 1.0);
-    out_force = vec4(force, 1.0);
+//    out_force = vec4(force, 1.0);
 }

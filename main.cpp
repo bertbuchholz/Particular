@@ -28,16 +28,15 @@ BOOST_CLASS_EXPORT_GUID(Molecule_capture_condition, "Molecule_capture_condition"
 int main(int argc, char** argv)
 {
     QApplication application(argc,argv);
-//    application.setDoubleClickInterval(0);
 
-    QGLFormat glFormat;
+//    QGLFormat glFormat;
 //    glFormat.setVersion(3, 2);
 //    glFormat.setProfile(QGLFormat::CompatibilityProfile); // Requires >=Qt-4.8.0
 //    glFormat.setSampleBuffers(true);
 
     Core core;
 
-    My_viewer * viewer = new My_viewer(core, glFormat);
+    My_viewer * viewer = new My_viewer(core);
     viewer->show();
 
 //    QDesktopWidget widget;

@@ -157,6 +157,8 @@ void GPU_force::init_vertex_data()
 
 std::vector<Eigen::Vector3f> const& GPU_force::calc_forces(std::list<Molecule> const& molecules)
 {
+    glDisable(GL_BLEND);
+
     // go over all atoms (inside the molecules) and store their data in textures
 
     int num_atoms = 0;
@@ -177,7 +179,8 @@ std::vector<Eigen::Vector3f> const& GPU_force::calc_forces(std::list<Molecule> c
     assert(num_atoms < _max_num_atoms);
 
 
-    int needed_height = (num_atoms / _size) + 1;
+//    int const needed_height = (num_atoms / _size) + 1;
+    int const needed_height = _size;
 
     glBindTexture(GL_TEXTURE_2D, _position_tex);
     glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, _size, needed_height, GL_RGB, GL_FLOAT, _position_frame.get_raw_data());

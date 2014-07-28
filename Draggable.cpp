@@ -63,6 +63,8 @@ const Draggable_screen_point &Draggable_slider::get_slider_marker() const
 
 void Draggable_slider::init()
 {
+//    std::cout << __func__ << " parameter: " << _parameter->get_name() << std::endl;
+
     //        int i = 0;
 
     //        for (auto const prop_iter : _properties)
@@ -77,7 +79,9 @@ void Draggable_slider::init()
         float const slider_range_3d = _slider_movement_range * 2.0f;
         float const normalized_current_value = (property->get_value<float>() - property->get_min<float>()) / (property->get_max<float>() - property->get_min<float>());
 
-        assert(normalized_current_value >= 0.0f && normalized_current_value <= 1.0f);
+//        std::cout << normalized_current_value << std::endl;
+
+        assert(normalized_current_value >= 0.0f && normalized_current_value <= 1.00001f);
 
         Eigen::Vector3f const center_position = Eigen::Vector3f::Zero();
 

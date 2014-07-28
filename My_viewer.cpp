@@ -301,10 +301,9 @@ void My_viewer::init()
 
     Base::init();
 
-//    restoreStateFromFile();
+    restoreStateFromFile();
 
-//    resize(1280, 720);
-//    adjustSize();
+    resize(1280, 720);
     move(QApplication::desktop()->screen()->rect().center() - rect().center());
 
     qglviewer::ManipulatedCameraFrame * frame = camera()->frame();

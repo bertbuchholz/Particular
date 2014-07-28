@@ -846,7 +846,10 @@ void Shader_renderer::draw_atom(const Atom &atom, const float scale, const float
     glUniform4fv(_molecule_program->uniformLocation("color"), 1, color.data());
 
 //    draw_mesh(_sphere_mesh);
-    _sphere_mesh.draw();
+//    _sphere_mesh.draw();
+//    _sphere_mesh.bind_vao();
+    _sphere_mesh.draw_without_binding();
+//    _sphere_mesh.release_vao();
 }
 
 void Shader_renderer::draw_molecule(const Molecule &molecule, const float scale, const float alpha)
@@ -1205,10 +1208,6 @@ void Shader_renderer::render(QGLFramebufferObject *main_fbo, const Level_data &l
         GLfloat m_view[16];
         glGetFloatv(GL_MODELVIEW_MATRIX, m_view);
 
-//        GLfloat v[16];
-//        glGetFloatv(GL_MODELVIEW_MATRIX, v);
-//        _molecule_program->setUniformValue("m_projection", QMatrix4x4(v));
-
         _molecule_program->setUniformValue("m_projection", QMatrix4x4(m_projection).transposed());
         _molecule_program->setUniformValue("m_view", QMatrix4x4(m_view).transposed());
         _molecule_program->setUniformValue("light_pos", QVector3D(-5.0f, 5.0f, 5.0f));
@@ -1217,10 +1216,12 @@ void Shader_renderer::render(QGLFramebufferObject *main_fbo, const Level_data &l
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, _blurred_backdrop_texture);
 
+        _sphere_mesh.bind_vao(); // bind and release here, to avoid unnecessary binds/unbinds
         for (Molecule const& molecule : molecules)
         {
             draw_molecule(molecule, _scale);
         }
+        _sphere_mesh.release_vao();
     }
     _molecule_program->release();
 

@@ -567,14 +567,16 @@ void Core::update_physics_elements(const float time_step)
 
 ////    _ann_wrapper = ANN_wrapper();
 //    _ann_wrapper.generate_tree_from_molecules(_level_data._molecules);
-        std::vector<Eigen::Vector3f> const& forces_on_atoms = _gpu_force->calc_forces(_level_data._molecules);
+    std::vector<Eigen::Vector3f> const& forces_on_atoms = _gpu_force->calc_forces(_level_data._molecules,
+            _parameters["Atomic Force Type/Coulomb Force/Strength"]->get_value<float>(),
+            _parameters["Atomic Force Type/Van der Waals Force/Strength"]->get_value<float>(),
+            _parameters["Atomic Force Type/Van der Waals Force/Radius Factor"]->get_value<float>());
 
     if (time_debug)
     {
         timer_end = std::chrono::steady_clock::now();
 
-        elapsed_milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>
-                (timer_end-timer_start).count();
+        elapsed_milliseconds = std::chrono::duration <double, std::milli>(timer_end - timer_start).count();
 
         if (elapsed_milliseconds > 1)
         {
@@ -601,9 +603,6 @@ void Core::update_physics_elements(const float time_step)
     if (time_debug)
     {
         timer_end = std::chrono::steady_clock::now();
-
-//        elapsed_milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>
-//                (timer_end-timer_start).count();
 
         elapsed_milliseconds = std::chrono::duration <double, std::milli>(timer_end - timer_start).count();
 

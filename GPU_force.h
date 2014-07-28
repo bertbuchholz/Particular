@@ -36,7 +36,7 @@ public:
 
     void init_vertex_data();
 
-    std::vector<Eigen::Vector3f> const& calc_forces(std::list<Molecule> const& molecules);
+    std::vector<Eigen::Vector3f> const& calc_forces(std::list<Molecule> const& molecules, float const coulomb_factor, float const vdw_factor, float const vdw_radius);
 
 private:
     Frame_buffer<Eigen::Vector4f> _result_fb;

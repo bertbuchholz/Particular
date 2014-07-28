@@ -97,7 +97,7 @@ GPU_force::GPU_force(QGLContext * context)
 {
     initializeOpenGLFunctions();
 
-    _size = 40;
+    _size = 64;
     _max_num_atoms = _size * _size;
 
     _fbo = std::unique_ptr<QGLFramebufferObject>(new QGLFramebufferObject(_size, _size, QGLFramebufferObject::NoAttachment, GL_TEXTURE_2D, GL_RGBA));
@@ -130,32 +130,19 @@ void GPU_force::init_vertex_data()
 {
     std::vector<float> vertices = {
         -1.0f, -1.0f, 0.0f,
-        1.0f, -1.0f, 0.0f,
-        1.0f,  1.0f, 0.0f,
+         1.0f, -1.0f, 0.0f,
+         1.0f,  1.0f, 0.0f,
         -1.0f,  1.0f, 0.0f
     };
-
-//    std::vector<float> tex_coords = {
-//        0.0f, 0.0f,
-//        1.0f, 0.0f,
-//        1.0f, 1.0f,
-//        0.0f, 1.0f
-//    };
 
     glGenBuffers(1, &_buffer_square_positions);
 
     glBindBuffer(GL_ARRAY_BUFFER, _buffer_square_positions);
     glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(float), vertices.data(), GL_STATIC_DRAW);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
-
-//    glGenBuffers(1, &_buffer_square_tex_coords);
-
-//    glBindBuffer(GL_ARRAY_BUFFER, _buffer_square_tex_coords);
-//    glBufferData(GL_ARRAY_BUFFER, tex_coords.size() * sizeof(float), tex_coords.data(), GL_STATIC_DRAW);
-//    glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 
-std::vector<Eigen::Vector3f> const& GPU_force::calc_forces(std::list<Molecule> const& molecules)
+std::vector<Eigen::Vector3f> const& GPU_force::calc_forces(std::list<Molecule> const& molecules, const float coulomb_factor, const float vdw_factor, const float vdw_radius)
 {
     glDisable(GL_BLEND);
 
@@ -179,8 +166,8 @@ std::vector<Eigen::Vector3f> const& GPU_force::calc_forces(std::list<Molecule> c
     assert(num_atoms < _max_num_atoms);
 
 
-//    int const needed_height = (num_atoms / _size) + 1;
-    int const needed_height = _size;
+    int const needed_height = (num_atoms / _size) + 1;
+//    int const needed_height = _size;
 
     glBindTexture(GL_TEXTURE_2D, _position_tex);
     glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, _size, needed_height, GL_RGB, GL_FLOAT, _position_frame.get_raw_data());
@@ -213,18 +200,17 @@ std::vector<Eigen::Vector3f> const& GPU_force::calc_forces(std::list<Molecule> c
 
 
     _shader->bind();
-//    _shader->setUniformValue("scale", 1.0f);
-//    _shader->setUniformValue("offset", QVector2D(0.0f, 0.0f));
-    _shader->setUniformValue("tex_size", QSize  (100, 100));
+    _shader->setUniformValue("tex_size", QSize(_size, _size));
     _shader->setUniformValue("num_atoms", num_atoms);
+
+    _shader->setUniformValue("coulomb_factor", coulomb_factor);
+    _shader->setUniformValue("vdw_factor", vdw_factor);
+    _shader->setUniformValue("vdw_radius_factor", vdw_radius);
+
 
     glBindBuffer(GL_ARRAY_BUFFER, _buffer_square_positions);
     glEnableVertexAttribArray(0);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
-
-//    glBindBuffer(GL_ARRAY_BUFFER, _buffer_square_tex_coords);
-//    glEnableVertexAttribArray(1);
-//    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 0, 0);
 
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, _position_tex);
@@ -250,8 +236,6 @@ std::vector<Eigen::Vector3f> const& GPU_force::calc_forces(std::list<Molecule> c
     glBindTexture(GL_TEXTURE_2D, 0);
     glDisableVertexAttribArray(0);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
-
-//    glDisableVertexAttribArray(1);
 
     _fbo->release();
 

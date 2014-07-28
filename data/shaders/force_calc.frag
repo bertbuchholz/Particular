@@ -5,22 +5,18 @@ uniform sampler2D charge_tex;
 uniform sampler2D radius_tex;
 uniform sampler2D parent_id_tex;
 
-//in vec2 texc;
-
-//uniform float scale;
-//uniform vec2 offset;
 uniform vec2 tex_size;
 uniform int num_atoms;
 
 layout(location = 0) out vec4 out_force;
 
-const float coulomb_strength = 155.0;
-const float vdw_strength = 2.0;
-const float vdw_radius_factor = 1.4;
+uniform float coulomb_factor; // = 155.0;
+uniform float vdw_factor; // = 2.0;
+uniform float vdw_radius_factor; // = 1.4;
 
 float calc_coulomb_force(float distance, float charge_0, float charge_1)
 {
-    return coulomb_strength * charge_0 * charge_1 / (distance * distance);
+    return coulomb_factor * charge_0 * charge_1 / (distance * distance);
 }
 
 float calc_van_der_waals_force(float distance, float radius_0, float radius_1)
@@ -29,7 +25,7 @@ float calc_van_der_waals_force(float distance, float radius_0, float radius_1)
     float sigma = vdw_radius_factor * vdw_radii;
     float sigma_distance = sigma / distance;
     float pow_6 = sigma_distance * sigma_distance * sigma_distance * sigma_distance * sigma_distance * sigma_distance;
-    return vdw_strength * 4.0f * (pow_6 * pow_6 - pow_6);
+    return vdw_factor * 4.0f * (pow_6 * pow_6 - pow_6);
 }
 
 void main(void)
@@ -82,8 +78,8 @@ void main(void)
 //    out_force = vec4(gl_FragCoord.x, 0.0, 0.0, 1.0);
 //    out_force = vec4(20.0 * charge_receiver, 0.0, 0.0, 1.0);
 //    out_force = vec4(10.0, 0.0, 0.0, 1.0);
-    out_force = vec4(1.0 * float(receiver_parent_id), 0.0, 0.0, 1.0);
+//    out_force = vec4(1.0 * float(receiver_parent_id), 0.0, 0.0, 1.0);
 //    out_force = vec4(float(receiving_atom_index), 0.0, 0.0, 1.0);
 //    out_force = vec4(float(debug_num_encountered_atoms), 0.0, 0.0, 1.0);
-//    out_force = vec4(force, 1.0);
+    out_force = vec4(force, 1.0);
 }

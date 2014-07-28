@@ -58,6 +58,7 @@ struct Atom_averager
     }
 };
 
+
 Core::Core() :
     _game_state(Game_state::Unstarted),
     _previous_game_state(Game_state::Unstarted),
@@ -327,31 +328,14 @@ void Core::compute_force_and_torque(Molecule &receiver, int & atom_index, std::v
         receiver._force += b->calc_force_on_molecule(receiver);
     }
 
-    float brownian_translation_factor = 0.0f;
-    float brownian_rotation_factor = 0.0f;
+    float const brownian_translation_factor = _level_data.get_temperature(receiver._x);
+    float const brownian_rotation_factor = translation_to_rotation_ratio * brownian_translation_factor;
 
+    Eigen::Vector3f random_dir_f = _random_generator.generator_unit_vector();
+    Eigen::Vector3f random_dir_t = _random_generator.generator_unit_vector();
 
-//    float brownian_translation_factor = _level_data._translation_fluctuation;
-//    float brownian_rotation_factor = _level_data._rotation_fluctuation * translation_to_rotation_ratio;
-
-//    for (Brownian_element const* element : _level_data._brownian_elements)
-//    {
-//        float const factor = element->get_brownian_motion_factor(receiver._x);
-
-//        brownian_translation_factor += factor;
-//        brownian_rotation_factor += translation_to_rotation_ratio * factor;
-//    }
-
-    float const factor = _level_data.get_temperature(receiver._x);
-
-    brownian_translation_factor += factor;
-    brownian_rotation_factor += translation_to_rotation_ratio * factor;
-
-
-    Eigen::Vector3f random_dir = Eigen::Vector3f::Random().normalized();
-
-    receiver._force  += std::max(0.0f, brownian_translation_factor) * random_dir;
-    receiver._torque += std::max(0.0f, brownian_rotation_factor)    * Eigen::Vector3f::Random().normalized();
+    receiver._force  += std::max(0.0f, brownian_translation_factor) * random_dir_f;
+    receiver._torque += std::max(0.0f, brownian_rotation_factor)    * random_dir_t;
 
     for (auto const& f : _level_data._external_forces)
     {

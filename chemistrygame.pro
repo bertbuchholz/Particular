@@ -182,4 +182,5 @@ HEADERS += \
     PolygonalCurve.h \
     Help_screen.h \
     Event.h \
-    Draggable_event.h
+    Draggable_event.h \
+    Random_generator.h

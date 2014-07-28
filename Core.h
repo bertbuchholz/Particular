@@ -30,6 +30,7 @@
 #include "ANN_wrapper_functions.h"
 #include "Progress.h"
 #include "Main_game_screen.h"
+#include "Random_generator.h"
 
 void update_temperature_grid(Level_data const& level_data, Frame_buffer<float> & grid);
 
@@ -283,6 +284,8 @@ private:
     std::string _current_level_name;
 
     std::unique_ptr<GPU_force> _gpu_force;
+
+    Random_generator _random_generator;
 };
 
 //REGISTER_BASE_CLASS_WITH_PARAMETERS(Core);

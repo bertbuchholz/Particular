@@ -952,6 +952,8 @@ void Core::load_simulation_settings()
     catch (std::runtime_error const& e)
     {
         std::cout << "Couldn't load simulation settings file: simulation_settings.data, " << e.what() << std::endl;
+
+        load_default_simulation_settings();
     }
 }
 

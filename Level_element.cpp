@@ -23,7 +23,7 @@ const Eigen::Transform<float, 3, Eigen::Affine> &Level_element::get_transform() 
 
 Eigen::Transform<float, 3, Eigen::Affine> const& Level_element::get_inverse_transform() const
 {
-    return _transform;
+    return _inverse_transform;
 }
 
 

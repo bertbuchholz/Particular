@@ -66,8 +66,8 @@ QMAKE_CXXFLAGS += -Wall \
 
 win32 {
     QMAKE_CXXFLAGS += /bigobj /FS
-    QMAKE_CFLAGS_RELEASE    = /Zi
-    QMAKE_LFLAGS_RELEASE    = /MAP /DEBUG /OPT:REF
+#    QMAKE_CFLAGS_RELEASE    = /Zi
+#    QMAKE_LFLAGS_RELEASE    = /MAP /DEBUG /OPT:REF
 }
 
 macx {

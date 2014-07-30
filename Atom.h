@@ -203,6 +203,8 @@ public:
 
     void apply_orientation(Eigen::Quaternion<float> const& orientation);
 
+    void update_atom_positions();
+
     int get_id() const { return _id; }
     void set_id(int const id);
 

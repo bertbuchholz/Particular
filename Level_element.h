@@ -140,8 +140,7 @@ public:
 
     virtual ~Level_element() {}
 
-    Level_element() : _user_editable(Edit_type::None), _persistent(true), _selected(false)
-    { }
+    Level_element();
 
     virtual void accept(Level_element_visitor const* visitor) = 0;
 

@@ -174,7 +174,6 @@ void Core::compute_force_and_torque(Molecule &receiver, int & atom_index, std::v
 
     for (Atom const& receiver_atom : receiver._atoms)
     {
-//        Eigen::Vector3f force_i = force_on_atom(receiver_atom);
         Eigen::Vector3f const& force_i = forces_on_atoms[atom_index];
 
         receiver._force += force_i;
@@ -785,7 +784,7 @@ void Core::load_default_simulation_settings()
 void Core::save_level(const std::string &file_name) const
 {
     //        std::ofstream out_file(file_name.c_str(), std::ios_base::binary);
-    std::ofstream out_file(file_name.c_str(), std::fstream::binary | std::fstream::in);
+    std::ofstream out_file(file_name.c_str(), std::fstream::binary | std::fstream::out);
     //        boost::archive::text_oarchive oa(out_file);
     boost::archive::xml_oarchive oa(out_file);
 

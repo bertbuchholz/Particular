@@ -4,15 +4,23 @@ uniform sampler2D pos_tex;
 uniform sampler2D charge_tex;
 uniform sampler2D radius_tex;
 uniform sampler2D parent_id_tex;
+uniform sampler2D temperature_tex;
 
 uniform vec2 tex_size;
 uniform int num_atoms;
+uniform float time;
+uniform vec2 bounding_box_size;
 
 layout(location = 0) out vec4 out_force;
 
 uniform float coulomb_factor; // = 155.0;
 uniform float vdw_factor; // = 2.0;
 uniform float vdw_radius_factor; // = 1.4;
+
+float rand(vec2 co)
+{
+    return 2.0 * fract(sin(dot(co, vec2(12.9898, 78.233))) * 43758.5453) - 1.0;
+}
 
 float calc_coulomb_force(float distance, float charge_0, float charge_1)
 {
@@ -73,6 +81,17 @@ void main(void)
 
         force += direction * calc_coulomb_force(distance, charge_sender, charge_receiver);
         force += direction * calc_van_der_waals_force(distance, radius_sender, radius_receiver);
+    }
+
+    // temperature contribution
+    {
+        vec3 brownian_motion_dir = vec3(rand(vec2(time, pos_receiver.x + pos_receiver.y + pos_receiver.z)),
+                                        rand(vec2(time + pos_receiver.x, pos_receiver.x + pos_receiver.y + pos_receiver.z)),
+                                        rand(vec2(time + pos_receiver.y, pos_receiver.x + pos_receiver.y + pos_receiver.z)));
+
+        float temperature = texture2D(temperature_tex, vec2(0.5) + 0.5 * pos_receiver.xz / bounding_box_size);
+
+        force += normalize(brownian_motion_dir) * max(0, temperature);
     }
 
 //    out_force = vec4(gl_FragCoord.x, 0.0, 0.0, 1.0);

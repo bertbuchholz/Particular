@@ -93,7 +93,7 @@ GLuint create_four_channel_float_texture(int const size)
 }
 
 
-GPU_force::GPU_force(QGLContext * context)
+GPU_force::GPU_force(QGLContext * context, int const temperature_grid_size)
 {
     initializeOpenGLFunctions();
 
@@ -117,6 +117,7 @@ GPU_force::GPU_force(QGLContext * context)
     _radius_tex   = create_single_channel_float_texture(_size);
 //    _parent_id_tex = create_single_channel_int_texture(_size);
     _parent_id_tex = create_single_channel_float_texture(_size);
+    _temperature_tex = create_single_channel_float_texture(temperature_grid_size);
 
     _shader = std::unique_ptr<QGLShaderProgram>(init_program(context, Data_config::get_instance()->get_absolute_qfilename("shaders/force_calc.vert"), Data_config::get_instance()->get_absolute_qfilename("shaders/force_calc.frag")));
 
@@ -142,7 +143,9 @@ void GPU_force::init_vertex_data()
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 
-std::vector<Eigen::Vector3f> const& GPU_force::calc_forces(std::list<Molecule> const& molecules, const float coulomb_factor, const float vdw_factor, const float vdw_radius)
+std::vector<Eigen::Vector3f> const& GPU_force::calc_forces(std::list<Molecule> const& molecules,
+                                                           const float coulomb_factor, const float vdw_factor, const float vdw_radius,
+                                                           const float time, QVector2D const& bounding_box_size)
 {
     glDisable(GL_BLEND);
 
@@ -202,6 +205,8 @@ std::vector<Eigen::Vector3f> const& GPU_force::calc_forces(std::list<Molecule> c
     _shader->bind();
     _shader->setUniformValue("tex_size", QSize(_size, _size));
     _shader->setUniformValue("num_atoms", num_atoms);
+    _shader->setUniformValue("time", time);
+    _shader->setUniformValue("bounding_box_size", bounding_box_size);
 
     _shader->setUniformValue("coulomb_factor", coulomb_factor);
     _shader->setUniformValue("vdw_factor", vdw_factor);
@@ -227,6 +232,10 @@ std::vector<Eigen::Vector3f> const& GPU_force::calc_forces(std::list<Molecule> c
     glActiveTexture(GL_TEXTURE3);
     glBindTexture(GL_TEXTURE_2D, _parent_id_tex);
     _shader->setUniformValue("parent_id_tex", 3);
+
+    glActiveTexture(GL_TEXTURE4);
+    glBindTexture(GL_TEXTURE_2D, _temperature_tex);
+    _shader->setUniformValue("temperature_tex", 4);
 
     glDrawArrays(GL_TRIANGLE_FAN, 0, 4);
 
@@ -257,5 +266,12 @@ std::vector<Eigen::Vector3f> const& GPU_force::calc_forces(std::list<Molecule> c
     }
 
     return _resulting_forces;
+}
+
+void GPU_force::update_temperature_tex(Frame_buffer<float> temperature_grid)
+{
+    glBindTexture(GL_TEXTURE_2D, _temperature_tex);
+    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, temperature_grid.get_width(), temperature_grid.get_height(), GL_RED, GL_FLOAT, temperature_grid.get_raw_data());
+    glBindTexture(GL_TEXTURE_2D, 0);
 }
 

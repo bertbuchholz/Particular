@@ -127,84 +127,6 @@ Eigen::Vector3f Core::apply_forces_brute_force(const Atom &receiver_atom) const
 }
 
 
-Eigen::Vector3f Core::apply_forces_using_ann_tree(Atom const& receiver_atom) const
-{
-    Eigen::Vector3f force_i = Eigen::Vector3f::Zero();
-
-    std::vector<Atom const*> const closest_atoms = _ann_wrapper.find_closest_atoms(receiver_atom);
-
-    for (Atom const* sender_atom : closest_atoms)
-    {
-        if (receiver_atom._parent_id == sender_atom->_parent_id) continue;
-
-        force_i += calc_forces_between_atoms(receiver_atom, *sender_atom);
-    }
-
-    return force_i;
-}
-
-
-Eigen::Vector3f Core::apply_forces_using_tree(const Atom &receiver_atom) const
-{
-    Eigen::Vector3f force_i = Eigen::Vector3f::Zero();
-
-    std::queue<My_tree const*> queue;
-    queue.push(&_tree);
-
-    while (!queue.empty())
-    {
-        My_tree const* node = queue.front();
-        queue.pop();
-
-        if (node->get_is_leaf())
-        {
-            for (Atom const* sender_atom : node->get_data())
-            {
-                if (!(sender_atom->_parent_id >= 0))
-                {
-                    std::cout << sender_atom << " " << sender_atom->_parent_id << std::endl;
-                }
-
-                assert(sender_atom->_parent_id >= 0);
-
-                if (sender_atom->_parent_id == receiver_atom._parent_id) continue;
-
-                ++_debug_leaf_usage_count;
-                force_i += calc_forces_between_atoms(receiver_atom, *sender_atom);
-            }
-        }
-        else
-        {
-            float const dist = (receiver_atom.get_position() - node->get_averaged_data().get_position()).norm();
-            float const dist_to_cell_center = (receiver_atom.get_position() - node->get_center()).norm();
-
-            bool const too_close_to_cell = dist_to_cell_center < 1.5f * node->get_radius();
-
-            if (too_close_to_cell ||
-                    node->is_point_in(receiver_atom.get_position()) ||
-                    dist < _max_force_distance ||
-                    dist < node->get_averaged_data()._radius * 2.0f) // too large, push children
-            {
-                for (My_tree const& child : node->get_children())
-                {
-                    if (child.has_averaged_data())
-                    {
-                        queue.push(&child);
-                    }
-                }
-            }
-            else
-            {
-                ++_debug_inner_node_usage_count;
-                force_i += calc_forces_between_atoms(receiver_atom, node->get_averaged_data());
-            }
-        }
-    }
-
-    return force_i;
-}
-
-
 Eigen::Vector3f Core::apply_forces_from_vector(const Atom &receiver_atom, const std::vector<const Atom *> &atoms) const
 {
     Eigen::Vector3f force_i = Eigen::Vector3f::Zero();
@@ -218,73 +140,11 @@ Eigen::Vector3f Core::apply_forces_from_vector(const Atom &receiver_atom, const 
 }
 
 
-std::vector<const Atom *> Core::get_atoms_from_tree(const Atom &receiver_atom) const
-{
-    std::vector<Atom const*> result;
-
-    std::queue<My_tree const*> queue;
-    queue.push(&_tree);
-
-    while (!queue.empty())
-    {
-        My_tree const* node = queue.front();
-        queue.pop();
-
-        if (node->get_is_leaf())
-        {
-            for (Atom const* sender_atom : node->get_data())
-            {
-                if (!(sender_atom->_parent_id >= 0))
-                {
-                    std::cout << sender_atom << " " << sender_atom->_parent_id << std::endl;
-                }
-
-                assert(sender_atom->_parent_id >= 0);
-
-                if (sender_atom->_parent_id == receiver_atom._parent_id) continue;
-
-                result.push_back(sender_atom);
-            }
-        }
-        else
-        {
-            float const dist = (receiver_atom.get_position() - node->get_averaged_data().get_position()).norm();
-            float const dist_to_cell_center = (receiver_atom.get_position() - node->get_center()).norm();
-
-            bool const too_close_to_cell = dist_to_cell_center < 1.5f * node->get_radius();
-
-            if (too_close_to_cell ||
-                    node->is_point_in(receiver_atom.get_position()) ||
-                    dist < _max_force_distance ||
-                    dist < node->get_averaged_data()._radius * 2.0f) // too large, push children
-            {
-                for (My_tree const& child : node->get_children())
-                {
-                    if (child.has_averaged_data())
-                    {
-                        queue.push(&child);
-                    }
-                }
-            }
-            else
-            {
-                result.push_back(&node->get_averaged_data());
-            }
-        }
-    }
-
-    return result;
-}
-
-
 Eigen::Vector3f Core::force_on_atom(const Atom &receiver_atom) const
 {
     Eigen::Vector3f force_i = Eigen::Vector3f::Zero();
 
     //        force_i = apply_forces_brute_force(receiver_atom, parent_molecule_id);
-//    force_i = apply_forces_using_tree(receiver_atom);
-    //        force_i = apply_forces_from_vector(receiver_atom, get_atoms_from_tree(receiver_atom));
-    force_i = apply_forces_using_ann_tree(receiver_atom);
 
     // per atom force application, replaced by per molecule application
     //        for (Barrier const* b : _level_data._barriers)
@@ -328,14 +188,14 @@ void Core::compute_force_and_torque(Molecule &receiver, int & atom_index, std::v
         receiver._force += b->calc_force_on_molecule(receiver);
     }
 
-    float const brownian_translation_factor = _level_data.get_temperature(receiver._x);
-    float const brownian_rotation_factor = translation_to_rotation_ratio * brownian_translation_factor;
+//    float const brownian_translation_factor = _level_data.get_temperature(receiver._x);
+//    float const brownian_rotation_factor = translation_to_rotation_ratio * brownian_translation_factor;
 
-    Eigen::Vector3f random_dir_f = _random_generator.generator_unit_vector();
-    Eigen::Vector3f random_dir_t = _random_generator.generator_unit_vector();
+//    Eigen::Vector3f random_dir_f = _random_generator.generator_unit_vector();
+//    Eigen::Vector3f random_dir_t = _random_generator.generator_unit_vector();
 
-    receiver._force  += std::max(0.0f, brownian_translation_factor) * random_dir_f;
-    receiver._torque += std::max(0.0f, brownian_rotation_factor)    * random_dir_t;
+//    receiver._force  += std::max(0.0f, brownian_translation_factor) * random_dir_f;
+//    receiver._torque += std::max(0.0f, brownian_rotation_factor)    * random_dir_t;
 
     for (auto const& f : _level_data._external_forces)
     {
@@ -516,6 +376,7 @@ void Core::update_level_elements(const float time_step)
     }
 
     update_temperature_grid(_level_data, _level_data._temperature_grid);
+    _gpu_force->update_temperature_tex(_level_data._temperature_grid);
 
     if (_current_time - _last_sensor_check > _sensor_data.get_check_interval())
     {
@@ -547,14 +408,11 @@ void Core::update_physics_elements(const float time_step)
         timer_start = std::chrono::steady_clock::now();
     }
 
-////    update_tree();
-
-////    _ann_wrapper = ANN_wrapper();
-//    _ann_wrapper.generate_tree_from_molecules(_level_data._molecules);
     std::vector<Eigen::Vector3f> const& forces_on_atoms = _gpu_force->calc_forces(_level_data._molecules,
             _parameters["Atomic Force Type/Coulomb Force/Strength"]->get_value<float>(),
             _parameters["Atomic Force Type/Van der Waals Force/Strength"]->get_value<float>(),
-            _parameters["Atomic Force Type/Van der Waals Force/Radius Factor"]->get_value<float>());
+            _parameters["Atomic Force Type/Van der Waals Force/Radius Factor"]->get_value<float>(),
+            _current_time, QVector2D(_level_data._game_field_width, _level_data._game_field_height));
 
     if (time_debug)
     {
@@ -565,7 +423,6 @@ void Core::update_physics_elements(const float time_step)
         if (elapsed_milliseconds > 1)
         {
             std::cout << "gpu_force update: " << elapsed_milliseconds << std::endl;
-//            std::cout << "ann_wrapper update: " << elapsed_milliseconds << std::endl;
         }
     }
 
@@ -573,9 +430,6 @@ void Core::update_physics_elements(const float time_step)
     {
         timer_start = std::chrono::steady_clock::now();
     }
-
-    _debug_leaf_usage_count = 0;
-    _debug_inner_node_usage_count = 0;
 
     int atom_index = 0;
 
@@ -593,8 +447,6 @@ void Core::update_physics_elements(const float time_step)
         if (elapsed_milliseconds > 1)
         {
             std::cout << "compute_force_and_torque(): " << elapsed_milliseconds << std::endl;
-//            std::cout << "leaf usage: " << _debug_leaf_usage_count << " ";
-//            std::cout << "inner node usage: " << _debug_inner_node_usage_count << std::endl;
         }
     }
 
@@ -742,45 +594,6 @@ void Core::add_molecule(Molecule molecule)
     _molecule_id_to_molecule_map[_molecule_id_counter] = &_level_data._molecules.back();
     ++_molecule_id_counter;
 }
-
-
-void Core::update_tree()
-{
-    Eigen::Vector3f min(1e10f, 1e10f, 1e10f), max(-1e10f, -1e10f, -1e10f);
-
-    for (Molecule const& m : _level_data._molecules)
-    {
-        for (Atom const& a : m._atoms)
-        {
-            for (int i = 0; i < 3; ++i)
-            {
-                min[i] = std::min(a.get_position()[i], min[i]);
-                max[i] = std::max(a.get_position()[i], max[i]);
-            }
-        }
-    }
-
-    min -= Eigen::Vector3f(0.1f, 0.1f, 0.1f);
-    max += Eigen::Vector3f(0.1f, 0.1f, 0.1f);
-
-    _tree = My_tree(min, max, 10, 10);
-
-    for (Molecule const& m : _level_data._molecules)
-    {
-        for (Atom const& a : m._atoms)
-        {
-            _tree.add_point(a.get_position(), &a);
-        }
-    }
-
-    My_tree::average_data(&_tree, Atom_averager());
-}
-
-
-//const std::vector<Brownian_element *> &Core::get_brownian_elements() const
-//{
-//    return _level_data._brownian_elements;
-//}
 
 
 Eigen::Vector3f Core::calc_forces_between_atoms(const Atom &a_0, const Atom &a_1) const
@@ -1166,7 +979,7 @@ float Core::get_current_time() const
 
 void Core::gl_init(QGLContext * context)
 {
-    _gpu_force = std::unique_ptr<GPU_force>(new GPU_force(context));
+    _gpu_force = std::unique_ptr<GPU_force>(new GPU_force(context, _level_data._temperature_grid.get_width()));
 }
 
 

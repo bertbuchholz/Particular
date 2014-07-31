@@ -93,15 +93,16 @@ Main_options_window *Main_options_window::get_instance()
     return _instance.get();
 }
 
-Main_options_window * Main_options_window::create()
-{
-    return new Main_options_window();
-}
+//Main_options_window * Main_options_window::create()
+//{
+//    return new Main_options_window();
+//}
 
 
 Main_options_window::Main_options_window()
 {
-    _menu_frame = std::unique_ptr<QScrollArea>(new QScrollArea);
+//    _menu_frame = std::unique_ptr<QScrollArea>(new QScrollArea);
+    _menu_frame = new QScrollArea();
 
     _menu_frame->setWidget(create_options_widget());
     _menu_frame->setWidgetResizable(true);

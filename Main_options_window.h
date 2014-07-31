@@ -11,7 +11,7 @@ class Main_options_window
 {
 public:
     static Main_options_window * get_instance();
-    static Main_options_window * create();
+//    static Main_options_window * create();
 
 
     void remove_parameter_list(std::string const& name);
@@ -27,7 +27,7 @@ private:
 
     static std::unique_ptr<Main_options_window> _instance;
 
-    std::unique_ptr<QScrollArea> _menu_frame;
+    QScrollArea * _menu_frame;
 
     std::unordered_map<std::string, QWidget*> _param_group_to_widget_map;
 };

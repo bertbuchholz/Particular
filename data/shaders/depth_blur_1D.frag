@@ -63,6 +63,9 @@ void main(void)
 {
     vec2 tex_coord = gl_TexCoord[0].st;
 
+//    gl_FragColor = texture2D(texture, tex_coord);
+//    return;
+
 //    vec4 color = texture2D(texture, tex_coord);
 
     float normalized_depth = linearize_depth(texture2D(depth_texture, tex_coord).r);

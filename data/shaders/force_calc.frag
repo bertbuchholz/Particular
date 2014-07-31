@@ -104,7 +104,8 @@ void main(void)
 
         float temperature = texture2D(temperature_tex, vec2(0.5) + 0.5 * pos_receiver.xz / bounding_box_size);
 
-        force += normalize(brownian_motion_dir) * max(0, temperature);
+//        force += normalize(brownian_motion_dir) * max(0, temperature);
+        force += brownian_motion_dir * max(0, temperature);
     }
 
     if (isnan(force.x)) force = vec3(0.0, 0.0, 0.0);

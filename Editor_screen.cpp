@@ -324,9 +324,17 @@ bool Editor_screen::keyPressEvent(QKeyEvent * event)
             handled = true;
         }
     }
-    if (event->key() == Qt::Key_Backspace || event->key() == Qt::Key_Delete)
+    else if (event->key() == Qt::Key_Backspace || event->key() == Qt::Key_Delete)
     {
         delete_selected_element();
+    }
+    else if (event->key() == Qt::Key_F11)
+    {
+        std::cout << __func__ << " re-init screen" << std::endl;
+
+        _renderer->init(_viewer.context(), QSize(_viewer.camera()->screenWidth(), _viewer.camera()->screenHeight()));
+
+        handled = true;
     }
 
     return handled;

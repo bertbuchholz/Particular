@@ -167,7 +167,7 @@ Eigen::Vector3f Core::force_on_atom(const Atom &receiver_atom) const
 void Core::compute_force_and_torque(Molecule &receiver, int & atom_index, std::vector<Eigen::Vector3f> const& forces_on_atoms)
 {
 //    float const translation_to_rotation_ratio = 1.0f;
-    float const translation_to_rotation_ratio = 0.05f;
+    float const translation_to_rotation_ratio = 0.1f;
 
     receiver._force.setZero();
     receiver._torque.setZero();

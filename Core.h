@@ -21,13 +21,10 @@
 #include "GPU_force.h"
 #include "Atom.h"
 #include "Atomic_force.h"
-//#include "Spatial_hash.h"
-#include "RegularBspTree.h"
 #include "Level_element.h"
 #include "Level_data.h"
 #include "End_condition.h"
 #include "Sensor_data.h"
-#include "ANN_wrapper_functions.h"
 #include "Progress.h"
 #include "Main_game_screen.h"
 #include "Random_generator.h"
@@ -50,19 +47,12 @@ public:
         int a_id;
     };
 
-//    typedef Spatial_hash<Eigen::Vector3f, Molecule_atom_id> Molecule_atom_hash;
-    typedef Regular_bsp_tree<Eigen::Vector3f, 3, Atom> My_tree;
-
     Core();
 
     ~Core();
 
     Eigen::Vector3f apply_forces_brute_force(Atom const& receiver_atom) const;
-    Eigen::Vector3f apply_forces_using_tree(Atom const& receiver_atom) const;
     Eigen::Vector3f apply_forces_from_vector(Atom const& receiver_atom, std::vector<Atom const*> const& atoms) const;
-    Eigen::Vector3f apply_forces_using_ann_tree(const Atom &receiver_atom) const;
-
-    std::vector<Atom const*> get_atoms_from_tree(Atom const& receiver_atom) const;
 
     Eigen::Vector3f force_on_atom(Atom const& receiver_atom) const;
     void compute_force_and_torque(Molecule & receiver, int & atom_index, std::vector<Eigen::Vector3f> const& forces_on_atoms);
@@ -124,11 +114,6 @@ public:
 //        return _molecule_hash;
 //    }
 
-    My_tree const& get_tree() const
-    {
-        return _tree;
-    }
-
     void add_molecule(Molecule molecule);
 
 //    void update_spatial_hash()
@@ -143,8 +128,6 @@ public:
 //            }
 //        }
 //    }
-
-    void update_tree();
 
 
     void add_molecule_external_force(Molecule_external_force const& force);
@@ -261,14 +244,6 @@ private:
     float _max_force;
 
     float _max_force_distance;
-
-//    Molecule_atom_hash _molecule_hash;
-    My_tree _tree;
-
-    ANN_wrapper _ann_wrapper;
-
-    mutable int _debug_leaf_usage_count;
-    mutable int _debug_inner_node_usage_count;
 
     Parameter_list _parameters;
 

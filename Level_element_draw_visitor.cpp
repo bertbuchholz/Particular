@@ -187,11 +187,14 @@ void Level_element_draw_visitor::visit(Molecule_releaser *b) const
 
     for (Targeted_particle_system const& p_system : b->get_particle_systems())
     {
-        _particle_distance_shader->setAttributeArray("particle_size", GL_FLOAT, &p_system.get_particles()[0].size_factor, 1, offset);
+        if (!p_system.get_particles().empty())
+        {
+            _particle_distance_shader->setAttributeArray("particle_size", GL_FLOAT, &p_system.get_particles()[0].size_factor, 1, offset);
 
-        glVertexPointer(3, GL_FLOAT, offset, &p_system.get_particles()[0].position);
-        glColorPointer(4, GL_FLOAT, offset, &p_system.get_particles()[0].color);
-        glDrawArrays(GL_POINTS, 0, int(p_system.get_particles().size()));
+            glVertexPointer(3, GL_FLOAT, offset, &p_system.get_particles()[0].position);
+            glColorPointer(4, GL_FLOAT, offset, &p_system.get_particles()[0].color);
+            glDrawArrays(GL_POINTS, 0, int(p_system.get_particles().size()));
+        }
     }
 
     glDisableClientState(GL_VERTEX_ARRAY);
@@ -443,38 +446,31 @@ void Level_element_draw_visitor::visit(Box_portal *b) const
 
     glPopMatrix();
 
-    int const offset = sizeof(Particle);
+    if (!b->get_particles().empty())
+    {
+        int const offset = sizeof(Particle);
 
-    glEnable(GL_VERTEX_PROGRAM_POINT_SIZE);
+        glEnable(GL_VERTEX_PROGRAM_POINT_SIZE);
 
-    _particle_distance_shader->bind();
+        _particle_distance_shader->bind();
 
-    _particle_distance_shader->enableAttributeArray("particle_size");
-    glEnableClientState(GL_VERTEX_ARRAY);
-    glEnableClientState(GL_COLOR_ARRAY);
+        _particle_distance_shader->enableAttributeArray("particle_size");
+        glEnableClientState(GL_VERTEX_ARRAY);
+        glEnableClientState(GL_COLOR_ARRAY);
 
-    _particle_distance_shader->setUniformValue("height", 48.0f * _scale_factor);
-    _particle_distance_shader->setAttributeArray("particle_size", GL_FLOAT, &b->get_particles()[0].size_factor, 1, offset);
+        _particle_distance_shader->setUniformValue("height", 48.0f * _scale_factor);
+        _particle_distance_shader->setAttributeArray("particle_size", GL_FLOAT, &b->get_particles()[0].size_factor, 1, offset);
 
-    glVertexPointer(3, GL_FLOAT, offset, &b->get_particles()[0].position);
-    glColorPointer(4, GL_FLOAT, offset, &b->get_particles()[0].color);
-    glDrawArrays(GL_POINTS, 0, int(b->get_particles().size()));
+        glVertexPointer(3, GL_FLOAT, offset, &b->get_particles()[0].position);
+        glColorPointer(4, GL_FLOAT, offset, &b->get_particles()[0].color);
+        glDrawArrays(GL_POINTS, 0, int(b->get_particles().size()));
 
-    glDisableClientState(GL_VERTEX_ARRAY);
-    glDisableClientState(GL_COLOR_ARRAY);
-    _particle_distance_shader->disableAttributeArray("particle_size");
+        glDisableClientState(GL_VERTEX_ARRAY);
+        glDisableClientState(GL_COLOR_ARRAY);
+        _particle_distance_shader->disableAttributeArray("particle_size");
 
-    _particle_distance_shader->release();
-
-//    glPointSize(24.0f * _scale_factor);
-
-//    glBegin(GL_POINTS);
-//    for (Particle const& p : b->get_particles())
-//    {
-//        glColor4fv(p.color.data());
-//        glVertex3fv(p.position.data());
-//    }
-//    glEnd();
+        _particle_distance_shader->release();
+    }
 
     if (b->is_selected())
     {
@@ -536,28 +532,31 @@ void Level_element_draw_visitor::visit(Sphere_portal *b) const
 
     glPopMatrix();
 
-    int const offset = sizeof(Particle);
+    if (!b->get_particles().empty())
+    {
+        int const offset = sizeof(Particle);
 
-    glEnable(GL_VERTEX_PROGRAM_POINT_SIZE);
+        glEnable(GL_VERTEX_PROGRAM_POINT_SIZE);
 
-    _particle_distance_shader->bind();
+        _particle_distance_shader->bind();
 
-    _particle_distance_shader->enableAttributeArray("particle_size");
-    glEnableClientState(GL_VERTEX_ARRAY);
-    glEnableClientState(GL_COLOR_ARRAY);
+        _particle_distance_shader->enableAttributeArray("particle_size");
+        glEnableClientState(GL_VERTEX_ARRAY);
+        glEnableClientState(GL_COLOR_ARRAY);
 
-    _particle_distance_shader->setUniformValue("height", 48.0f * _scale_factor);
-    _particle_distance_shader->setAttributeArray("particle_size", GL_FLOAT, &b->get_particles()[0].size_factor, 1, offset);
+        _particle_distance_shader->setUniformValue("height", 48.0f * _scale_factor);
+        _particle_distance_shader->setAttributeArray("particle_size", GL_FLOAT, &b->get_particles()[0].size_factor, 1, offset);
 
-    glVertexPointer(3, GL_FLOAT, offset, &b->get_particles()[0].position);
-    glColorPointer(4, GL_FLOAT, offset, &b->get_particles()[0].color);
-    glDrawArrays(GL_POINTS, 0, int(b->get_particles().size()));
+        glVertexPointer(3, GL_FLOAT, offset, &b->get_particles()[0].position);
+        glColorPointer(4, GL_FLOAT, offset, &b->get_particles()[0].color);
+        glDrawArrays(GL_POINTS, 0, int(b->get_particles().size()));
 
-    glDisableClientState(GL_VERTEX_ARRAY);
-    glDisableClientState(GL_COLOR_ARRAY);
-    _particle_distance_shader->disableAttributeArray("particle_size");
+        glDisableClientState(GL_VERTEX_ARRAY);
+        glDisableClientState(GL_COLOR_ARRAY);
+        _particle_distance_shader->disableAttributeArray("particle_size");
 
-    _particle_distance_shader->release();
+        _particle_distance_shader->release();
+    }
 
 //    glPointSize(24.0f * _scale_factor);
 
@@ -585,6 +584,8 @@ void Level_element_draw_visitor::visit(Sphere_portal *b) const
 
 void Level_element_draw_visitor::visit(Particle_system_element *system) const
 {
+    if (system->get_particles().empty()) return;
+
     glDisable(GL_LIGHTING);
     glEnable(GL_BLEND);
 

@@ -332,12 +332,7 @@ void Molecule::from_state(const Body_state &, const float mass_factor)
     //    assert(!std::isnan(_omega.y()) && !std::isinf(_omega.y()));
     //    assert(!std::isnan(_omega.z()) && !std::isinf(_omega.z()));
 
-
-    for (Atom & a : _atoms)
-    {
-        a.set_position(_R * a._r_0 + _x);
-        assert(!std::isnan(a.get_position()[0]) && !std::isinf(a.get_position()[0]));
-    }
+    update_atom_positions();
 }
 
 void Molecule::apply_orientation(const Eigen::Quaternion<float> &orientation)
@@ -346,6 +341,11 @@ void Molecule::apply_orientation(const Eigen::Quaternion<float> &orientation)
     _R = _q.normalized().toRotationMatrix();
     //        _I_inv = _R * _I_body_inv * _R.transpose();
 
+    update_atom_positions();
+}
+
+void Molecule::update_atom_positions()
+{
     for (Atom & a : _atoms)
     {
         a.set_position(_R * a._r_0 + _x);

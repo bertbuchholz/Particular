@@ -32,11 +32,15 @@ inline GLuint create_single_channel_texture(Frame_buffer<float> const& frame);
 class GPU_force : public QOpenGLFunctions_4_3_Core
 {
 public:
-    GPU_force(QGLContext *context);
+    GPU_force(QGLContext *context, int const temperature_grid_size);
 
     void init_vertex_data();
 
-    std::vector<Eigen::Vector3f> const& calc_forces(std::list<Molecule> const& molecules, float const coulomb_factor, float const vdw_factor, float const vdw_radius);
+    std::vector<Eigen::Vector3f> const& calc_forces(std::list<Molecule> const& molecules,
+                                                    float const coulomb_factor, float const vdw_factor, float const vdw_radius,
+                                                    float const time, QVector2D const& bounding_box_size);
+
+    void update_temperature_tex(Frame_buffer<float> temperature_grid);
 
 private:
     Frame_buffer<Eigen::Vector4f> _result_fb;
@@ -57,6 +61,7 @@ private:
     GLuint _charge_tex;
     GLuint _radius_tex;
     GLuint _parent_id_tex;
+    GLuint _temperature_tex;
     GLuint _fbo_tex;
 
     GLuint _buffer_square_positions;

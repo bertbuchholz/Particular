@@ -9,6 +9,13 @@ void Level_element::set_position(const Eigen::Vector3f &position)
 }
 
 
+Level_element::Level_element() : _user_editable(Edit_type::None), _persistent(true), _selected(false)
+{
+    _position.setZero();
+    _transform.setIdentity();
+    _inverse_transform.setIdentity();
+}
+
 const Eigen::Vector3f &Level_element::get_position() const
 {
     return _position;
@@ -23,7 +30,7 @@ const Eigen::Transform<float, 3, Eigen::Affine> &Level_element::get_transform() 
 
 Eigen::Transform<float, 3, Eigen::Affine> const& Level_element::get_inverse_transform() const
 {
-    return _transform;
+    return _inverse_transform;
 }
 
 
@@ -429,6 +436,7 @@ Box_barrier::Box_barrier(const Eigen::Vector3f &min, const Eigen::Vector3f &max,
     set_position((min + max) * 0.5f);
 
     _box = Eigen::AlignedBox<float, 3>(min - get_position(), max - get_position());
+    _box_radius = (_box.max() - _box.min()).norm() * 0.5f;
 }
 
 Eigen::Vector3f Box_barrier::calc_force_on_molecule(const Molecule &m) const

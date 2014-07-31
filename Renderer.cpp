@@ -121,6 +121,8 @@ void World_renderer::setup_gl_points(bool const distance_dependent)
 
 void World_renderer::draw_particle_system(Targeted_particle_system const& system, int const height)
 {
+    if (system.get_particles().empty()) return;
+
     glDisable(GL_DEPTH_TEST);
     glDisable(GL_LIGHTING);
 
@@ -750,6 +752,7 @@ void Shader_renderer::init(const QGLContext *context, const QSize &size)
     _sphere_mesh.init(load_mesh<MyMesh>(Data_config::get_instance()->get_absolute_filename("meshes/icosphere_3.obj")));
     _grid_mesh = load_mesh<MyMesh>(Data_config::get_instance()->get_absolute_filename("meshes/grid_10x10.obj"));
     _cube_grid_mesh.init(load_mesh<MyMesh>(Data_config::get_instance()->get_absolute_filename("meshes/grid_cube.obj")), true);
+    _cube_grid_mesh.setup_vertex_colors_buffer();
     _bg_hemisphere_mesh = load_mesh<MyMesh>(Data_config::get_instance()->get_absolute_filename("meshes/bg_hemisphere.obj"));
 
     MyMesh::ConstVertexIter vIt(_grid_mesh.vertices_begin()), vEnd(_grid_mesh.vertices_end());
@@ -843,10 +846,9 @@ void Shader_renderer::draw_atom(const Atom &atom, const float scale, const float
 
     glUniform4fv(_molecule_program->uniformLocation("color"), 1, color.data());
 
-//    draw_mesh(_sphere_mesh);
-//    _sphere_mesh.draw();
-//    _sphere_mesh.bind_vao();
     _sphere_mesh.draw_without_binding();
+//    _sphere_mesh.bind_vao();
+//    _sphere_mesh.draw();
 //    _sphere_mesh.release_vao();
 }
 
@@ -935,7 +937,7 @@ void Shader_renderer::draw_temperature_cube(GL_mesh2 & gl_mesh, Level_data const
         ++i;
     }
 
-    gl_mesh.set_vertex_colors(vertex_colors.data()->data(), GL_FLOAT);
+    gl_mesh.set_vertex_colors(vertex_colors.data()->data());
 
     gl_mesh.draw();
 
@@ -1188,9 +1190,6 @@ void Shader_renderer::render(QGLFramebufferObject *main_fbo, const Level_data &l
                                           GL_COLOR_BUFFER_BIT);
 
     glClear(GL_DEPTH_BUFFER_BIT);
-
-
-//    draw_temperature_mesh(_grid_mesh, level_data, _tmp_screen_texture[1], screen_size, time);
 
     draw_temperature_cube(_cube_grid_mesh, level_data, _tmp_screen_texture[1].get_id(), _screen_size, time);
 

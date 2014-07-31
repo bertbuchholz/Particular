@@ -17,9 +17,12 @@ uniform float coulomb_factor; // = 155.0;
 uniform float vdw_factor; // = 2.0;
 uniform float vdw_radius_factor; // = 1.4;
 
+const float pi = 3.141592;
+
 float rand(vec2 co)
 {
-    return 2.0 * fract(sin(dot(co, vec2(12.9898, 78.233))) * 43758.5453) - 1.0;
+//    return 2.0 * fract(sin(dot(co, vec2(12.9898, 78.233))) * 43758.5453) - 1.0;
+    return fract(sin(dot(co, vec2(12.9898, 78.233))) * 43758.5453);
 }
 
 float calc_coulomb_force(float distance, float charge_0, float charge_1)
@@ -77,6 +80,9 @@ void main(void)
 
         vec3 direction = pos_receiver - pos_sender;
         float distance = length(direction);
+
+        if (distance < 0.001) continue;
+
         direction = normalize(direction);
 
         force += direction * calc_coulomb_force(distance, charge_sender, charge_receiver);
@@ -85,14 +91,23 @@ void main(void)
 
     // temperature contribution
     {
-        vec3 brownian_motion_dir = vec3(rand(vec2(time, pos_receiver.x + pos_receiver.y + pos_receiver.z)),
-                                        rand(vec2(time + pos_receiver.x, pos_receiver.x + pos_receiver.y + pos_receiver.z)),
-                                        rand(vec2(time + pos_receiver.y, pos_receiver.x + pos_receiver.y + pos_receiver.z)));
+//        vec3 brownian_motion_dir = vec3(rand(vec2(time, pos_receiver.x + pos_receiver.y + pos_receiver.z)),
+//                                        rand(vec2(time + pos_receiver.x, pos_receiver.x + pos_receiver.y + pos_receiver.z)),
+//                                        rand(vec2(time + pos_receiver.y, pos_receiver.x + pos_receiver.y + pos_receiver.z)));
+
+        float theta =       pi * rand(vec2(time, pos_receiver.x + pos_receiver.y + pos_receiver.z));
+        float phi   = 2.0 * pi * rand(vec2(time + pos_receiver.x, pos_receiver.x + pos_receiver.y + pos_receiver.z));
+
+        vec3 brownian_motion_dir = vec3(sin(theta) * cos(phi),
+                                        sin(theta) * sin(phi),
+                                        cos(theta));
 
         float temperature = texture2D(temperature_tex, vec2(0.5) + 0.5 * pos_receiver.xz / bounding_box_size);
 
         force += normalize(brownian_motion_dir) * max(0, temperature);
     }
+
+    if (isnan(force.x)) force = vec3(0.0, 0.0, 0.0);
 
 //    out_force = vec4(gl_FragCoord.x, 0.0, 0.0, 1.0);
 //    out_force = vec4(20.0 * charge_receiver, 0.0, 0.0, 1.0);

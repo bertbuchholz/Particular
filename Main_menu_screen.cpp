@@ -120,7 +120,7 @@ void Main_menu_screen::quit_game()
 
 void Main_menu_screen::start_editor()
 {
-    _viewer.camera()->frame()->setConstraint(nullptr);
+//    _viewer.camera()->frame()->setConstraint(nullptr);
 
     _core.load_level_defaults();
     _core.set_simulation_state(false);

@@ -252,17 +252,16 @@ std::vector<Eigen::Vector3f> const& GPU_force::calc_forces(std::list<Molecule> c
 
     glPopAttrib();
 
-
-//    glBindTexture(GL_TEXTURE_2D, _fbo_tex);
-//    glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_FLOAT, _result_fb.get_raw_data());
-//    glBindTexture(GL_TEXTURE_2D, 0);
-
     for (int i = 0; i < num_atoms; ++i)
     {
 //        resulting_forces.push_back(Eigen::Vector3f(_result.get_data(i)[0], _result.get_data(i)[1], _result.get_data(i)[2]));
         _resulting_forces[i][0] = _result_fb.get_data(i)[0];
         _resulting_forces[i][1] = _result_fb.get_data(i)[1];
         _resulting_forces[i][2] = _result_fb.get_data(i)[2];
+
+        assert(!std::isnan(_resulting_forces[i][0]) && "Bla bla");
+        assert(!std::isnan(_resulting_forces[i][1]));
+        assert(!std::isnan(_resulting_forces[i][2]));
     }
 
     return _resulting_forces;

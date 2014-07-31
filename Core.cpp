@@ -245,6 +245,13 @@ void Core::compute_force_and_torque(Molecule &receiver, int & atom_index, std::v
 //    receiver._torque += -_level_data._rotation_damping * translation_to_rotation_ratio * receiver._omega;
     receiver._torque -= _level_data._rotation_damping * receiver._omega;
 
+//    assert(!std::isnan(receiver._force[0]));
+//    assert(!std::isnan(receiver._force[1]));
+//    assert(!std::isnan(receiver._force[2]));
+//    assert(!std::isnan(receiver._torque[0]));
+//    assert(!std::isnan(receiver._torque[1]));
+//    assert(!std::isnan(receiver._torque[2]));
+
 //    std::cout << "after subtr. rcv.torque: " << receiver._torque << std::endl;
 }
 
@@ -397,7 +404,7 @@ void Core::update_level_elements(const float time_step)
 
 void Core::update_physics_elements(const float time_step)
 {
-    bool const time_debug = true;
+    bool const time_debug = false;
 
     int elapsed_milliseconds;
     std::chrono::steady_clock::time_point timer_start, timer_end;
@@ -919,26 +926,30 @@ const QStringList &Core::get_level_names() const
 
 void Core::update_physics()
 {
-    std::chrono::steady_clock::time_point const timer_start = std::chrono::steady_clock::now();
+    float const time_debug = false;
 
-    //        int const elapsed_milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>
-    //                (std::chrono::steady_clock::now() - _physics_elapsed_time).count();
+    std::chrono::steady_clock::time_point timer_start = std::chrono::steady_clock::now();
 
-    //        _physics_elapsed_time = std::chrono::steady_clock::now();
+    if (time_debug)
+    {
+        timer_start = std::chrono::steady_clock::now();
+    }
 
     // FIXME: currently constant update time step, not regarding at all the actually elapsed time
     // some updates are really far away from the set time step, not sure why
     update(_parameters["physics_timestep_ms"]->get_value<int>() / 1000.0f * _parameters["physics_speed"]->get_value<float>());
-    //        _core.update(elapsed_milliseconds / 1000.0f * _parameters["physics_speed"]->get_value<float>());
 
-    std::chrono::steady_clock::time_point const timer_end = std::chrono::steady_clock::now();
-
-    int const elapsed_milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>
-            (timer_end-timer_start).count();
-
-    if (elapsed_milliseconds > 1)
+    if (time_debug)
     {
-        std::cout << __FUNCTION__ << " time elapsed: " << elapsed_milliseconds << std::endl;
+        std::chrono::steady_clock::time_point const timer_end = std::chrono::steady_clock::now();
+
+        int const elapsed_milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>
+                (timer_end-timer_start).count();
+
+        if (elapsed_milliseconds > 1)
+        {
+            std::cout << __FUNCTION__ << " time elapsed: " << elapsed_milliseconds << std::endl;
+        }
     }
 }
 

@@ -5,171 +5,27 @@
 #include "Main_options_window.h"
 #include "Help_screen.h"
 
-class Game_camera_constraint_old : public qglviewer::Constraint
-{
-public:
-    Game_camera_constraint_old(std::map<Level_data::Plane, Plane_barrier*> const& game_field_borders) : _game_field_borders(game_field_borders)
-    { }
-
-    void constrainTranslation(qglviewer::Vec & t, qglviewer::Frame * const frame) override
-    {
-        // Express t in the world coordinate system.
-        const qglviewer::Vec tWorld = frame->inverseTransformOf(t);
-        if (frame->position().z + tWorld.z > _game_field_borders[Level_data::Plane::Pos_Z]->get_position()[2])
-        {
-            std::cout << frame->position().z << " "
-                      << tWorld.z << " "
-                      << _game_field_borders[Level_data::Plane::Pos_Z]->get_position()[2] << "\n";
-//                t.z = frame->transformOf(-frame->position().z); // t.z is clamped so that next z position is 0.0
-            t.z = _game_field_borders[Level_data::Plane::Pos_Z]->get_position()[2] - frame->position().z;
-
-            std::cout << "new t.z: " << t.z << "\n";
-
-        }
-        if (frame->position().z + tWorld.z < _game_field_borders[Level_data::Plane::Neg_Z]->get_position()[2])
-        {
-            t.z = _game_field_borders[Level_data::Plane::Neg_Z]->get_position()[2] - frame->position().z;
-        }
-        if (frame->position().x + tWorld.x > _game_field_borders[Level_data::Plane::Pos_X]->get_position()[0])
-        {
-            t.x = _game_field_borders[Level_data::Plane::Pos_X]->get_position()[0] - frame->position().x;
-        }
-        if (frame->position().x + tWorld.x < _game_field_borders[Level_data::Plane::Neg_X]->get_position()[0])
-        {
-            t.x = _game_field_borders[Level_data::Plane::Neg_X]->get_position()[0] - frame->position().x;
-        }
-
-        t.y = 0.0f;
-    }
-
-    void constrainRotation(qglviewer::Quaternion & rotation, qglviewer::Frame * const frame) override
-    {
-        qglviewer::Vec rotation_axis = frame->inverseTransformOf(rotation.axis());
-
-        std::cout << __FUNCTION__ << " " << rotation_axis.x << " " << rotation_axis.y << " " << rotation_axis.z << std::endl;
-
-        rotation_axis.y = 0.0f;
-
-//            into_range(rotation_axis.x, -0.2, 0.2);
-//            into_range(rotation_axis.y, -0.2, 0.2);
-        rotation.setAxisAngle(frame->transformOf(rotation_axis), rotation.angle());
-    }
-
-private:
-    std::map<Level_data::Plane, Plane_barrier*> _game_field_borders;
-};
 
 class Game_camera_constraint : public qglviewer::Constraint
 {
 public:
-    Game_camera_constraint(std::map<Level_data::Plane, Plane_barrier*> const& game_field_borders) : _game_field_borders(game_field_borders)
+    Game_camera_constraint(float const box_size_half) : _box_size_half(box_size_half)
     { }
 
-    void constrainTranslation(qglviewer::Vec & t, qglviewer::Frame * const frame) override
+    void constrainTranslation(qglviewer::Vec & t_world, qglviewer::Frame * const frame) override
     {
-        float const game_field_width_x = _game_field_borders[Level_data::Plane::Pos_X]->get_position()[0] - _game_field_borders[Level_data::Plane::Neg_X]->get_position()[0];
-        float const game_field_width_z = _game_field_borders[Level_data::Plane::Pos_Z]->get_position()[2] - _game_field_borders[Level_data::Plane::Neg_Z]->get_position()[2];
+        qglviewer::Vec new_world_pos = t_world + frame->position();
 
-        float const margin = 25.0f;
+        new_world_pos.x = into_range(float(new_world_pos.x), -_box_size_half, _box_size_half);
+        new_world_pos.y = into_range(float(new_world_pos.y), -_box_size_half, _box_size_half);
+        new_world_pos.z = into_range(float(new_world_pos.z), -_box_size_half, _box_size_half);
 
-        float const full_width[2] = { game_field_width_x + 2.0f * margin, game_field_width_z + 2.0f * margin };
-
-        float const aspect_ratio = 1.333f;
-
-        float const fov_horizontal = 90.0f / 360.0f * 2.0f * float(M_PI);
-        float const fov_vertical = fov_horizontal / aspect_ratio;
-
-        float const y_max = -std::max(full_width[0] * 0.5f / std::tan(fov_horizontal * 0.5f),
-                full_width[1] * 0.5f / std::tan(fov_vertical * 0.5f));
-
-        float const y_min = y_max * 0.5f;
-
-        // Express t in the world coordinate system.
-        const qglviewer::Vec tWorld = frame->inverseTransformOf(t);
-
-        Eigen::Vector3f pyramid_tip_point(0.0f, y_max, 0.0f);
-
-        float const z_offset = std::tan(fov_vertical * 0.5f) * (y_max - y_min);
-        float const x_offset = std::tan(fov_horizontal * 0.5f) * (y_max - y_min);
-
-        std::vector<Eigen::Vector3f> corner_points;
-
-        corner_points.push_back(Eigen::Vector3f( x_offset, y_min,  z_offset));
-        corner_points.push_back(Eigen::Vector3f(-x_offset, y_min,  z_offset));
-        corner_points.push_back(Eigen::Vector3f(-x_offset, y_min, -z_offset));
-        corner_points.push_back(Eigen::Vector3f( x_offset, y_min, -z_offset));
-
-        std::vector< Eigen::Hyperplane<float, 3> > planes;
-
-        planes.push_back(Eigen::Hyperplane<float, 3>(Eigen::Vector3f(0.0f, 1.0f, 0.0f), pyramid_tip_point));
-
-        planes.push_back(Eigen::Hyperplane<float, 3>((corner_points[3] - pyramid_tip_point).cross(corner_points[0] - pyramid_tip_point).normalized(), pyramid_tip_point));
-        planes.push_back(Eigen::Hyperplane<float, 3>((corner_points[0] - pyramid_tip_point).cross(corner_points[1] - pyramid_tip_point).normalized(), pyramid_tip_point));
-        planes.push_back(Eigen::Hyperplane<float, 3>((corner_points[1] - pyramid_tip_point).cross(corner_points[2] - pyramid_tip_point).normalized(), pyramid_tip_point));
-        planes.push_back(Eigen::Hyperplane<float, 3>((corner_points[2] - pyramid_tip_point).cross(corner_points[3] - pyramid_tip_point).normalized(), pyramid_tip_point));
-
-        Eigen::Vector3f const new_world = QGLV2Eigen(frame->position() + tWorld);
-
-        std::vector<int> front_planes;
-
-        for (size_t i = 0; i < planes.size(); ++i)
-        {
-            if (planes[i].signedDistance(new_world) > 0.0f)
-            {
-                front_planes.push_back(int(i));
-            }
-        }
-
-        Eigen::Vector3f constrained_world = Eigen::Vector3f::Zero();
-
-        if (front_planes.size() == 4)
-        {
-            constrained_world = pyramid_tip_point;
-        }
-        else if (front_planes.size() == 3)
-        {
-            Eigen::ParametrizedLine<float, 3> const line = plane_plane_intersection(planes[front_planes[0]], planes[front_planes[1]]);
-
-            Eigen::Vector3f const point = line.intersectionPoint(planes[front_planes[2]]);
-
-            constrained_world = point;
-        }
-        else if (front_planes.size() == 2)
-        {
-            Eigen::ParametrizedLine<float, 3> const line = plane_plane_intersection(planes[front_planes[0]], planes[front_planes[1]]);
-
-            constrained_world = line.projection(new_world);
-        }
-        else if (front_planes.size() == 1)
-        {
-//                assert(front_planes.size() == 1);
-
-            constrained_world = planes[front_planes[0]].projection(new_world);
-        }
-
-        if (front_planes.size() > 0)
-        {
-            t = Eigen2QGLV(constrained_world) - frame->position();
-        }
+        t_world = new_world_pos - frame->position();
     }
 
-//        void constrainRotation(qglviewer::Quaternion & rotation, qglviewer::Frame * const frame) override
-//        {
-//            qglviewer::Vec rotation_axis = frame->inverseTransformOf(rotation.axis());
-
-//            std::cout << __FUNCTION__ << " " << rotation_axis.x << " " << rotation_axis.y << " " << rotation_axis.z << std::endl;
-
-//            rotation_axis.y = 0.0f;
-
-////            into_range(rotation_axis.x, -0.2, 0.2);
-////            into_range(rotation_axis.y, -0.2, 0.2);
-//            rotation.setAxisAngle(frame->transformOf(rotation_axis), rotation.angle());
-//        }
-
 private:
-    std::map<Level_data::Plane, Plane_barrier*> _game_field_borders;
+    float _box_size_half;
 };
-
 
 
 My_viewer::My_viewer(Core &core, const QGLFormat &format) : Options_viewer(format), _core(core)
@@ -301,15 +157,17 @@ void My_viewer::init()
 
     Base::init();
 
-    restoreStateFromFile();
+//    restoreStateFromFile();
 
     resize(1280, 720);
     move(QApplication::desktop()->screen()->rect().center() - rect().center());
 
-    qglviewer::ManipulatedCameraFrame * frame = camera()->frame();
-    frame->setSpinningSensitivity(1000.0f);
     _my_camera = new StandardCamera(0.1f, 1000.0f);
-    _my_camera->setFrame(frame);
+    _my_camera->frame()->setSpinningSensitivity(1000.0f);
+
+    Game_camera_constraint * camera_constraint = new Game_camera_constraint(195.0f);
+    _my_camera->frame()->setConstraint(camera_constraint);
+
     setCamera(_my_camera);
 
     glEnable(GL_NORMALIZE);

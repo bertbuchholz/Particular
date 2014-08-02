@@ -5,7 +5,7 @@
 #include <QtOpenGL>
 #include <QGLWidget>
 #include <QSpinBox>
-#include <QOpenGLFunctions_4_2_Core>
+#include <QOpenGLFunctions_3_3_Core>
 #include <iostream>
 
 #include <Eigen/Geometry>
@@ -23,7 +23,7 @@
 #include "Main_game_screen.h"
 
 
-class My_viewer : public Options_viewer, public QOpenGLFunctions_4_2_Core
+class My_viewer : public Options_viewer, public QOpenGLFunctions_3_3_Core
 {
     Q_OBJECT
 

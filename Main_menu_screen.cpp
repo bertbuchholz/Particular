@@ -30,7 +30,7 @@ void Main_menu_screen::init()
         _buttons.push_back(boost::shared_ptr<Draggable_button>(button));
     }
 
-    if (_core.get_progress().last_level < _core.get_level_names().size() - 1)
+    if (_core.get_progress().last_level < _core.get_level_names().size())
     {
         Draggable_button * button = new Draggable_button(Eigen::Vector3f(0.5f, 0.4f, 0.0f), Eigen::Vector2f(0.5f, 0.15f), "Continue Game",  std::bind(&Main_menu_screen::continue_game, this));
         _buttons.push_back(boost::shared_ptr<Draggable_button>(button));

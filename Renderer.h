@@ -4,7 +4,7 @@
 #include <QGLShaderProgram>
 #include <QGLFramebufferObject>
 
-#include <QOpenGLFunctions_4_2_Core>
+#include <QOpenGLFunctions_3_3_Core>
 
 #include <MyOpenMesh.h>
 #include <Icosphere.h>
@@ -16,7 +16,7 @@
 
 //void setup_gl_points(bool const distance_dependent);
 
-class World_renderer : public QOpenGLFunctions_4_2_Core
+class World_renderer : public QOpenGLFunctions_3_3_Core
 {
 public:
     virtual ~World_renderer() {}

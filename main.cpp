@@ -39,6 +39,15 @@ int main(int argc, char** argv)
     My_viewer * viewer = new My_viewer(core);
     viewer->show();
 
+    if (!(QGLFormat::openGLVersionFlags() & QGLFormat::OpenGL_Version_3_3))
+    {
+        QMessageBox e;
+        e.setText("OpenGL version 3.3 or higher necessary but couldn't be found.");
+        e.exec();
+
+        abort();
+    }
+
 //    QDesktopWidget widget;
 //    QRect mainScreenSize = widget.availableGeometry(widget.primaryScreen());
 

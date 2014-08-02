@@ -64,7 +64,7 @@ void Data_config::init()
         e.setText("Data path could not be found. Make sure the folder data is in the same directory as the executable.");
         e.exec();
 
-        assert(false);
+        abort();
     }
     else
     {

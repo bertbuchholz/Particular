@@ -24,7 +24,7 @@ GLuint create_single_channel_int_texture(int const size)
 }
 
 
-GLuint create_single_channel_float_texture(int const size)
+GLuint create_single_channel_float_texture(int const size, GLint const interpolation_type = GL_NEAREST)
 {
     GLuint texture_index;
 
@@ -38,8 +38,8 @@ GLuint create_single_channel_float_texture(int const size)
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
 
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, interpolation_type);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, interpolation_type);
 
     glBindTexture(GL_TEXTURE_2D, 0);
 
@@ -117,7 +117,7 @@ GPU_force::GPU_force(QGLContext * context, int const temperature_grid_size)
     _radius_tex   = create_single_channel_float_texture(_size);
 //    _parent_id_tex = create_single_channel_int_texture(_size);
     _parent_id_tex = create_single_channel_float_texture(_size);
-    _temperature_tex = create_single_channel_float_texture(temperature_grid_size);
+    _temperature_tex = create_single_channel_float_texture(temperature_grid_size, GL_LINEAR);
 
     _shader = std::unique_ptr<QGLShaderProgram>(init_program(context, Data_config::get_instance()->get_absolute_qfilename("shaders/force_calc.vert"), Data_config::get_instance()->get_absolute_qfilename("shaders/force_calc.frag")));
 
@@ -206,7 +206,7 @@ std::vector<Eigen::Vector3f> const& GPU_force::calc_forces(std::list<Molecule> c
     _shader->setUniformValue("tex_size", QSize(_size, _size));
     _shader->setUniformValue("num_atoms", num_atoms);
     _shader->setUniformValue("time", time);
-    _shader->setUniformValue("bounding_box_size", bounding_box_size);
+    _shader->setUniformValue("bounding_box_size", 0.5f * bounding_box_size);
 
     _shader->setUniformValue("coulomb_factor", coulomb_factor);
     _shader->setUniformValue("vdw_factor", vdw_factor);

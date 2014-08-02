@@ -208,6 +208,9 @@ public:
         ar & BOOST_SERIALIZATION_NVP(_level_data);
     }
 
+    void do_physics_step(std::list<Molecule> &molecules, const float current_time, const float time_step);
+    void midpoint_integration(std::list<Molecule> &molecules, const float time_step);
+
 public Q_SLOTS:
     void update_physics();
 

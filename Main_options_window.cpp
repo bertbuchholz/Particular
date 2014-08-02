@@ -37,6 +37,7 @@ QWidget *Main_options_window::add_parameter_list(const std::string &name, const 
 void Main_options_window::show()
 {
     _menu_frame->show();
+    _menu_frame->raise();
 }
 
 

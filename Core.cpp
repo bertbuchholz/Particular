@@ -80,9 +80,11 @@ Core::Core() :
     _parameters.add_parameter(new Parameter("max_force_distance", 10.0f, 1.0f, 1000.0f, update_variables));
 
     _parameters.add_parameter(new Parameter("physics_timestep_ms", 10, 1, 100, std::bind(&Core::update_physics_timestep, this)));
-    _parameters["physics_timestep_ms"]->set_hidden(true);
+    _parameters["physics_timestep_ms"]->set_hidden(false);
     _parameters.add_parameter(new Parameter("physics_speed", 1.0f, -10.0f, 100.0f, update_variables));
     _parameters["physics_speed"]->set_hidden(true);
+    _parameters.add_parameter(new Parameter("Use midpoint", true, update_variables));
+
 
     Parameter_registry<Atomic_force>::create_multi_select_instance(&_parameters, "Atomic Force Type", update_variables);
 
@@ -351,7 +353,14 @@ void Core::update(const float time_step)
         update_level_elements(time_since_animation_update);
     }
 
-    update_physics_elements(time_step);
+    if (_parameters["Use midpoint"]->get_value<bool>())
+    {
+        midpoint_integration(_level_data._molecules, time_step);
+    }
+    else
+    {
+        update_physics_elements(time_step);
+    }
 }
 
 
@@ -362,6 +371,8 @@ void Core::update_level_elements(const float time_step)
     _level_data._particle_system_elements.erase(std::remove_if(_level_data._particle_system_elements.begin(), _level_data._particle_system_elements.end(), Particle_system_element::check_if_dead()),
                                                 _level_data._particle_system_elements.end());
 
+    _molecule_external_forces.erase(std::remove_if(_molecule_external_forces.begin(), _molecule_external_forces.end(), Check_duration(_current_time)),
+                                    _molecule_external_forces.end());
 
     for (Molecule_releaser * m : _level_data._molecule_releasers)
     {
@@ -399,6 +410,76 @@ void Core::update_level_elements(const float time_step)
     {
         set_new_game_state(Game_state::Finished);
     }
+}
+
+
+void Core::do_physics_step(std::list<Molecule> & molecules, float const current_time, float const time_step)
+{
+    std::vector<Eigen::Vector3f> const& forces_on_atoms = _gpu_force->calc_forces(molecules,
+            _parameters["Atomic Force Type/Coulomb Force/Strength"]->get_value<float>(),
+            _parameters["Atomic Force Type/Van der Waals Force/Strength"]->get_value<float>(),
+            _parameters["Atomic Force Type/Van der Waals Force/Radius Factor"]->get_value<float>(),
+            current_time, QVector2D(_level_data._game_field_width, _level_data._game_field_height));
+
+    int atom_index = 0;
+
+    for (Molecule & molecule : molecules)
+    {
+        compute_force_and_torque(molecule, atom_index, forces_on_atoms);
+
+        molecule._x += molecule._v * time_step;
+
+        Eigen::Quaternion<float> omega_quaternion(0.0f, molecule._omega[0], molecule._omega[1], molecule._omega[2]);
+        Eigen::Quaternion<float> q_dot = scale(omega_quaternion * molecule._q, 0.5f);
+        molecule._q = add(molecule._q, scale(q_dot, time_step));
+
+        molecule._P += molecule._force * time_step;
+        molecule._L += molecule._torque * time_step;
+
+        molecule.from_state(Body_state(), _mass_factor);
+    }
+}
+
+
+void Core::midpoint_integration(std::list<Molecule> & molecules, float const time_step)
+{
+    std::list<Molecule> molecules_at_half_time = molecules;
+    do_physics_step(molecules_at_half_time, _current_time, time_step * 0.5f);
+
+    std::vector<Eigen::Vector3f> const& forces_on_atoms_at_half_time = _gpu_force->calc_forces(molecules_at_half_time,
+            _parameters["Atomic Force Type/Coulomb Force/Strength"]->get_value<float>(),
+            _parameters["Atomic Force Type/Van der Waals Force/Strength"]->get_value<float>(),
+            _parameters["Atomic Force Type/Van der Waals Force/Radius Factor"]->get_value<float>(),
+            _current_time + 0.5f * time_step, QVector2D(_level_data._game_field_width, _level_data._game_field_height));
+
+    int atom_index = 0;
+
+    for (Molecule & m : molecules_at_half_time)
+    {
+        compute_force_and_torque(m, atom_index, forces_on_atoms_at_half_time);
+    }
+
+    auto iter_molecule = molecules.begin();
+    auto iter_molecule_half_time = molecules_at_half_time.cbegin();
+
+    for ( ; iter_molecule != molecules.end(); ++iter_molecule, ++iter_molecule_half_time)
+    {
+        Molecule & molecule = *iter_molecule;
+        Molecule const& molecule_at_halt_time = *iter_molecule_half_time;
+
+        molecule._x += molecule_at_halt_time._v * time_step;
+
+        Eigen::Quaternion<float> omega_quaternion(0.0f, molecule_at_halt_time._omega[0], molecule_at_halt_time._omega[1], molecule_at_halt_time._omega[2]);
+        Eigen::Quaternion<float> q_dot = scale(omega_quaternion * molecule_at_halt_time._q, 0.5f);
+        molecule._q = add(molecule._q, scale(q_dot, time_step));
+
+        molecule._P += molecule_at_halt_time._force * time_step;
+        molecule._L += molecule_at_halt_time._torque * time_step;
+
+        molecule.from_state(Body_state(), _mass_factor);
+    }
+
+    assert(iter_molecule_half_time == molecules_at_half_time.end());
 }
 
 
@@ -455,9 +536,6 @@ void Core::update_physics_elements(const float time_step)
             std::cout << "compute_force_and_torque(): " << elapsed_milliseconds << std::endl;
         }
     }
-
-    _molecule_external_forces.erase(std::remove_if(_molecule_external_forces.begin(), _molecule_external_forces.end(), Check_duration(_current_time)),
-                                    _molecule_external_forces.end());
 
     if (time_debug)
     {

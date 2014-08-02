@@ -1459,7 +1459,7 @@ void Main_game_screen::change_speed_pressed()
 
     float new_speed = std::round(current_speed * 2.0f);
 
-    if (new_speed > 4.1f)
+    if (new_speed > 2.1f)
     {
         new_speed = 1.0f;
     }

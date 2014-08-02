@@ -250,13 +250,14 @@ void Molecule::add_connection(const int connector)
 
 void Molecule::reset()
 {
-    _R.setIdentity();
     _P.setZero();
     _L.setZero();
     _q.setIdentity();
 
     _v = Eigen::Vector3f::Zero();
     _omega = Eigen::Vector3f::Zero();
+    _I_inv.setIdentity();
+    _R.setIdentity();
 }
 
 void Molecule::init()

@@ -19,6 +19,10 @@ Menu_screen::Menu_screen(My_viewer & viewer, Core & core) : Screen(viewer), _cor
     _heat_program = std::unique_ptr<QGLShaderProgram>(init_program(_viewer.context(),
                                                                           Data_config::get_instance()->get_absolute_qfilename("shaders/temperature.vert"),
                                                                           Data_config::get_instance()->get_absolute_qfilename("shaders/heat.frag")));
+
+    _drop_shadow_program = std::unique_ptr<QGLShaderProgram>(init_program(_viewer.context(),
+                                                                          Data_config::get_instance()->get_absolute_qfilename("shaders/temperature.vert"),
+                                                                          Data_config::get_instance()->get_absolute_qfilename("shaders/drop_shadow.frag")));
 }
 
 void Menu_screen::draw_hovered_button(Draggable_button const* b, float const time, float const alpha)
@@ -84,13 +88,34 @@ void Menu_screen::draw()
         }
     }
 
+//    for (boost::shared_ptr<Draggable_label> const& label : _labels)
+//    {
+//        if (label->is_visible())
+//        {
+//            _viewer.draw_label(label.get(), alpha);
+//        }
+//    }
+
+    _drop_shadow_program->bind();
+
+    _drop_shadow_program->setUniformValue("texture", 0);
+    _drop_shadow_program->setUniformValue("blur_size", 5);
+    _drop_shadow_program->setUniformValue("offset", 0.004f);
+
+    glActiveTexture(GL_TEXTURE0);
+
     for (boost::shared_ptr<Draggable_label> const& label : _labels)
     {
         if (label->is_visible())
         {
+            _drop_shadow_program->setUniformValue("overall_alpha", label->get_alpha());
+            _drop_shadow_program->setUniformValue("tex_size", QVector2D(label->get_extent()[0] * _viewer.width(), label->get_extent()[1] * _viewer.height()));
+
             _viewer.draw_label(label.get(), alpha);
         }
     }
+
+    _drop_shadow_program->release();
 
     _viewer.stop_normalized_screen_coordinates();
 }

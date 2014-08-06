@@ -441,11 +441,12 @@ void Ui_renderer::generate_label_texture(Draggable_label *b, int const text_alig
     QSize const pixel_size(_screen_size.width() * b->get_extent()[0], _screen_size.height() * b->get_extent()[1]);
 
     QImage img(pixel_size, QImage::Format_ARGB32);
-    img.fill(QColor(0, 0, 0, 0));
+    img.fill(QColor(255, 255, 255, 0));
 
     QPainter p;
     p.begin(&img);
     p.setRenderHint(QPainter::Antialiasing);
+//    p.setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing | QPainter::SmoothPixmapTransform);
     p.setCompositionMode(QPainter::CompositionMode_SourceOver);
 
     QFont font = _main_font;

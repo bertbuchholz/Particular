@@ -39,6 +39,7 @@ protected:
     int _hover_index;
 
     std::unique_ptr<QGLShaderProgram> _heat_program;
+    std::unique_ptr<QGLShaderProgram> _drop_shadow_program;
 
     float _time;
 

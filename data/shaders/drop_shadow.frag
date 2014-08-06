@@ -16,6 +16,7 @@ float wendland_2_1(float x)
 float blur_alpha(vec2 pos, int radius)
 {
     vec2 step = 1.0 / tex_size;
+    float ratio = tex_size.x / tex_size.y;
 
     float result = 0.0;
 
@@ -26,7 +27,7 @@ float blur_alpha(vec2 pos, int radius)
         for (int v = -radius; v <= radius; ++v)
         {
             float weight = wendland_2_1(sqrt(float(u * u  + v * v)) / float(radius + 1));
-            result += texture2D(texture, pos + step * vec2(u, v) - vec2(offset, -offset)).a * weight;
+            result += texture2D(texture, pos + step * vec2(u, v) - vec2(offset, -offset * ratio)).a * weight;
             weight_sum += weight;
         }
     }

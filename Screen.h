@@ -4,12 +4,13 @@
 #include <QtGui>
 #include <memory>
 #include <deque>
+#include <QOpenGLFunctions_3_3_Core>
 
 #include "Event.h"
 
 class My_viewer;
 
-class Screen : public QObject
+class Screen : public QObject, public QOpenGLFunctions_3_3_Core
 {
     Q_OBJECT
 
@@ -21,7 +22,9 @@ public:
         _viewer(viewer),
         _transition_progress(0.0f),
         _state(State::Resuming)
-    { }
+    {
+        initializeOpenGLFunctions();
+    }
 
     virtual ~Screen() {}
 

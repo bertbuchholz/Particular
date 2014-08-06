@@ -45,8 +45,6 @@ Main_game_screen::Main_game_screen(My_viewer &viewer, Core &core, Ui_state ui_st
     _type = Screen::Type::Fullscreen;
 //    _state = State::Running;
 
-    initializeGLFunctions(_viewer.context());
-
     _picking.init(_viewer.context());
 
     _icosphere = IcoSphere<OpenMesh::Vec3f, Color>(2);
@@ -1137,25 +1135,27 @@ void Main_game_screen::draw_draggables() // FIXME: use visitors or change it so 
         }
     }
 
+    _drop_shadow_program->bind();
+
+    _drop_shadow_program->setUniformValue("texture", 0);
+    _drop_shadow_program->setUniformValue("blur_size", 5);
+    _drop_shadow_program->setUniformValue("offset", 0.01f);
+
+    glActiveTexture(GL_TEXTURE0);
+
     for (boost::shared_ptr<Draggable_label> const& label : _labels)
     {
-        _drop_shadow_program->bind();
-
-        _drop_shadow_program->setUniformValue("texture", 0);
-        _drop_shadow_program->setUniformValue("blur_size", 5);
-        _drop_shadow_program->setUniformValue("offset", 0.01f);
-        _drop_shadow_program->setUniformValue("overall_alpha", label->get_alpha());
-        _drop_shadow_program->setUniformValue("tex_size", QVector2D(label->get_extent()[0] * _viewer.width(), label->get_extent()[1] * _viewer.height()));
-
-        glActiveTexture(GL_TEXTURE0);
 
         if (label->is_visible())
         {
+            _drop_shadow_program->setUniformValue("overall_alpha", label->get_alpha());
+            _drop_shadow_program->setUniformValue("tex_size", QVector2D(label->get_extent()[0] * _viewer.width(), label->get_extent()[1] * _viewer.height()));
+
             _viewer.draw_label(label.get());
         }
-
-        _drop_shadow_program->release();
     }
+
+    _drop_shadow_program->release();
 
     _viewer.stop_normalized_screen_coordinates();
 

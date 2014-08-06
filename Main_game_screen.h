@@ -11,7 +11,7 @@
 
 class Core;
 
-class Main_game_screen : public Screen, public QGLFunctions
+class Main_game_screen : public Screen
 {
     Q_OBJECT
 

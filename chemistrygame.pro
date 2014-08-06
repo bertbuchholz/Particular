@@ -46,6 +46,7 @@ INCLUDEPATH += . \
 CONFIG(debug, debug|release) {
     MOC_DIR = debug/moc
     OBJECTS_DIR = debug/obj
+    CONFIG += console
 }
 else {
     MOC_DIR = release/moc

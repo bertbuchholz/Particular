@@ -3,7 +3,7 @@
 
 #include <QGLFramebufferObject>
 #include <QGLShaderProgram>
-#include <QOpenGLFunctions_4_3_Core>
+#include <QOpenGLFunctions_3_3_Core>
 
 #include <Eigen/Core>
 
@@ -29,7 +29,7 @@ inline GLuint create_single_channel_texture(Frame_buffer<int> const& frame);
 
 inline GLuint create_single_channel_texture(Frame_buffer<float> const& frame);
 
-class GPU_force : public QOpenGLFunctions_4_3_Core
+class GPU_force : public QOpenGLFunctions_3_3_Core
 {
 public:
     GPU_force(QGLContext *context, int const temperature_grid_size);

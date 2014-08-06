@@ -19,25 +19,16 @@ BOOST_CLASS_EXPORT_GUID(Sphere_portal, "Sphere_portal")
 BOOST_CLASS_EXPORT_GUID(Brownian_box, "Brownian_box")
 BOOST_CLASS_EXPORT_GUID(Tractor_barrier, "Tractor_barrier")
 BOOST_CLASS_EXPORT_GUID(Charged_barrier, "Charged_barrier")
-
 BOOST_CLASS_EXPORT_GUID(Molecule_capture_condition, "Molecule_capture_condition")
 
-
-
+extern "C"
+{
+    __declspec(dllexport) DWORD NvOptimusEnablement = 0x00000001;
+}
 
 int main(int argc, char** argv)
 {
     QApplication application(argc,argv);
-
-//    QGLFormat glFormat;
-//    glFormat.setVersion(3, 2);
-//    glFormat.setProfile(QGLFormat::CompatibilityProfile); // Requires >=Qt-4.8.0
-//    glFormat.setSampleBuffers(true);
-
-    Core core;
-
-    My_viewer * viewer = new My_viewer(core);
-    viewer->show();
 
     if (!(QGLFormat::openGLVersionFlags() & QGLFormat::OpenGL_Version_3_3))
     {
@@ -48,12 +39,10 @@ int main(int argc, char** argv)
         abort();
     }
 
-//    QDesktopWidget widget;
-//    QRect mainScreenSize = widget.availableGeometry(widget.primaryScreen());
+    Core core;
 
-//    viewer->setFullScreen();
-//    viewer->setFixedSize(mainScreenSize.size());
-
+    My_viewer * viewer = new My_viewer(core);
+    viewer->show();
     viewer->start();
 
     return application.exec();

@@ -11,7 +11,7 @@ uniform int num_atoms;
 uniform float time;
 uniform vec2 bounding_box_size;
 
-layout(location = 0) out vec4 out_force;
+layout(location = 0) out vec3 out_force;
 
 uniform float coulomb_factor; // = 155.0;
 uniform float vdw_factor; // = 2.0;
@@ -116,5 +116,5 @@ void main(void)
 //    out_force = vec4(1.0 * float(receiver_parent_id), 0.0, 0.0, 1.0);
 //    out_force = vec4(float(receiving_atom_index), 0.0, 0.0, 1.0);
 //    out_force = vec4(float(debug_num_encountered_atoms), 0.0, 0.0, 1.0);
-    out_force = vec4(force, 1.0);
+    out_force = force;
 }

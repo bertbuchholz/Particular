@@ -43,7 +43,7 @@ public:
     void update_temperature_tex(Frame_buffer<float> temperature_grid);
 
 private:
-    Frame_buffer<Eigen::Vector4f> _result_fb;
+    Frame_buffer<Eigen::Vector3f> _result_fb;
     std::vector<Eigen::Vector3f> _resulting_forces;
 
     std::unique_ptr<QGLFramebufferObject> _fbo;

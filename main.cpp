@@ -23,7 +23,7 @@ BOOST_CLASS_EXPORT_GUID(Molecule_capture_condition, "Molecule_capture_condition"
 
 extern "C"
 {
-    __declspec(dllexport) DWORD NvOptimusEnablement = 0x00000001;
+//    __declspec(dllexport) DWORD NvOptimusEnablement = 0x00000001;
 }
 
 int main(int argc, char** argv)

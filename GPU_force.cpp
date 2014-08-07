@@ -111,7 +111,7 @@ GPU_force::GPU_force(QGLContext * context, int const temperature_grid_size)
     _radius_frame = Frame_buffer<float>(_size, _size);
     _parent_id_frame = Frame_buffer<float>(_size, _size);
 
-    _fbo_tex = create_four_channel_float_texture(_size);
+    _fbo_tex = create_three_channel_float_texture(_size);
     _position_tex = create_three_channel_float_texture(_size);
     _charge_tex   = create_single_channel_float_texture(_size);
     _radius_tex   = create_single_channel_float_texture(_size);
@@ -121,7 +121,7 @@ GPU_force::GPU_force(QGLContext * context, int const temperature_grid_size)
 
     _shader = std::unique_ptr<QGLShaderProgram>(init_program(context, Data_config::get_instance()->get_absolute_qfilename("shaders/force_calc.vert"), Data_config::get_instance()->get_absolute_qfilename("shaders/force_calc.frag")));
 
-    _result_fb = Frame_buffer<Eigen::Vector4f>(_size, _size);
+    _result_fb = Frame_buffer<Eigen::Vector3f>(_size, _size);
     _resulting_forces.resize(_size * _size);
 
     init_vertex_data();
@@ -246,25 +246,13 @@ std::vector<Eigen::Vector3f> const& GPU_force::calc_forces(std::list<Molecule> c
     glDisableVertexAttribArray(0);
     glBindBuffer(GL_ARRAY_BUFFER, 0);
 
-    glReadPixels(0, 0, _size, needed_height, GL_RGBA, GL_FLOAT, _result_fb.get_raw_data());
+    glReadPixels(0, 0, _size, needed_height, GL_RGB, GL_FLOAT, _result_fb.get_raw_data());
 
     _fbo->release();
 
     glPopAttrib();
 
-    for (int i = 0; i < num_atoms; ++i)
-    {
-//        resulting_forces.push_back(Eigen::Vector3f(_result.get_data(i)[0], _result.get_data(i)[1], _result.get_data(i)[2]));
-        _resulting_forces[i][0] = _result_fb.get_data(i)[0];
-        _resulting_forces[i][1] = _result_fb.get_data(i)[1];
-        _resulting_forces[i][2] = _result_fb.get_data(i)[2];
-
-        assert(!std::isnan(_resulting_forces[i][0]) && "Bla bla");
-        assert(!std::isnan(_resulting_forces[i][1]));
-        assert(!std::isnan(_resulting_forces[i][2]));
-    }
-
-    return _resulting_forces;
+    return _result_fb.get_data();
 }
 
 void GPU_force::update_temperature_tex(Frame_buffer<float> temperature_grid)

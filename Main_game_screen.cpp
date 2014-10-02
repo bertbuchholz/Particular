@@ -71,8 +71,8 @@ Main_game_screen::Main_game_screen(My_viewer &viewer, Core &core, Ui_state ui_st
 
     _tmp_screen_texture[0].set_context(_viewer.context());
     _tmp_screen_texture[1].set_context(_viewer.context());
-    _tmp_screen_texture[0].reset(f.create_texture(_viewer.camera()->screenWidth(), _viewer.camera()->screenHeight()));
-    _tmp_screen_texture[1].reset(f.create_texture(_viewer.camera()->screenWidth(), _viewer.camera()->screenHeight()));
+    _tmp_screen_texture[0].reset(f.create_texture<float>(_viewer.camera()->screenWidth(), _viewer.camera()->screenHeight()));
+    _tmp_screen_texture[1].reset(f.create_texture<float>(_viewer.camera()->screenWidth(), _viewer.camera()->screenHeight()));
 
     std::vector<std::string> object_types { "O2", "H2O", "SDS", "Na", "Cl", "Dipole",
 //                                                  "Plane_barrier",
@@ -1476,8 +1476,8 @@ void Main_game_screen::resize(QSize const& size)
     GL_functions f;
     f.init();
 
-    _tmp_screen_texture[0].reset(f.create_texture(size.width(), size.height()));
-    _tmp_screen_texture[1].reset(f.create_texture(size.width(), size.height()));
+    _tmp_screen_texture[0].reset(f.create_texture<float>(size.width(), size.height()));
+    _tmp_screen_texture[1].reset(f.create_texture<float>(size.width(), size.height()));
 //    _tmp_screen_texture[0].reset(f.create_texture(_viewer.camera()->screenWidth(), _viewer.camera()->screenHeight()));
 //    _tmp_screen_texture[1].reset(f.create_texture(_viewer.camera()->screenWidth(), _viewer.camera()->screenHeight()));
 

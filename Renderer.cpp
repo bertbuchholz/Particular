@@ -803,8 +803,8 @@ void Shader_renderer::resize(const QSize &size)
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     glBindTexture(GL_TEXTURE_2D, 0);
 
-    _tmp_screen_texture[0].reset(_gl_functions.create_texture(size.width(), size.height()));
-    _tmp_screen_texture[1].reset(_gl_functions.create_texture(size.width(), size.height()));
+    _tmp_screen_texture[0].reset(_gl_functions.create_texture<float>(size.width(), size.height()));
+    _tmp_screen_texture[1].reset(_gl_functions.create_texture<float>(size.width(), size.height()));
 
     _scene_fbo->bind();
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, _depth_texture, 0);
@@ -1305,8 +1305,8 @@ void Editor_renderer::resize(const QSize &size)
     glBindTexture(GL_TEXTURE_2D, 0);
 
     // FIXME: need to delete first
-    _tmp_screen_texture[0] = f.create_texture(size.width(), size.height());
-    _tmp_screen_texture[1] = f.create_texture(size.width(), size.height());
+    _tmp_screen_texture[0] = f.create_texture<float>(size.width(), size.height());
+    _tmp_screen_texture[1] = f.create_texture<float>(size.width(), size.height());
 
     _scene_fbo->bind();
     glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, _depth_texture, 0);

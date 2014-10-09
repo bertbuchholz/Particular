@@ -249,7 +249,7 @@ void After_finish_screen::add_particle_system()
     int const score = _score.final_score + _score._energy_bonus;
 
     _score_particle_system = Targeted_particle_system(3.0f);
-    _score_particle_system.generate(QString("%1").arg(score, 7, 10, QChar('0')).toStdString(), _viewer.get_particle_font(), QRectF(0.0f, 0.5f, 1.0f, 0.3f));
+    _score_particle_system.generate(QString("%1").arg(score, 7, 10, QChar('0')).toStdString(), _viewer.get_particle_font(), QRectF(0.0f, 0.55f, 1.0f, 0.3f), _renderer.get_aspect_ratio());
 
     for (boost::shared_ptr<Draggable_button> const& button : _buttons)
     {

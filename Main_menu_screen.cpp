@@ -61,7 +61,7 @@ void Main_menu_screen::init()
         _renderer.generate_label_texture(label.get());
     }
 
-    _game_name_system.generate("PARTICULAR", _viewer.get_particle_font(), QRectF(0.0f, 0.05f, 1.0f, 0.3f));
+    _game_name_system.generate("PARTICULAR", _viewer.get_particle_font(), QRectF(0.0f, 0.1f, 1.0f, 0.2f), _renderer.get_aspect_ratio());
 }
 
 

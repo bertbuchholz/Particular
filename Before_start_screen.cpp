@@ -41,7 +41,7 @@ void Before_start_screen::init()
     }
 
     _particle_system = Targeted_particle_system(3.0f);
-    _particle_system.generate(QString("LEVEL %1").arg(_core.get_progress().last_level + 1).toStdString(), _viewer.get_particle_font(), QRectF(0.0f, 0.1f, 1.0f, 0.3f));
+    _particle_system.generate(QString("LEVEL %1").arg(_core.get_progress().last_level + 1).toStdString(), _viewer.get_particle_font(), QRectF(0.0f, 0.1f, 1.0f, 0.3f), _renderer.get_aspect_ratio());
 }
 
 void Before_start_screen::return_to_main_menu()

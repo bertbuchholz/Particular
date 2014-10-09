@@ -18,6 +18,8 @@ private:
     Curved_particle_system _curved_system;
 
     Draggable_statistics _statistic;
+
+    Targeted_particle_system _game_name_system;
 };
 
 #endif // EXPERIMENT_SCREEN_H

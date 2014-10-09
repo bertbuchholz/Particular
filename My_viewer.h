@@ -106,6 +106,8 @@ private:
     std::vector<Screen*> _delayed_screen_stack;
 
     Ui_renderer _ui_renderer;
+
+    QElapsedTimer _frame_timer;
 };
 
 

@@ -37,6 +37,7 @@ public:
     void draw_curved_particle_system(Curved_particle_system const& system, int const height);
     void draw_curved_particle_system_in_existing_coord_sys(Curved_particle_system const& system, int const height);
 
+    float get_aspect_ratio() const { return _aspect_ratio; }
 
     void draw_textured_quad(const GLuint tex_id);
 

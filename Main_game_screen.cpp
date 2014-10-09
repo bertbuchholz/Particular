@@ -109,6 +109,8 @@ Main_game_screen::~Main_game_screen()
 
 void Main_game_screen::init_labels()
 {
+    _labels.clear();
+
     if (_ui_state != Ui_state::Editor)
     {
         {
@@ -136,7 +138,9 @@ void Main_game_screen::init_labels()
         }
 
         {
-            _energy_bonus_label = boost::shared_ptr<Draggable_label>(new Draggable_label({ 0.0f, 0.0f, 0.0f }, { 0.3f, 0.2f }, ""));
+
+            float const current_bonus = _core.get_sensor_data().get_energy_bonus().back();
+            _energy_bonus_label = boost::shared_ptr<Draggable_label>(new Draggable_label({ 0.0f, 0.0f, 0.0f }, { 0.3f, 0.2f }, QString("%1").arg(current_bonus, 6).toStdString()));
             Eigen::Vector2f bb = _ui_renderer.generate_flowing_text_label(_energy_bonus_label.get(), 0.4f);
             Eigen::Vector3f left_edge_pos(0.7f + bb[0] * 0.5f + 0.01f, 1.0f - 0.02f - bb[1] * 1.5f, 0.0f);
             _energy_bonus_label->set_position(left_edge_pos);
@@ -502,7 +506,9 @@ void Main_game_screen::update_score_labels()
             Eigen::Vector3f label_pos(0.7f + bb[0] * 0.5f + 0.01f, 1.0f - 0.02f - bb[1] * 1.5f, 0.0f);
             _energy_bonus_label->set_position(label_pos);
 
-            Draggable_label * label = new Draggable_label(label_pos, Eigen::Vector2f(0.1f, 0.03f), QString("-%1").arg(_last_updated_bonus - current_bonus).toStdString());
+            Eigen::Vector3f neg_bonus_label_pos = label_pos + Eigen::Vector3f(0.03f, 0.01f, 0.0f);
+
+            Draggable_label * label = new Draggable_label(neg_bonus_label_pos, Eigen::Vector2f(0.1f, 0.03f), QString("-%1").arg(_last_updated_bonus - current_bonus).toStdString());
             label->set_color({255 / 255.0f, 121 / 255.0f, 54 / 255.0f, 1.0f});
             label->set_alpha(0.0f);
             _ui_renderer.generate_label_texture(label);
@@ -519,7 +525,7 @@ void Main_game_screen::update_score_labels()
                 boost::shared_ptr<Draggable_event> e(new Draggable_event(_labels.back(), Draggable_event::Type::Move, _core.get_current_time(), QEasingCurve::OutCubic));
                 e->set_duration(1.0f);
                 e->trigger();
-                e->make_move_event(label_pos, label_pos + Eigen::Vector3f(0.0f, 0.02f, 0.0f));
+                e->make_move_event(neg_bonus_label_pos, neg_bonus_label_pos + Eigen::Vector3f(0.0f, 0.02f, 0.0f));
                 _draggable_events.push_back(e);
             }
 
@@ -1494,6 +1500,7 @@ void Main_game_screen::handle_level_change(Main_game_screen::Level_state const l
     _level_state = level_state;
 
     clear_events();
+    init_labels();
 
     if (_level_state == Level_state::Intro)
     {

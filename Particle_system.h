@@ -91,9 +91,9 @@ public:
     { }
 
     // rect in 0..1 coordinates
-    void generate(std::string const& text, QFont const& main_font, QRectF const& rect);
+    void generate(std::string const& text, QFont const& main_font, QRectF const& rect, float const aspect_ratio);
 
-    void generate(QImage const& image);
+    void generate(QImage const& image, QVector2D const& scale);
 
     void init(std::vector<Targeted_particle> const& particles);
 

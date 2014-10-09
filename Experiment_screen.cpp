@@ -13,15 +13,17 @@ Experiment_screen::Experiment_screen(My_viewer &viewer, Core &core) : Menu_scree
 
 void Experiment_screen::draw()
 {
-    Menu_screen::draw();
+//    Menu_screen::draw();
 
     _viewer.start_normalized_screen_coordinates();
-    _viewer.draw_statistic(_statistic);
+//    _viewer.draw_statistic(_statistic);
     _viewer.stop_normalized_screen_coordinates();
 
     _renderer.setup_gl_points(false);
 
-    _renderer.draw_curved_particle_system(_curved_system, _viewer.height());
+//    _renderer.draw_curved_particle_system(_curved_system, _viewer.height());
+
+    _renderer.draw_particle_system(_game_name_system, _viewer.height());
 
 }
 
@@ -87,6 +89,15 @@ void Experiment_screen::init()
     _curved_system.set_display_ratio(_viewer.camera()->screenWidth() / float(_viewer.camera()->screenHeight()));
 
     _curved_system.set_use_as_diagram(true);
+
+    _game_name_system.generate("PARTICULAR", _viewer.get_particle_font(), QRectF(0.0f, 0.4f, 1.0f, 0.2f), _renderer.get_aspect_ratio());
+
+//    for (Targeted_particle & p : _game_name_system.get_particles())
+//    {
+//        p.target = Eigen::Vector3f::Random().normalized();
+//        p.target *= 1.5f;
+//    }
+
 }
 
 void Experiment_screen::update_event(const float time_step)
@@ -96,4 +107,6 @@ void Experiment_screen::update_event(const float time_step)
     _curved_system.animate(time_step);
 
     _statistic.animate(time_step);
+
+    _game_name_system.animate(time_step);
 }

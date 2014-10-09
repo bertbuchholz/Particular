@@ -73,11 +73,11 @@ void My_viewer::print_cam_orientation()
 
 void My_viewer::setup_fonts()
 {
-//    int id = QFontDatabase::addApplicationFont(Data_config::get_instance()->get_absolute_qfilename("fonts/Matiz.ttf"));
 //    QString family = QFontDatabase::applicationFontFamilies(id).at(0);
 //    _main_font = QFont(family);
 
-    int id = QFontDatabase::addApplicationFont(Data_config::get_instance()->get_absolute_qfilename("fonts/LondrinaOutline-Regular.otf"));
+    int id = QFontDatabase::addApplicationFont(Data_config::get_instance()->get_absolute_qfilename("fonts/Matiz.ttf"));
+//    int id = QFontDatabase::addApplicationFont(Data_config::get_instance()->get_absolute_qfilename("fonts/LondrinaOutline-Regular.otf"));
     QString family = QFontDatabase::applicationFontFamilies(id).at(0);
     _particle_font = QFont(family);
 }
@@ -191,7 +191,11 @@ void My_viewer::start()
 {
     restore_parameters();
 
+    setAnimationPeriod(16);
+
     startAnimation();
+
+    _frame_timer.start();
 
     _ui_renderer.init(context(), size());
 
@@ -628,7 +632,9 @@ void My_viewer::wheelEvent(QWheelEvent * event)
 
 void My_viewer::animate()
 {
-    float const time_step = animationPeriod() / 1000.0f;
+    float const time_step = _frame_timer.restart() / 1000.0f;
+//    float const time_step = animationPeriod() / 1000.0f;
+//    std::cout << __func__ << " frame time: " << time_step << std::endl;
 
 //    _core.update_level_elements(time_step);
 

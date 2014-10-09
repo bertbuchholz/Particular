@@ -4,7 +4,7 @@
 
 #include <cmath>
 
-void Targeted_particle_system::generate(const std::string &text, const QFont &main_font, const QRectF &rect)
+void Targeted_particle_system::generate(const std::string &text, const QFont &main_font, const QRectF &rect, float const aspect_ratio)
 {
 
     int const scale = 500;
@@ -15,34 +15,65 @@ void Targeted_particle_system::generate(const std::string &text, const QFont &ma
                       rect.height() * scale);
 
     //        QImage img(text.size() * 30, text.size() * 30, QImage::Format_RGB32);
-    QImage img(scale, scale, QImage::Format_RGB32);
-    img.fill(QColor(0, 0, 0));
+    QImage image(scale, scale, QImage::Format_RGB32);
+    image.fill(QColor(0, 0, 0));
 
-    QPainter p(&img);
+    QPainter p(&image);
 
     QFont font = main_font;
     //        font.setWeight(QFont::Bold);
-    font.setPixelSize(70);
-    font.setLetterSpacing(QFont::PercentageSpacing, 115.0f);
+    font.setPointSizeF(10.0f);
+//    font.setLetterSpacing(QFont::PercentageSpacing, 115.0f);
+    p.setFont(font);
+
+    float const x_factor = scaled_rect.width() / float(p.fontMetrics().width(QString::fromStdString(text)));
+    float const y_factor = scaled_rect.height() / float(p.fontMetrics().height());
+    font.setPointSizeF(9.5f * std::min(x_factor, y_factor));
     p.setFont(font);
 
     p.setPen(QColor(255, 255, 255));
     p.setBrush(Qt::NoBrush);
 
-    //        p.drawText(QRect(15, 15, img.width() - 30, img.height() - 30), Qt::AlignCenter, QString::fromStdString(text));
-
-    //        QSize b_size = p.boundingRect(QRect(0, 0, 500, 500), Qt::AlignLeft | Qt::AlignTop, QString::fromStdString(text)).size();
-
-
     p.drawText(scaled_rect, Qt::AlignCenter, QString::fromStdString(text));
+
+//    p.drawRect(0, 0, scale - 1, scale - 1);
+//    p.drawRect(scaled_rect);
+
+    p.end();
 
 //    img.save("/Users/bert/Desktop/text.png");
 
-    generate(img);
+//    img = img.scaled(img.width(), img.height());
+
+    int const neighborhood_size = 1;
+
+    QImage tmp_image = image;
+
+    for (int x = 0; x < image.width(); ++x)
+    {
+        for (int y = 0; y < image.height(); ++y)
+        {
+            int neighborhood_average = 0;
+
+            for (int u = -neighborhood_size; u <= neighborhood_size; ++u)
+            {
+                for (int v = -neighborhood_size; v <= neighborhood_size; ++v)
+                {
+                    neighborhood_average += qRed(image.pixel(into_range(x + u, 0, image.width() - 1), into_range(y + v, 0, image.height() - 1)));
+                }
+            }
+
+            neighborhood_average /= (2 * neighborhood_size + 1) * (2 * neighborhood_size + 1);
+
+            tmp_image.setPixel(x, y, QColor(std::abs(neighborhood_average - qRed(image.pixel(x, y))), 0, 0).rgb());
+        }
+    }
+
+    generate(tmp_image, QVector2D(1.0f / aspect_ratio, 1.0f));
 }
 
 
-void Targeted_particle_system::generate(const QImage &image)
+void Targeted_particle_system::generate(const QImage &image, QVector2D const& scale)
 {
     _particles.reserve(10000);
 
@@ -70,11 +101,11 @@ void Targeted_particle_system::generate(const QImage &image)
 //                p.position = { 1.0f, 1.0f, 0.0f };
 
                 p.position[2] = 0.0f;
-                p.target = Eigen::Vector3f(  x / float(image.width())  * 2.0f - 1.0f,
-                                             -(y / float(image.height()) * 2.0f - 1.0f),
+                p.target = Eigen::Vector3f(scale.x() *  (x / float(image.width())  * 2.0f - 1.0f),
+                                           scale.y() * -(y / float(image.height()) * 2.0f - 1.0f),
                                              0.0f);
 
-                p.initial_speed = (0.05f + 2.5f) * (p.target - p.position) / _total_duration; // 2.5f is the 1/integral(wendland_2_1)
+                p.initial_speed = (0.05f + 2.5f) * (p.target - p.position) / _total_duration; // 2.5f is the 1/integral(wendland_2_1), add 0.05 to overshoot a bit
 
                 p.speed[2] = 0.0f;
 

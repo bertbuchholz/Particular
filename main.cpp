@@ -41,7 +41,10 @@ int main(int argc, char** argv)
 
     Core core;
 
-    My_viewer * viewer = new My_viewer(core);
+    QGLFormat format;
+    format.setSwapInterval(1);
+
+    My_viewer * viewer = new My_viewer(core, format);
     viewer->show();
     viewer->start();
 

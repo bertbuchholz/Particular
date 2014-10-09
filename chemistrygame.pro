@@ -1,7 +1,7 @@
 cache()
 
 TEMPLATE = app
-TARGET = chemistrygame
+TARGET = particular
 DEPENDPATH += .
 
 QT += opengl \

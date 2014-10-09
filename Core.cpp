@@ -679,10 +679,11 @@ bool Core::check_is_finished() const
 }
 
 
-void Core::add_molecule(Molecule molecule)
+void Core::add_molecule(Molecule const& molecule)
 {
-    molecule.set_id(_molecule_id_counter);
-    _level_data._molecules.push_back(molecule);
+    Molecule m = molecule;
+    m.set_id(_molecule_id_counter);
+    _level_data._molecules.push_back(m);
     _molecule_id_to_molecule_map[_molecule_id_counter] = &_level_data._molecules.back();
     ++_molecule_id_counter;
     _num_atoms += molecule._atoms.size();

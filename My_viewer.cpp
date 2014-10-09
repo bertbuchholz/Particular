@@ -153,7 +153,16 @@ void My_viewer::init()
 {
     std::cout << __FUNCTION__ << std::endl;
 
-    initializeOpenGLFunctions();
+    bool const opengl_initialized = initializeOpenGLFunctions();
+
+    if (!opengl_initialized)
+    {
+        QMessageBox e;
+        e.setText("Couldn't initialize OpenGL.");
+        e.exec();
+
+        abort();
+    }
 
     Base::init();
 

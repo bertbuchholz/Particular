@@ -114,7 +114,7 @@ public:
 //        return _molecule_hash;
 //    }
 
-    void add_molecule(Molecule molecule);
+    void add_molecule(Molecule const& molecule);
 
 //    void update_spatial_hash()
 //    {

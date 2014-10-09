@@ -21,10 +21,10 @@ BOOST_CLASS_EXPORT_GUID(Tractor_barrier, "Tractor_barrier")
 BOOST_CLASS_EXPORT_GUID(Charged_barrier, "Charged_barrier")
 BOOST_CLASS_EXPORT_GUID(Molecule_capture_condition, "Molecule_capture_condition")
 
-extern "C"
-{
+//extern "C"
+//{
 //    __declspec(dllexport) DWORD NvOptimusEnablement = 0x00000001;
-}
+//}
 
 int main(int argc, char** argv)
 {

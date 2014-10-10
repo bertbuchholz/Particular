@@ -1,6 +1,8 @@
 #ifndef MOLECULE_RELEASER_H
 #define MOLECULE_RELEASER_H
 
+#include <deque>
+
 #include "Level_element.h"
 
 #include "Atom.h"
@@ -20,7 +22,7 @@ public:
 
     Targeted_particle_system init_particle_system(Molecule const& m, Eigen::Vector3f const& local_pos);
 
-    bool check_do_release(float const time);
+    bool check_do_release(float const time, bool const release_allowed);
 
     virtual Molecule release(float const time);
 
@@ -43,6 +45,8 @@ public:
 
     int get_num_released_molecules() const;
     std::vector<Targeted_particle_system> const& get_particle_systems() const;
+
+    int get_num_prepared_molecules_atoms() const;
 
     float get_animation_count() const;
 
@@ -86,6 +90,8 @@ protected:
 
     Molecule _next_molecule;
     bool _next_molecule_prepared;
+
+    std::deque<Molecule> _prepared_molecules;
 
     std::vector<Targeted_particle_system> _particles;
 

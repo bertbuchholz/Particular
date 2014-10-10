@@ -170,6 +170,10 @@ void My_viewer::init()
 
     setCamera(_my_camera);
 
+    // effectively disables update() calls during manipulation since they are not necessary when running animation
+    disconnect(camera()->frame(), SIGNAL(manipulated()), this, SLOT(update()));
+    disconnect(camera()->frame(), SIGNAL(spun()), this, SLOT(update()));
+
     glEnable(GL_NORMALIZE);
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);

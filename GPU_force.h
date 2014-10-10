@@ -40,7 +40,9 @@ public:
                                                     float const coulomb_factor, float const vdw_factor, float const vdw_radius,
                                                     float const time, QVector2D const& bounding_box_size);
 
-    void update_temperature_tex(Frame_buffer<float> temperature_grid);
+    void update_temperature_tex(Frame_buffer<float> const& temperature_grid);
+
+    int get_max_num_atoms() const;
 
 private:
     Frame_buffer<Eigen::Vector3f> _result_fb;

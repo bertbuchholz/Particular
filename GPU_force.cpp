@@ -232,10 +232,15 @@ std::vector<Eigen::Vector3f> const& GPU_force::calc_forces(std::list<Molecule> c
     return _result_fb.get_data();
 }
 
-void GPU_force::update_temperature_tex(Frame_buffer<float> temperature_grid)
+void GPU_force::update_temperature_tex(Frame_buffer<float> const& temperature_grid)
 {
     glBindTexture(GL_TEXTURE_2D, _temperature_tex);
     glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, temperature_grid.get_width(), temperature_grid.get_height(), GL_RED, GL_FLOAT, temperature_grid.get_raw_data());
     glBindTexture(GL_TEXTURE_2D, 0);
+}
+
+int GPU_force::get_max_num_atoms() const
+{
+    return _max_num_atoms - 30; // add a safety buffer, hacky ...
 }
 

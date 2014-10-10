@@ -376,7 +376,15 @@ void Core::update_level_elements(const float time_step)
 
     for (Molecule_releaser * m : _level_data._molecule_releasers)
     {
-        if (m->check_do_release(_current_time))
+        bool release_allowed = true;
+
+        if (_num_atoms + m->get_num_prepared_molecules_atoms() > _gpu_force->get_max_num_atoms())
+        {
+            std::cout << __func__ << " Reached max number of atoms" << std::endl;
+            release_allowed = false;
+        }
+
+        if (m->check_do_release(_current_time, release_allowed))
         {
             add_molecule(m->release(_current_time));
         }
@@ -677,6 +685,7 @@ void Core::add_molecule(Molecule molecule)
     _level_data._molecules.push_back(molecule);
     _molecule_id_to_molecule_map[_molecule_id_counter] = &_level_data._molecules.back();
     ++_molecule_id_counter;
+    _num_atoms += molecule._atoms.size();
 }
 
 
@@ -795,6 +804,9 @@ void Core::clear()
     _level_data._external_forces.clear();
     _molecule_external_forces.clear();
     _molecule_id_to_molecule_map.clear();
+
+    _num_atoms = 0;
+    _molecule_id_counter = 0;
     //        _molecule_hash.clear();
 }
 
@@ -804,6 +816,9 @@ void Core::reset_level()
     delete_non_persistent_objects();
 
     _level_data._molecules.clear();
+
+    _num_atoms = 0;
+    _molecule_id_counter = 0;
 
     _molecule_external_forces.clear();
 

@@ -231,6 +231,7 @@ private:
     std::unordered_map<int, Molecule*> _molecule_id_to_molecule_map;
 
     int _molecule_id_counter;
+    int _num_atoms;
 
     Molecule_external_force _user_force;
 

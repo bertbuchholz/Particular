@@ -662,7 +662,7 @@ void Main_game_screen::show_context_menu_for_element()
 
         QSpinBox * spinbox_num_max_molecules = new QSpinBox();
         {
-            spinbox_num_max_molecules->setMaximum(1000);
+            spinbox_num_max_molecules->setMaximum(5000);
             spinbox_num_max_molecules->setMinimum(1);
             spinbox_num_max_molecules->setValue(m->get_num_max_molecules());
 

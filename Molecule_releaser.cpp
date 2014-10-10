@@ -20,6 +20,9 @@ Molecule_releaser::Molecule_releaser(const Eigen::Vector3f &min, const Eigen::Ve
 
 void Molecule_releaser::animate(const float timestep)
 {
+    _particles.erase(std::remove_if(_particles.begin(), _particles.end(), Targeted_particle_system::is_dead),
+                     _particles.end());
+
     for (Targeted_particle_system & p : _particles)
     {
         p.animate(timestep);
@@ -78,14 +81,11 @@ Targeted_particle_system Molecule_releaser::init_particle_system(const Molecule 
     return p_system;
 }
 
-bool Molecule_releaser::check_do_release(const float time)
+bool Molecule_releaser::check_do_release(const float time, bool const release_allowed)
 {
     float const next_release = _last_release + _interval;
 
-    _particles.erase(std::remove_if(_particles.begin(), _particles.end(), Targeted_particle_system::is_dead),
-                     _particles.end());
-
-    if (next_release - _particle_duration < time && !_next_molecule_prepared)
+    if (next_release - _particle_duration < time && !_next_molecule_prepared && release_allowed)
     {
         _next_molecule_prepared = true;
 
@@ -99,6 +99,8 @@ bool Molecule_releaser::check_do_release(const float time)
         _next_molecule._P = get_transform() * Eigen::Vector3f(1.0f, 0.0f, 0.0f) * (4.0f + 4.0f * std::rand() / float(RAND_MAX));
 
         _next_molecule.update_atom_positions();
+
+        _prepared_molecules.push_back(_next_molecule);
 
         _particles.push_back(init_particle_system(_next_molecule, local_pos));
     }
@@ -116,7 +118,11 @@ Molecule Molecule_releaser::release(const float time)
 
     _next_molecule_prepared = false;
 
-    return _next_molecule;
+    Molecule m = _prepared_molecules.front();
+    _prepared_molecules.pop_front();
+
+//    return _next_molecule;
+    return m;
 }
 
 const Eigen::AlignedBox<float, 3> &Molecule_releaser::get_box() const
@@ -185,6 +191,18 @@ const std::vector<Targeted_particle_system> &Molecule_releaser::get_particle_sys
     return _particles;
 }
 
+int Molecule_releaser::get_num_prepared_molecules_atoms() const
+{
+    int num_atoms = 0;
+
+    for (Molecule const& m : _prepared_molecules)
+    {
+        num_atoms += m._atoms.size();
+    }
+
+    return num_atoms;
+}
+
 float Molecule_releaser::get_animation_count() const
 {
     return _animation_count;
@@ -229,6 +247,7 @@ void Molecule_releaser::reset()
     _num_released_molecules = 0;
     _next_molecule_prepared = false;
     _animation_count = 0.0f;
+    _prepared_molecules.clear();
 }
 
 Atom_cannon::Atom_cannon(const Eigen::Vector3f &min, const Eigen::Vector3f &max, const float first_release, const float interval, const float speed, const float charge) :

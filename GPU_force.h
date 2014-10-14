@@ -1,8 +1,8 @@
 #ifndef GPU_FORCE_H
 #define GPU_FORCE_H
 
-#include <QGLFramebufferObject>
-#include <QGLShaderProgram>
+#include <QOpenGLFramebufferObject>
+#include <QOpenGLShaderProgram>
 #include <QOpenGLFunctions_3_3_Core>
 
 #include <Eigen/Core>
@@ -32,7 +32,7 @@ inline GLuint create_single_channel_texture(Frame_buffer<float> const& frame);
 class GPU_force : public QOpenGLFunctions_3_3_Core
 {
 public:
-    GPU_force(QGLContext *context, int const temperature_grid_size);
+    GPU_force(int const temperature_grid_size);
 
     void init_vertex_data();
 
@@ -48,8 +48,8 @@ private:
     Frame_buffer<Eigen::Vector3f> _result_fb;
     std::vector<Eigen::Vector3f> _resulting_forces;
 
-    std::unique_ptr<QGLFramebufferObject> _fbo;
-    std::unique_ptr<QGLShaderProgram> _shader;
+    std::unique_ptr<QOpenGLFramebufferObject> _fbo;
+    std::unique_ptr<QOpenGLShaderProgram> _shader;
 
     int _max_num_atoms;
     int _size;

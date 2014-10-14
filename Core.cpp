@@ -1083,9 +1083,9 @@ float Core::get_current_time() const
     return _current_time;
 }
 
-void Core::gl_init(QGLContext * context)
+void Core::gl_init(QGLContext * /* context */)
 {
-    _gpu_force = std::unique_ptr<GPU_force>(new GPU_force(context, _level_data._temperature_grid.get_width()));
+    _gpu_force = std::unique_ptr<GPU_force>(new GPU_force(_level_data._temperature_grid.get_width()));
 }
 
 

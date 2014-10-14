@@ -70,14 +70,14 @@ GLuint create_three_channel_float_texture(int const size)
 }
 
 
-GPU_force::GPU_force(QGLContext * context, int const temperature_grid_size)
+GPU_force::GPU_force(int const temperature_grid_size)
 {
     initializeOpenGLFunctions();
 
     _size = 64;
     _max_num_atoms = _size * _size;
 
-    _fbo = std::unique_ptr<QGLFramebufferObject>(new QGLFramebufferObject(_size, _size, QGLFramebufferObject::NoAttachment, GL_TEXTURE_2D, GL_RGBA));
+    _fbo = std::unique_ptr<QOpenGLFramebufferObject>(new QOpenGLFramebufferObject(_size, _size, QOpenGLFramebufferObject::NoAttachment, GL_TEXTURE_2D, GL_RGBA));
     glBindTexture(GL_TEXTURE_2D, _fbo->texture());
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
@@ -96,7 +96,7 @@ GPU_force::GPU_force(QGLContext * context, int const temperature_grid_size)
     _parent_id_tex = create_single_channel_float_texture(_size);
     _temperature_tex = create_single_channel_float_texture(temperature_grid_size, GL_LINEAR);
 
-    _shader = std::unique_ptr<QGLShaderProgram>(init_program(context, Data_config::get_instance()->get_absolute_qfilename("shaders/force_calc.vert"), Data_config::get_instance()->get_absolute_qfilename("shaders/force_calc.frag")));
+    _shader = std::unique_ptr<QOpenGLShaderProgram>(init_program(Data_config::get_instance()->get_absolute_qfilename("shaders/force_calc.vert"), Data_config::get_instance()->get_absolute_qfilename("shaders/force_calc.frag")));
 
     _result_fb = Frame_buffer<Eigen::Vector3f>(_size, _size);
     _resulting_forces.resize(_size * _size);

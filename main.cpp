@@ -5,6 +5,8 @@
 #include <boost/serialization/nvp.hpp>
 #endif
 
+#include <Message_logger.h>
+
 #include "My_viewer.h"
 #include "Spatial_hash.h"
 #include "End_condition.h"
@@ -38,6 +40,8 @@ int main(int argc, char** argv)
 
         abort();
     }
+
+    Message_logger::get_instance()->init("log.txt");
 
     Core core;
 

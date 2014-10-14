@@ -135,7 +135,7 @@ public:
 
     float get_current_time() const;
 
-    void gl_init(QGLContext *context);
+    void gl_init(QGLContext *);
 
     Molecule_external_force & get_user_force();
     Molecule_external_force const& get_user_force() const;

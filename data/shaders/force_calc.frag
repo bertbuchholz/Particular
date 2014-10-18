@@ -36,7 +36,7 @@ float calc_van_der_waals_force(float distance, float radius_0, float radius_1)
     float sigma = vdw_radius_factor * vdw_radii;
     float sigma_distance = sigma / distance;
     float pow_6 = sigma_distance * sigma_distance * sigma_distance * sigma_distance * sigma_distance * sigma_distance;
-    return vdw_factor * 4.0f * (pow_6 * pow_6 - pow_6);
+    return vdw_factor * 4.0 * (pow_6 * pow_6 - pow_6);
 }
 
 void main(void)
@@ -102,7 +102,7 @@ void main(void)
                                         sin(theta) * sin(phi),
                                         cos(theta));
 
-        float temperature = texture2D(temperature_tex, vec2(0.5) + 0.5 * pos_receiver.xz / bounding_box_size);
+        float temperature = texture2D(temperature_tex, vec2(0.5) + 0.5 * pos_receiver.xz / bounding_box_size).r;
 
 //        force += normalize(brownian_motion_dir) * max(0, temperature);
         force += brownian_motion_dir * max(0, temperature);

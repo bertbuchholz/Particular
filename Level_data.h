@@ -57,6 +57,8 @@ public:
     void delete_level_element(Level_element *level_element);
     void reset_level_elements();
 
+    void use_unstable_options();
+
     static Level_data * create()
     {
         assert(false);
@@ -67,45 +69,6 @@ public:
     {
         return "Level_data";
     }
-
-//    template<class Archive>
-//    void serialize(Archive & ar, const unsigned int version)
-//    {
-//        ar & BOOST_SERIALIZATION_NVP(_game_field_borders);
-//        ar & BOOST_SERIALIZATION_NVP(_barriers);
-//        ar & BOOST_SERIALIZATION_NVP(_portals);
-//        ar & BOOST_SERIALIZATION_NVP(_molecule_releasers);
-//        ar & BOOST_SERIALIZATION_NVP(_brownian_elements);
-//        ar & BOOST_SERIALIZATION_NVP(_level_elements);
-
-//        ar & BOOST_SERIALIZATION_NVP(_available_elements);
-//        ar & BOOST_SERIALIZATION_NVP(_score_time_factor);
-
-//        if (version > 0)
-//        {
-//            ar & BOOST_SERIALIZATION_NVP(_background_name);
-//        }
-
-//        if (version > 1)
-//        {
-//            ar & BOOST_SERIALIZATION_NVP(_translation_damping);
-//            ar & BOOST_SERIALIZATION_NVP(_rotation_damping);
-
-//            ar & BOOST_SERIALIZATION_NVP(_rotation_fluctuation);
-//            ar & BOOST_SERIALIZATION_NVP(_translation_fluctuation);
-//        }
-
-//        if (version == 3)
-//        {
-//            ar & BOOST_SERIALIZATION_NVP(_gravity);
-//        }
-
-//        if (version > 3)
-//        {
-//            ar & BOOST_SERIALIZATION_NVP(_external_forces);
-//        }
-//    }
-
 
     template<class Archive>
     void save(Archive & ar, const unsigned int /* version */) const
@@ -150,8 +113,16 @@ public:
 
         if (version > 1)
         {
-            ar & BOOST_SERIALIZATION_NVP(_translation_damping);
-            ar & BOOST_SERIALIZATION_NVP(_rotation_damping);
+            // average damping from rotation and translation:
+            // this might break existing levels if they rely on a certain amount of damping (mostly translation, probably)
+            float rot_damping;
+            float trans_damping;
+
+            ar & BOOST_SERIALIZATION_NVP(rot_damping);
+            ar & BOOST_SERIALIZATION_NVP(trans_damping);
+
+            _translation_damping = (rot_damping + trans_damping) * 0.5f;
+            _rotation_damping = _translation_damping;
 
             ar & BOOST_SERIALIZATION_NVP(_rotation_fluctuation);
             ar & BOOST_SERIALIZATION_NVP(_translation_fluctuation);

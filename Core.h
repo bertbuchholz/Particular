@@ -28,6 +28,7 @@
 #include "Progress.h"
 #include "Main_game_screen.h"
 #include "Random_generator.h"
+#include "Fps.h"
 
 void update_temperature_grid(Level_data const& level_data, Frame_buffer<float> & grid);
 
@@ -47,7 +48,7 @@ public:
         int a_id;
     };
 
-    Core();
+    Core(bool const use_unstable_options);
 
     ~Core();
 
@@ -265,6 +266,8 @@ private:
     std::unique_ptr<GPU_force> _gpu_force;
 
     Random_generator _random_generator;
+
+    Fps_meter _fps_meter;
 };
 
 //REGISTER_BASE_CLASS_WITH_PARAMETERS(Core);

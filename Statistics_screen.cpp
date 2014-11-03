@@ -155,7 +155,7 @@ void Statistics_screen::update_event(const float time_step)
 
     int bonus = 0;
 
-    if (index < _score.sensor_data.get_energy_bonus().size())
+    if (index < int(_score.sensor_data.get_energy_bonus().size()))
     {
         bonus = _score.sensor_data.get_energy_bonus()[index];
     }

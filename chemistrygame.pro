@@ -184,4 +184,5 @@ HEADERS += \
     Help_screen.h \
     Event.h \
     Draggable_event.h \
-    Random_generator.h
+    Random_generator.h \
+    Fps.h

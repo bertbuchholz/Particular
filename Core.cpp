@@ -59,7 +59,7 @@ struct Atom_averager
 };
 
 
-Core::Core() :
+Core::Core(bool const use_unstable_options) :
     _game_state(Game_state::Unstarted),
     _previous_game_state(Game_state::Unstarted),
     _molecule_id_counter(0),
@@ -90,11 +90,18 @@ Core::Core() :
 
     Main_options_window::get_instance()->add_parameter_list("Core", _parameters);
 
+    _physics_timer.setTimerType(Qt::PreciseTimer);
     _physics_timer.setInterval(_parameters["physics_timestep_ms"]->get_value<int>());
 
     connect(&_physics_timer, SIGNAL(timeout()), this, SLOT(update_physics()));
 
     load_default_simulation_settings();
+
+    if (use_unstable_options)
+    {
+        _level_data.use_unstable_options();
+    }
+
     init_game();
 }
 
@@ -1022,12 +1029,12 @@ void Core::update_physics()
 {
     float const time_debug = false;
 
-    std::chrono::steady_clock::time_point timer_start = std::chrono::steady_clock::now();
-
     if (time_debug)
     {
-        timer_start = std::chrono::steady_clock::now();
+        _fps_meter.update();
     }
+
+    std::chrono::steady_clock::time_point const timer_start = std::chrono::steady_clock::now();
 
     // FIXME: currently constant update time step, not regarding at all the actually elapsed time
     // some updates are really far away from the set time step, not sure why
@@ -1042,7 +1049,12 @@ void Core::update_physics()
 
         if (elapsed_milliseconds > 1)
         {
-            std::cout << __FUNCTION__ << " time elapsed: " << elapsed_milliseconds << std::endl;
+            std::cout << __func__ << " time elapsed: " << elapsed_milliseconds << std::endl;
+        }
+
+        if (_fps_meter.has_new_value())
+        {
+            std::cout << __func__ << " Physics fps: " << _fps_meter.get_fps() << std::endl;
         }
     }
 }

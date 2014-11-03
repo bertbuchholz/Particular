@@ -16,8 +16,8 @@ Level_data::Level_data()
 
     _parameters.add_parameter(new Parameter("score_time_factor", 60.0f, 1.0f, 3000.0f, update_variables));
 
-    _parameters.add_parameter(new Parameter("rotation_damping", 0.3f, 0.01f, 1.0f, update_variables));
-    _parameters.add_parameter(new Parameter("translation_damping", 0.3f, 0.01f, 1.0f, update_variables));
+    _parameters.add_parameter(new Parameter("rotation_damping", 0.3f, 0.1f, 1.0f, update_variables));
+    _parameters.add_parameter(new Parameter("translation_damping", 0.3f, 0.1f, 1.0f, update_variables));
     _parameters.add_parameter(new Parameter("rotation_fluctuation", 0.0f, -50.0f, 50.0f, update_variables));
     _parameters.add_parameter(new Parameter("translation_fluctuation", 0.0f, -50.0f, 50.0f, update_variables));
     _parameters.add_parameter(new Parameter("Temperature", 0.0f, -50.0f, 50.0f, update_variables));
@@ -89,17 +89,6 @@ bool Level_data::validate_elements()
 
 void Level_data::load_defaults()
 {
-    //        External_force gravity;
-
-    //        gravity._force  = Eigen::Vector3f(0.0f, 0.0f, -1.0f);
-    //        gravity._origin = Eigen::Vector3f(0.0f, 0.0f, 1e6f);
-
-    //        _core.add_external_force("gravity", gravity);
-
-    //        Eigen::AlignedBox<float, 3> play_box(Eigen::Vector3f(-40.0f, -20.0f, 0.0f), Eigen::Vector3f(60.0f, 20.0f, 40.0f));
-
-    //        _core.set_game_field_borders(play_box.min(), play_box.max());
-
     _parameters["Game Field Width"]->set_value(80.0f);
     _parameters["Game Field Height"]->set_value(40.0f);
     _parameters["Game Field Depth"]->set_value(40.0f);
@@ -107,93 +96,6 @@ void Level_data::load_defaults()
     _parameters["Temperature"]->set_value(0.0f);
     _parameters["Damping"]->set_value(0.3f);
     _parameters["gravity"]->set_value(0.0f);
-
-
-    //        _core.add_barrier(new Box_barrier(Eigen::Vector3f(-10.0f, -20.0f, 0.0f), Eigen::Vector3f(10.0f, 20.0f, 20.0f), strength, radius));
-
-    //        _core.add_brownian_element(new Brownian_box(Eigen::Vector3f(10.0f, -20.0f, -1.0f), Eigen::Vector3f(40.0f, 20.0f, 0.0f),
-    //                                                    50.0f, 40.0f));
-
-    //        _core.add_brownian_element(new Brownian_box(Eigen::Vector3f(-40.0f, -20.0f, 40.0f), Eigen::Vector3f(-10.0f, 20.0f, 41.0f),
-    //                                                    -50.0f, 40.0f));
-
-    float const na_cl_distance = Atom::create_chlorine(Eigen::Vector3f::Zero())._radius + Atom::create_natrium(Eigen::Vector3f::Zero())._radius;
-
-    Eigen::Vector3f grid_start(15.0f, -15.0f, 5.0f);
-    Eigen::Vector3f grid_end  (35.0f,  15.0f, 25.0f);
-
-    //        float resolution = 4.0f;
-    float resolution = na_cl_distance;
-
-    Eigen::Vector3f num_grid_cells = (grid_end - grid_start) / resolution;
-
-    Eigen::Vector3f offset(resolution / 2.0f, resolution / 2.0f, resolution / 2.0f);
-
-    for (float x = grid_start[0]; x < grid_end[0]; x += resolution)
-    {
-        for (float y = grid_start[1]; y < grid_end[1]; y += resolution)
-        {
-            for (float z = grid_start[2]; z < grid_end[2]; z += resolution)
-            {
-                int const sum = x + y + z;
-
-                if ((sum % 2) == 0)
-                {
-                    //                        _core.add_molecule(Molecule::create_charged_chlorine(Eigen::Vector3f(x, y, z)));
-                }
-                else
-                {
-                    //                        _core.add_molecule(Molecule::create_charged_natrium(Eigen::Vector3f(x, y, z) + offset));
-                    //                        _core.add_molecule(Molecule::create_charged_natrium(Eigen::Vector3f(x, y, z)));
-                }
-            }
-        }
-    }
-
-    for (int x = 0; x < num_grid_cells[0]; ++x)
-    {
-        for (int y = 0; y < num_grid_cells[1]; ++y)
-        {
-            for (int z = 0; z < num_grid_cells[2]; ++z)
-            {
-                int const sum = x + y + z;
-
-                //                    Eigen::Vector3f pos = Eigen::Vector3f(x, y, z) * resolution + grid_start;
-
-                if ((sum % 2) == 0)
-                {
-                    //                        _core.add_molecule(Molecule::create_charged_chlorine(pos));
-                }
-                else
-                {
-                    //                        _core.add_molecule(Molecule::create_charged_natrium(pos));
-                }
-            }
-        }
-    }
-
-    for (float x = grid_start[0]; x < grid_end[0]; x += resolution)
-    {
-        for (float y = grid_start[1]; y < grid_end[1]; y += resolution)
-        {
-            for (float z = grid_start[2]; z < grid_end[2]; z += resolution)
-            {
-                //                    _core.add_molecule(Molecule::create_water(Eigen::Vector3f(x, y, z)));
-            }
-        }
-    }
-
-
-    //        Brownian_box * e = new Brownian_box(Eigen::Vector3f(-10.0f, -20.0f, -10.0f), Eigen::Vector3f(10.0f, 20.0f, 10.0f), 10.0f, 25.0f);
-    //        e->set_user_editable(Level_element::Edit_type::All);
-    //        e->set_persistent(false);
-    //        _core.add_brownian_element(e);
-
-    //        _parameters["Renderer/type"]->set_value<std::string>("Shader Renderer");
-    //        change_renderer();
-
-    //        update_draggable_to_level_element();
-    //        update_active_draggables();
 
     update_variables();
 }
@@ -371,4 +273,11 @@ void Level_data::reset_level_elements()
     {
         e->reset();
     }
+}
+
+void Level_data::use_unstable_options()
+{
+    _parameters["Damping"]->set_min_max(0.0f, 1.0f);
+    _parameters["rotation_damping"]->set_min_max(0.0f, 1.0f);
+    _parameters["translation_damping"]->set_min_max(0.0f, 1.0f);
 }

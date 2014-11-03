@@ -41,9 +41,12 @@ int main(int argc, char** argv)
         abort();
     }
 
+    QStringList arguments = application.arguments();
+    bool const use_unstable_options = arguments.contains("--use-unstable-options");
+
     Message_logger::get_instance()->init("log.txt");
 
-    Core core;
+    Core core(use_unstable_options);
 
     QGLFormat format;
     format.setSwapInterval(1);

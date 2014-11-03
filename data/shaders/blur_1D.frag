@@ -1,5 +1,3 @@
-#version 330
-
 uniform sampler2D texture;
 
 uniform float blur_strength;

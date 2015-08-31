@@ -3,6 +3,7 @@
 #include "My_viewer.h"
 #include "Before_start_screen.h"
 #include "Editor_screen.h"
+#include "level_picker_screen.h"
 
 Main_menu_screen::Main_menu_screen(My_viewer &viewer, Core &core) : Menu_screen(viewer, core)
 {
@@ -26,23 +27,28 @@ void Main_menu_screen::init()
 {
     // main menu
     {
-        Draggable_button * button = new Draggable_button(Eigen::Vector3f(0.5f, 0.6f, 0.0f), Eigen::Vector2f(0.5f, 0.15f), "Start New Game",  std::bind(&Main_menu_screen::start_new_game, this));
+        Draggable_button * button = new Draggable_button(Eigen::Vector3f(0.5f, 0.65f, 0.0f), Eigen::Vector2f(0.5f, 0.1f), "Start New Game",  std::bind(&Main_menu_screen::start_new_game, this));
         _buttons.push_back(boost::shared_ptr<Draggable_button>(button));
     }
 
     if (_core.get_progress().last_level < _core.get_level_names().size())
     {
-        Draggable_button * button = new Draggable_button(Eigen::Vector3f(0.5f, 0.4f, 0.0f), Eigen::Vector2f(0.5f, 0.15f), "Continue Game",  std::bind(&Main_menu_screen::continue_game, this));
+        Draggable_button * button = new Draggable_button(Eigen::Vector3f(0.5f, 0.5f, 0.0f), Eigen::Vector2f(0.5f, 0.1f), "Continue Game",  std::bind(&Main_menu_screen::continue_game, this));
         _buttons.push_back(boost::shared_ptr<Draggable_button>(button));
     }
     else
     {
-        Draggable_label * label = new Draggable_label(Eigen::Vector3f(0.5f, 0.4f, 0.0f), Eigen::Vector2f(0.5f, 0.15f), "All levels finished, try the sandbox!");
+        Draggable_label * label = new Draggable_label(Eigen::Vector3f(0.5f, 0.5f, 0.0f), Eigen::Vector2f(0.5f, 0.1f), "All levels finished, try the sandbox!");
         _labels.push_back(boost::shared_ptr<Draggable_label>(label));
     }
 
     {
-        Draggable_button * button = new Draggable_button(Eigen::Vector3f(0.5f, 0.2f, 0.0f), Eigen::Vector2f(0.5f, 0.15f), "Quit", std::bind(&Main_menu_screen::quit_game, this));
+        Draggable_button * button = new Draggable_button(Eigen::Vector3f(0.5f, 0.35f, 0.0f), Eigen::Vector2f(0.5f, 0.1f), "Pick Level", std::bind(&Main_menu_screen::pick_level, this));
+        _buttons.push_back(boost::shared_ptr<Draggable_button>(button));
+    }
+
+    {
+        Draggable_button * button = new Draggable_button(Eigen::Vector3f(0.5f, 0.2f, 0.0f), Eigen::Vector2f(0.5f, 0.1f), "Quit", std::bind(&Main_menu_screen::quit_game, this));
         _buttons.push_back(boost::shared_ptr<Draggable_button>(button));
     }
 
@@ -95,7 +101,9 @@ void Main_menu_screen::start_new_game()
 void Main_menu_screen::continue_game()
 {
     // load current progress and start game
-    _core.load_next_level();
+//    _core.set_current_level_index(_core.get_progress().last_level);
+
+    _core.load_level(_core.get_progress().last_level);
 
     _core.load_default_simulation_settings();
 
@@ -120,16 +128,35 @@ void Main_menu_screen::quit_game()
 
 void Main_menu_screen::start_editor()
 {
-//    _viewer.camera()->frame()->setConstraint(nullptr);
+    if (_core.get_progress().last_level < _core.get_level_names().size() && !_core.get_progress().sandbox_warning_seen)
+    {
+        QMessageBox::StandardButton button = QMessageBox::warning(&_viewer, "Starting Sandbox", "You haven't finished the game levels yet. Using the sandbox might need knowledge gained during those levels.\nStart the sandbox anyway?", QMessageBox::Yes | QMessageBox::No);
 
-    _core.load_level_defaults();
-    _core.set_simulation_state(false);
+        if (button == QMessageBox::Yes)
+        {
+            _core.get_progress().sandbox_warning_seen = true;
+            _core.save_progress();
+        }
+    }
 
-    _core.load_simulation_settings();
+    if (_core.get_progress().last_level == _core.get_level_names().size() || _core.get_progress().sandbox_warning_seen)
+    {
+        _core.load_level_defaults();
+        _core.set_simulation_state(false);
 
-    _core.set_new_game_state(Core::Game_state::Unstarted);
+        _core.load_simulation_settings();
 
-    _viewer.replace_screens(new Editor_screen(_viewer, _core));
+        _core.set_new_game_state(Core::Game_state::Unstarted);
+
+        _viewer.replace_screens(new Editor_screen(_viewer, _core));
+    }
+}
+
+void Main_menu_screen::pick_level()
+{
+    _viewer.add_screen(new Level_picker_screen(_viewer, _core, this));
+
+    kill();
 }
 
 void Main_menu_screen::update_event(const float time_step)

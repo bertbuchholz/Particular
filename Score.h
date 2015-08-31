@@ -53,7 +53,13 @@ struct Score
     void serialize(Archive & ar, const unsigned int /* version */)
     {
         ar & BOOST_SERIALIZATION_NVP(final_score);
+        ar & BOOST_SERIALIZATION_NVP(full_time);
         ar & BOOST_SERIALIZATION_NVP(sensor_data);
+        ar & BOOST_SERIALIZATION_NVP(score_at_time);
+        ar & BOOST_SERIALIZATION_NVP(penalty_at_time);
+        ar & BOOST_SERIALIZATION_NVP(num_molecules_to_capture);
+        ar & BOOST_SERIALIZATION_NVP(_penalty);
+        ar & BOOST_SERIALIZATION_NVP(_energy_bonus);
     }
 };
 

@@ -693,7 +693,7 @@ void Core::add_molecule(Molecule const& molecule)
     _level_data._molecules.push_back(m);
     _molecule_id_to_molecule_map[_molecule_id_counter] = &_level_data._molecules.back();
     ++_molecule_id_counter;
-    _num_atoms += molecule._atoms.size();
+    _num_atoms += int(molecule._atoms.size());
 }
 
 
@@ -1015,9 +1015,20 @@ void Core::quit()
 //    save_simulation_settings();
 }
 
-std::string const& Core::get_current_level_name() const
+std::string const Core::get_level_file_name(int const level_index) const
 {
-    return _current_level_name;
+    return Data_config::get_instance()->get_absolute_filename("levels/" + _level_names[level_index] + ".data");
+}
+
+std::string const Core::get_level_file_name(std::string const& base_name) const
+{
+    return Data_config::get_instance()->get_absolute_filename("levels/" + QString::fromStdString(base_name) + ".data");
+}
+
+std::string Core::get_level_base_name(int const level_index) const
+{
+    return _level_names[level_index].toStdString();
+//    QFileInfo(QString::fromStdString(get_current_level_name())).baseName().toStdString();
 }
 
 const QStringList &Core::get_level_names() const
@@ -1171,13 +1182,23 @@ void Core::load_level(std::string const& file_name)
 
     assert(_level_data.validate_elements());
 
-    reset_level();
+//    reset_level();
 
     std::cout << __FUNCTION__ << " B " << _level_data._parameters["gravity"]->get_value<float>() << std::endl;
 
-    _current_level_name = file_name;
-
     change_level_state(Main_game_screen::Level_state::Running);
+}
+
+void Core::load_level(const int level_index)
+{
+    if (level_index >= 0 && level_index < _level_names.size())
+    {
+        _current_level_index = level_index;
+
+        std::string const filename = get_level_file_name(_current_level_index);
+
+        load_level(filename);
+    }
 }
 
 void Core::change_level_state(const Main_game_screen::Level_state new_level_state)
@@ -1185,19 +1206,32 @@ void Core::change_level_state(const Main_game_screen::Level_state new_level_stat
     Q_EMIT level_changed(new_level_state);
 }
 
+int Core::get_current_level_index() const
+{
+    return _current_level_index;
+}
+
+//void Core::set_current_level_index(const int level_index)
+//{
+//    if (level_index >= 0 && level_index < _level_names.size())
+//    {
+//        _current_level_index = level_index;
+//    }
+//}
+
 void Core::load_next_level()
 {
-    std::cout << __FUNCTION__ << " next level: " << get_progress().last_level << std::endl;
+    int const next_level_index = _current_level_index + 1;
 
-    if (_level_names.size() <= get_progress().last_level)
+    std::cout << __FUNCTION__ << " next level: " << next_level_index << std::endl;
+
+    if (_level_names.size() <= next_level_index)
     {
         std::cout << "No more levels." << std::endl;
         return;
     }
 
-    std::string const filename = Data_config::get_instance()->get_absolute_filename("levels/" + _level_names[get_progress().last_level] + ".data");
-
-    load_level(filename);
+    load_level(next_level_index);
 }
 
 void Core::init_game()

@@ -114,7 +114,8 @@ SOURCES += main.cpp \
     Score.cpp \
     Draggable_event.cpp \
     Level_element_draw_visitor.cpp \
-    GPU_force.cpp
+    GPU_force.cpp \
+    level_picker_screen.cpp
 
 OTHER_FILES += TODO.txt \
     data/shaders/picking.vert \
@@ -185,4 +186,5 @@ HEADERS += \
     Event.h \
     Draggable_event.h \
     Random_generator.h \
-    Fps.h
+    Fps.h \
+    level_picker_screen.h

@@ -171,7 +171,7 @@ void My_viewer::init()
     resize(1280, 720);
     move(QApplication::desktop()->screen()->rect().center() - rect().center());
 
-    _my_camera = new StandardCamera(0.1f, 1000.0f);
+    _my_camera = new StandardCamera(10.0f, 1000.0f);
     _my_camera->frame()->setSpinningSensitivity(1000.0f);
 
     Game_camera_constraint * camera_constraint = new Game_camera_constraint(195.0f);
@@ -322,7 +322,7 @@ void My_viewer::draw_label(const Draggable_label *b, float const alpha)
 
     glTranslatef(b->get_position()[0], b->get_position()[1], b->get_position()[2]);
     glScalef(b->get_extent()[0] * 0.5f, b->get_extent()[1] * 0.5f, 1.0f);
-    glColor4f(b->get_color()[0], b->get_color()[1], b->get_color()[2], b->get_alpha() * alpha);
+    glColor4f(b->get_color()[0], b->get_color()[1], b->get_color()[2], b->get_alpha());
 
     draw_textured_quad(b->get_texture());
 

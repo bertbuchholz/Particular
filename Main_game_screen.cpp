@@ -1507,7 +1507,7 @@ void Main_game_screen::handle_level_change(Main_game_screen::Level_state const l
         setup_intro();
         assert(_core.get_level_data()._game_field_borders.size() == 6);
     }
-    else if (_core.get_progress().last_level == 0 && _ui_state == Ui_state::Playing)
+    else if (_core.get_current_level_index() == 0 && _ui_state == Ui_state::Playing)
     {
         std::cout << "Level 0, adding tutorial events" << std::endl;
         clear_events();

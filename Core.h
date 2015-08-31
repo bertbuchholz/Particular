@@ -164,9 +164,15 @@ public:
 
     void save_level(std::string const& file_name) const;
     void load_level(std::string const& file_name);
+    void load_level(const int level_index);
     void load_next_level();
     void change_level_state(Main_game_screen::Level_state const new_level_state);
-    std::string const& get_current_level_name() const;
+
+    int get_current_level_index() const;
+//    void set_current_level_index(int const level_index);
+    std::string const get_level_file_name(int const level_index) const; // Full path + file name
+    std::string const get_level_file_name(std::string const& base_name) const; // Full path + file name
+    std::string get_level_base_name(int const level_index) const; // File name without path and extension
     QStringList const& get_level_names() const;
 
     void init_game();
@@ -261,7 +267,8 @@ private:
     float _last_animation_time;
 
     QStringList _level_names;
-    std::string _current_level_name;
+    int _current_level_index;
+//    std::string _current_level_name;
 
     std::unique_ptr<GPU_force> _gpu_force;
 

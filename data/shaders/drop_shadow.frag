@@ -39,11 +39,14 @@ void main(void)
 {
     vec2 tex_coord = gl_TexCoord[0].st;
 
-    vec4 color = texture2D(texture, tex_coord) * gl_Color; // + color * (1.0 - f);
+    vec4 color = texture2D(texture, tex_coord); // * gl_Color; // + color * (1.0 - f);
+//    float tex_alpha = color.a; // i.e., text or no text
 
     float shadow = blur_alpha(tex_coord, blur_size / 2);
 
-    color = color * color.a + vec4(0.0, 0.0, 0.0, shadow * 0.75 * overall_alpha) * (1.0 - color.a);
+    color = color * color.a + vec4(0.0, 0.0, 0.0, shadow * 0.75) * (1.0 - color.a);
+    color.a *= overall_alpha * gl_Color.a;
+    color.rgb *= gl_Color.rgb;
 
 //    color = vec4(blur_alpha(tex_coord, blur_size), 0.0, 0.0, 1.0);
 

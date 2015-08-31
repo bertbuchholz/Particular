@@ -91,6 +91,8 @@ public:
         ar & BOOST_SERIALIZATION_NVP(_rotation_fluctuation);
         ar & BOOST_SERIALIZATION_NVP(_translation_fluctuation);
         ar & BOOST_SERIALIZATION_NVP(_external_forces);
+
+        ar & BOOST_SERIALIZATION_NVP(_molecules);
     }
 
     template<class Archive>
@@ -118,8 +120,10 @@ public:
             float rot_damping;
             float trans_damping;
 
-            ar & BOOST_SERIALIZATION_NVP(rot_damping);
-            ar & BOOST_SERIALIZATION_NVP(trans_damping);
+            ar & boost::serialization::make_nvp("_translation_damping", trans_damping);
+            ar & boost::serialization::make_nvp("_rotation_damping", rot_damping);
+//            ar & BOOST_SERIALIZATION_NVP(rot_damping);
+//            ar & BOOST_SERIALIZATION_NVP(trans_damping);
 
             _translation_damping = (rot_damping + trans_damping) * 0.5f;
             _rotation_damping = _translation_damping;
@@ -138,6 +142,11 @@ public:
         if (version > 3)
         {
             ar & BOOST_SERIALIZATION_NVP(_external_forces);
+        }
+
+        if (version > 4)
+        {
+            ar & BOOST_SERIALIZATION_NVP(_molecules);
         }
     }
     BOOST_SERIALIZATION_SPLIT_MEMBER()
@@ -180,6 +189,6 @@ public:
 
 //REGISTER_BASE_CLASS_WITH_PARAMETERS(Level_data);
 
-BOOST_CLASS_VERSION(Level_data, 4)
+BOOST_CLASS_VERSION(Level_data, 5)
 
 #endif // LEVEL_DATA_H

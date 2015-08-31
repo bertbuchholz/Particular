@@ -140,7 +140,7 @@ void After_finish_screen::init(Main_game_screen::Ui_state const ui_state)
             _core.get_progress().last_level += 1;
         }
 
-        std::vector<Score> & scores = _core.get_progress().scores[_core.get_current_level_name()];
+        std::vector<Score> & scores = _core.get_progress().scores[_core.get_level_base_name(_core.get_current_level_index())];
 
         bool is_new_highscore = false;
 

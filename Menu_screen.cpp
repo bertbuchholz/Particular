@@ -108,10 +108,10 @@ void Menu_screen::draw()
     {
         if (label->is_visible())
         {
-            _drop_shadow_program->setUniformValue("overall_alpha", label->get_alpha());
+            _drop_shadow_program->setUniformValue("overall_alpha", alpha);
             _drop_shadow_program->setUniformValue("tex_size", QVector2D(label->get_extent()[0] * _viewer.width(), label->get_extent()[1] * _viewer.height()));
 
-            _viewer.draw_label(label.get(), alpha);
+            _viewer.draw_label(label.get(), label->get_alpha());
         }
     }
 

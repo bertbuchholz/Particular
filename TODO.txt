@@ -1,3 +1,9 @@
+- Z-fighting, increase z buffer res or decrease near/far plane distance
+- OpenGL lighting of boxes, shading changes with moving the camera
+
+
+
+
 - Midpoint/Runge-Kutta
 - Basic interaction, shooting in new molecules, pulling existing molecules
 

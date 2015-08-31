@@ -16,6 +16,7 @@ public:
     void continue_game();
     void quit_game();
     void start_editor();
+    void pick_level();
 
     void update_event(const float time_step) override;
 

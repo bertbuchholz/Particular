@@ -1057,9 +1057,12 @@ void Shader_renderer::draw_gravity(Level_data const& l) const
 void Shader_renderer::render(QGLFramebufferObject *main_fbo, const Level_data &level_data, const float time, const qglviewer::Camera *camera)
 {
     glEnable(GL_DEPTH_TEST);
+    glEnable(GL_BLEND);
 
 //    glViewport(0.0f, 0.0f, camera->screenWidth(), camera->screenHeight());
 
+    GLfloat light_position[] = { 500.0, -1000.0, 750.0, 0.0 };
+    glLightfv(GL_LIGHT0, GL_POSITION, light_position);
 
     glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
 
@@ -1128,7 +1131,6 @@ void Shader_renderer::render(QGLFramebufferObject *main_fbo, const Level_data &l
     draw_level_elements(level_data);
 
     glDisable(GL_LIGHTING);
-    glEnable(GL_BLEND);
 
     draw_particle_systems(level_data);
 
@@ -1207,6 +1209,8 @@ void Shader_renderer::render(QGLFramebufferObject *main_fbo, const Level_data &l
     _screen_quad_program->bind();
     _screen_quad_program->setUniformValue("texture", 0);
     glActiveTexture(GL_TEXTURE0);
+//    glBindTexture(GL_TEXTURE_2D, _tmp_screen_texture[1].get_id());
+//    glBindTexture(GL_TEXTURE_2D, _scene_fbo->texture());
     glBindTexture(GL_TEXTURE_2D, _temperature_fbo->texture());
     draw_quad_with_tex_coords();
     _screen_quad_program->release();

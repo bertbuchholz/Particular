@@ -160,6 +160,8 @@ void Level_element_draw_visitor::visit(Blow_barrier *b) const
 
 void Level_element_draw_visitor::visit(Molecule_releaser *b) const
 {
+    glDisable(GL_LIGHTING);
+
     glPushMatrix();
 
     glTranslatef(b->get_position()[0], b->get_position()[1], b->get_position()[2]);

@@ -17,7 +17,8 @@ Statistics_screen::Statistics_screen(My_viewer & viewer, Core & core, Screen *ca
 
 void Statistics_screen::init()
 {
-    _statistics.resize(_core.get_sensor_data().get_num_data_types());
+//    _statistics.resize(_core.get_sensor_data().get_num_data_types());
+    _statistics.resize(_score.sensor_data.get_num_data_types());
 
     float const full_time = _score.get_full_time();
     float const time_threshold = _core.get_level_data()._score_time_factor;
@@ -95,7 +96,8 @@ void Statistics_screen::init()
         _draggable_events.push_back(e);
     }
 
-    setup_statistics(_core.get_sensor_data(), _score); // this MUST be before the generation of the textures!
+//    setup_statistics(_core.get_sensor_data(), _score); // this MUST be before the generation of the textures!
+    setup_statistics(_score.sensor_data, _score); // this MUST be before the generation of the textures!
 
     _renderer.generate_statistics_texture(*_statistics[int(Sensor_data::Type::ColMol)].get(), full_time, time_threshold);
     _renderer.generate_statistics_texture(*_statistics[int(Sensor_data::Type::AvgTemp)].get(), full_time);

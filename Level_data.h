@@ -146,6 +146,9 @@ public:
 
         if (version > 4)
         {
+            // Core contains several variables () that contain the number of molecules, atoms and even pointers
+            // to molecules, which are not restored here. probably need to be handled when loading a level!
+            // Solved by adding the option to keep molecules in Core::reset_level, won't keep their external forces however.
             ar & BOOST_SERIALIZATION_NVP(_molecules);
         }
     }

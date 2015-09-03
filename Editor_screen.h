@@ -27,6 +27,7 @@ private:
     void hide_controls();
     void show_controls();
     void slider_changed();
+    void reset_level();
     void clear_level();
     void show_advanced_options();
     void hide_advanced_options();

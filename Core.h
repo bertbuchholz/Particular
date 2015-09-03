@@ -156,7 +156,7 @@ public:
     void delete_non_persistent_objects();
 
     void clear();
-    void reset_level();
+    void reset_level(bool const keep_molecules = false);
 
     void save_simulation_settings();
     void load_simulation_settings();

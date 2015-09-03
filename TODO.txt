@@ -1,7 +1,8 @@
-- Z-fighting, increase z buffer res or decrease near/far plane distance
+- Polish the level picker
+
+Done:
 - OpenGL lighting of boxes, shading changes with moving the camera
-
-
+- Z-fighting, increase z buffer res or decrease near/far plane distance
 
 
 - Midpoint/Runge-Kutta

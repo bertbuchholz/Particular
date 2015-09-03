@@ -819,9 +819,16 @@ void Core::clear()
 }
 
 
-void Core::reset_level()
+void Core::reset_level(bool const keep_molecules)
 {
     delete_non_persistent_objects();
+
+    std::list<Molecule> molecules_tmp;
+
+    if (keep_molecules)
+    {
+        molecules_tmp = _level_data._molecules;
+    }
 
     _level_data._molecules.clear();
 
@@ -832,6 +839,14 @@ void Core::reset_level()
 
     //        _molecule_hash.clear();
     _molecule_id_to_molecule_map.clear();
+
+    if (keep_molecules)
+    {
+        for (Molecule const& m : molecules_tmp)
+        {
+            add_molecule(m);
+        }
+    }
 
     _sensor_data.clear();
     _sensor_data.set_game_field_volume(_level_data._game_field_height * _level_data._game_field_width);
@@ -1182,7 +1197,7 @@ void Core::load_level(std::string const& file_name)
 
     assert(_level_data.validate_elements());
 
-//    reset_level();
+    reset_level(true);
 
     std::cout << __FUNCTION__ << " B " << _level_data._parameters["gravity"]->get_value<float>() << std::endl;
 

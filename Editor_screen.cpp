@@ -476,7 +476,7 @@ void Editor_screen::init_controls()
     boost::shared_ptr<Draggable_button> button_reset(
                 new Draggable_button(Eigen::Vector3f(0.27f, 0.05f, 0.0f),
                                      Eigen::Vector2f(0.15f, 0.05f * _viewer.camera()->aspectRatio()),
-                                     "Reset", std::bind(&Core::reset_level, &_core)));
+                                     "Reset", std::bind(&Editor_screen::reset_level, this)));
     _ui_renderer.generate_button_texture(button_reset.get());
     button_reset->set_tooltip_text("Reset and delete all non-persistent elements");
 
@@ -711,6 +711,25 @@ void Editor_screen::slider_changed()
     std::cout << __FUNCTION__ << std::endl;
 }
 
+void Editor_screen::reset_level()
+{
+    QMessageBox msgBox(QMessageBox::Warning, "Reset Level", "The level elements will be reset and all molecules removed.");
+    QPushButton * keep_molecules_button = msgBox.addButton(tr("Keep molecules"), QMessageBox::ActionRole);
+    QPushButton * continue_button = msgBox.addButton(tr("Continue"), QMessageBox::ActionRole);
+    msgBox.addButton(QMessageBox::Abort);
+
+    msgBox.exec();
+
+    if (msgBox.clickedButton() == keep_molecules_button)
+    {
+        _core.reset_level(true);
+    }
+    else if (msgBox.clickedButton() == continue_button)
+    {
+        _core.reset_level(false);
+    }
+}
+
 void Editor_screen::hide_controls()
 {
     std::cout << __FUNCTION__ << std::endl;
@@ -765,9 +784,14 @@ void Editor_screen::show_controls()
 
 void Editor_screen::clear_level()
 {
-    _core.clear();
+    QMessageBox::StandardButton button = QMessageBox::warning(&_viewer, "Clear Level", "This will clear the level, unsaved work will be lost. Continue?", QMessageBox::Yes | QMessageBox::No);
 
-    _core.load_level_defaults();
+    if (button == QMessageBox::Yes)
+    {
+        _core.clear();
+
+        _core.load_level_defaults();
+    }
 }
 
 void Editor_screen::show_advanced_options()

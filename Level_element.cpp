@@ -770,7 +770,8 @@ float Brownian_plane::falloff_function(const float distance) const
 
 
 Brownian_box::Brownian_box(const Eigen::Vector3f &min, const Eigen::Vector3f &max, const float strength, const float radius) :
-    Brownian_element(strength, radius)
+//    Brownian_element(strength, radius)
+    Brownian_element(strength, 10.0f)
 {
     set_transform(Eigen::Transform<float, 3, Eigen::Affine>::Identity());
 
@@ -790,7 +791,7 @@ Brownian_box::Brownian_box(const Eigen::Vector3f &min, const Eigen::Vector3f &ma
         _particles.push_back(p);
     }
 
-    add_property(new Parameter("radius", radius, 5.0f, 100.0f));
+//    add_property(new Parameter("radius", radius, 5.0f, 100.0f));
     add_property(new Parameter("strength", strength, -50.0f, 50.0f));
 }
 
@@ -893,7 +894,7 @@ Eigen::AlignedBox<float, 3> Brownian_box::get_world_aabb() const
 void Brownian_box::set_property_values(const Parameter_list &properties)
 {
     _strength = properties["strength"]->get_value<float>();
-    _radius   = properties["radius"]->get_value<float>();
+//    _radius   = properties["radius"]->get_value<float>();
 }
 
 void Brownian_box::accept(const Level_element_visitor *visitor)

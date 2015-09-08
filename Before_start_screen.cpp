@@ -41,7 +41,8 @@ void Before_start_screen::init()
     }
 
     _particle_system = Targeted_particle_system(3.0f);
-    _particle_system.generate(QString("LEVEL %1").arg(_core.get_current_level_index() + 1).toStdString(), _viewer.get_particle_font(), QRectF(0.0f, 0.1f, 1.0f, 0.3f), _renderer.get_aspect_ratio());
+    _particle_system.generate(_core.get_level_base_name(_core.get_current_level_index()), _viewer.get_particle_font(), QRectF(0.0f, 0.1f, 1.0f, 0.3f), _renderer.get_aspect_ratio());
+//    _particle_system.generate(QString("LEVEL %1").arg(_core.get_current_level_index() + 1).toStdString(), _viewer.get_particle_font(), QRectF(0.0f, 0.1f, 1.0f, 0.3f), _renderer.get_aspect_ratio());
 }
 
 void Before_start_screen::return_to_main_menu()

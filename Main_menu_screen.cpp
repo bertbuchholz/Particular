@@ -27,28 +27,28 @@ void Main_menu_screen::init()
 {
     // main menu
     {
-        Draggable_button * button = new Draggable_button(Eigen::Vector3f(0.5f, 0.65f, 0.0f), Eigen::Vector2f(0.5f, 0.1f), "Start New Game",  std::bind(&Main_menu_screen::start_new_game, this));
+        Draggable_button * button = new Draggable_button(Eigen::Vector3f(0.5f, 0.65f, 0.0f), Eigen::Vector2f(0.5f, 0.12f), "Start New Game",  std::bind(&Main_menu_screen::start_new_game, this));
         _buttons.push_back(boost::shared_ptr<Draggable_button>(button));
     }
 
     if (_core.get_progress().last_level < _core.get_level_names().size())
     {
-        Draggable_button * button = new Draggable_button(Eigen::Vector3f(0.5f, 0.5f, 0.0f), Eigen::Vector2f(0.5f, 0.1f), "Continue Game",  std::bind(&Main_menu_screen::continue_game, this));
+        Draggable_button * button = new Draggable_button(Eigen::Vector3f(0.5f, 0.5f, 0.0f), Eigen::Vector2f(0.5f, 0.12f), "Continue Game",  std::bind(&Main_menu_screen::continue_game, this));
         _buttons.push_back(boost::shared_ptr<Draggable_button>(button));
     }
     else
     {
-        Draggable_label * label = new Draggable_label(Eigen::Vector3f(0.5f, 0.5f, 0.0f), Eigen::Vector2f(0.5f, 0.1f), "All levels finished, try the sandbox!");
+        Draggable_label * label = new Draggable_label(Eigen::Vector3f(0.5f, 0.5f, 0.0f), Eigen::Vector2f(0.5f, 0.12f), "All levels finished, try the sandbox!");
         _labels.push_back(boost::shared_ptr<Draggable_label>(label));
     }
 
     {
-        Draggable_button * button = new Draggable_button(Eigen::Vector3f(0.5f, 0.35f, 0.0f), Eigen::Vector2f(0.5f, 0.1f), "Pick Level", std::bind(&Main_menu_screen::pick_level, this));
+        Draggable_button * button = new Draggable_button(Eigen::Vector3f(0.5f, 0.35f, 0.0f), Eigen::Vector2f(0.5f, 0.12f), "Pick Level", std::bind(&Main_menu_screen::pick_level, this));
         _buttons.push_back(boost::shared_ptr<Draggable_button>(button));
     }
 
     {
-        Draggable_button * button = new Draggable_button(Eigen::Vector3f(0.5f, 0.2f, 0.0f), Eigen::Vector2f(0.5f, 0.1f), "Quit", std::bind(&Main_menu_screen::quit_game, this));
+        Draggable_button * button = new Draggable_button(Eigen::Vector3f(0.5f, 0.2f, 0.0f), Eigen::Vector2f(0.5f, 0.12f), "Quit", std::bind(&Main_menu_screen::quit_game, this));
         _buttons.push_back(boost::shared_ptr<Draggable_button>(button));
     }
 
@@ -88,7 +88,7 @@ void Main_menu_screen::start_new_game()
     }
 
 //    _core.change_level_state(Main_game_screen::Level_state::Intro);
-    _core.load_next_level();
+    _core.load_level(0);
 
     _viewer.add_screen(new Before_start_screen(_viewer, _core));
 

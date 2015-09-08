@@ -145,7 +145,7 @@ void Level_picker_screen::show_page(int const page_index)
         _statistic_buttons[i]->set_visible(false);
     }
 
-    for (int i = page_index * num_levels_per_page; i < page_index * num_levels_per_page + 3; ++i)
+    for (int i = page_index * num_levels_per_page; i < std::min(num_levels, page_index * num_levels_per_page + 3); ++i)
     {
         _level_name_labels[i]->set_visible(true);
 
@@ -168,7 +168,7 @@ void Level_picker_screen::show_page(int const page_index)
         _page_arrow_buttons[0]->set_visible(false);
     }
 
-    if (num_levels / num_levels_per_page == page_index + 1)
+    if ((num_levels - 1) / num_levels_per_page == page_index) // Are there any more pages to be shown, the "-1" prevents the button to be shown when the number of levels per page is a clean divisor of the number of levels
     {
         _page_arrow_buttons[1]->set_visible(false);
     }

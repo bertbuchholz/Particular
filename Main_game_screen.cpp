@@ -1037,6 +1037,7 @@ void Main_game_screen::draw_draggables() // FIXME: use visitors or change it so 
     glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
 
     float const z_offset = -0.01f;
+    float const handle_alpha = 0.8f;
 
     for (auto const& d : _draggable_to_level_element)
     {
@@ -1064,7 +1065,7 @@ void Main_game_screen::draw_draggables() // FIXME: use visitors or change it so 
                     glTranslatef(p.get_position()[0] + z_offset, p.get_position()[1] + z_offset, p.get_position()[2] + z_offset);
                     glScalef(scale, scale, scale);
                     glRotatef(90, 1.0, 0.0, 0.0);
-                    glColor4f(1.0f, 1.0f, 1.0f, 0.5f);
+                    glColor4f(1.0f, 1.0f, 1.0f, handle_alpha);
                     _viewer.draw_textured_quad(_scale_tex);
 
                     glPopMatrix();
@@ -1080,7 +1081,7 @@ void Main_game_screen::draw_draggables() // FIXME: use visitors or change it so 
                     glTranslatef(d_disc.get_position()[0] + z_offset, d_disc.get_position()[1] + z_offset, d_disc.get_position()[2] + z_offset);
                     glScalef(scale, scale, scale);
                     glRotatef(90, 1.0, 0.0, 0.0);
-                    glColor4f(1.0f, 1.0f, 1.0f, 0.5f);
+                    glColor4f(1.0f, 1.0f, 1.0f, handle_alpha);
                     _viewer.draw_textured_quad(_move_tex);
 
                     glPopMatrix();
@@ -1096,7 +1097,7 @@ void Main_game_screen::draw_draggables() // FIXME: use visitors or change it so 
                     glTranslatef(d_disc.get_position()[0] + z_offset, d_disc.get_position()[1] + z_offset, d_disc.get_position()[2] + z_offset);
                     glScalef(scale, scale, scale);
                     glRotatef(90, 1.0, 0.0, 0.0);
-                    glColor4f(1.0f, 1.0f, 1.0f, 0.5f);
+                    glColor4f(1.0f, 1.0f, 1.0f, handle_alpha);
                     _viewer.draw_textured_quad(_rotate_tex);
 
                     glPopMatrix();
@@ -1111,7 +1112,7 @@ void Main_game_screen::draw_draggables() // FIXME: use visitors or change it so 
                 glTranslatef(d_disc.get_position()[0] + z_offset, d_disc.get_position()[1] + z_offset, d_disc.get_position()[2] + z_offset);
                 glScalef(scale, scale, scale);
                 glRotatef(90, 1.0, 0.0, 0.0);
-                glColor4f(1.0f, 1.0f, 1.0f, 0.5f);
+                glColor4f(1.0f, 1.0f, 1.0f, handle_alpha);
                 _viewer.draw_textured_quad(_settings_tex);
 
                 glPopMatrix();

@@ -720,8 +720,17 @@ void Draggable_box::setup_handles()
             pos_1[0] += rotation_handles_distance;
         }
 
-        _rotation_handles[2 * i].set_position(pos_0);
-        _rotation_handles[2 * i + 1].set_position(pos_1);
+        _rotation_handles[i].set_position(pos_0);
+//        _rotation_handles[2 * i].set_position(pos_0);
+//        _rotation_handles[2 * i + 1].set_position(pos_1);
+    }
+
+    {
+        Eigen::Vector3f pos_1(0.0f, 0.0f, 0.0f);
+        pos_1[1] -= _extent_2[1];
+        pos_1[0] += rotation_handles_distance;
+
+        _setting_handle.set_position(pos_1);
     }
 }
 
@@ -837,6 +846,16 @@ const std::vector<Draggable_disc> &Draggable_box::get_rotation_handles() const
     return _rotation_handles;
 }
 
+Draggable_disc const& Draggable_box::get_setting_handle() const
+{
+    return _setting_handle;
+}
+
+Draggable_disc & Draggable_box::get_setting_handle()
+{
+    return _setting_handle;
+}
+
 const std::unordered_map<std::string, Draggable_point> &Draggable_box::get_property_handles() const
 {
     return _property_handles;
@@ -888,6 +907,11 @@ std::vector<Draggable *> Draggable_box::get_draggables(const Level_element::Edit
         }
     }
 
+    if (int(edit_type) & int(Level_element::Edit_type::Settings))
+    {
+        result.push_back(&_setting_handle);
+    }
+
     return result;
 }
 
@@ -914,7 +938,8 @@ void Draggable_box::init()
 {
     _size_handles.resize(_corner_types.size());
     _position_handles.resize(_position_types.size());
-    _rotation_handles.resize(_rotation_types.size() * 2);
+    _rotation_handles.resize(_rotation_types.size());
+//    _rotation_handles.resize(_rotation_types.size() * 2); // Changed to only one rotation icon
 
     setup_handles();
 
@@ -932,6 +957,8 @@ void Draggable_box::init()
     {
         d.set_parent(this);
     }
+
+    _setting_handle.set_parent(this);
 
     int i = 0;
 

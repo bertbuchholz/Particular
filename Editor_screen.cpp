@@ -259,6 +259,10 @@ bool Editor_screen::mouseReleaseEvent(QMouseEvent * event)
                 {
                     show_context_menu_for_element();
                 }
+                else
+                {
+                    _active_draggables[_picked_index]->clicked();
+                }
             }
 
             handled = true;

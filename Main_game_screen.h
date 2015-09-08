@@ -42,6 +42,7 @@ public:
 
     void delete_selected_element();
     void show_context_menu_for_element();
+    void level_element_settings_button_clicked(Draggable * clicked_draggable);
 
     void draw_molecules_for_picking();
     void draw_draggables_for_picking();
@@ -127,6 +128,7 @@ protected:
     GLuint _scale_tex;
     GLuint _move_tex;
     GLuint _slider_tex;
+    GLuint _settings_tex;
 
     std::unique_ptr<QGLFramebufferObject> _main_fbo;
     std::unique_ptr<QGLShaderProgram> _screen_quad_program;

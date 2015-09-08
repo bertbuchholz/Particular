@@ -136,7 +136,14 @@ private:
 class Level_element
 {
 public:
-    enum class Edit_type { None = 0, Rotate = 0x01, Translate = 0x02, Scale = 0x04, Property = 0x08, All = 0x0F  };
+    enum class Edit_type { None      = 0,
+                           Rotate    = 1,
+                           Translate = 2,
+                           Scale     = 4,
+                           Property  = 8,
+                           Settings  = 16,
+                           Editor    = 31,   // All fields, including "Settings"
+                           All       = 15 }; // All = not "Settings", as that is an editor only option
 
     virtual ~Level_element() {}
 

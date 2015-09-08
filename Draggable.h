@@ -119,6 +119,11 @@ public:
 
     Draggable const* get_parent() const;
 
+    void set_callback_self(std::function<void(Draggable * self)> const& callback)
+    {
+        _callback_self = callback;
+    }
+
     void add_constraint(Constraint * c);
 
     void notify() override;
@@ -132,7 +137,13 @@ public:
     std::string const& get_tooltip_text() const;
     void set_tooltip_text(std::string const& tooltip_text);
 
-    virtual void clicked() { }
+    virtual void clicked()
+    {
+        if (_callback_self)
+        {
+            _callback_self(this);
+        }
+    }
 
 protected:
     Draggable * _parent;
@@ -152,6 +163,8 @@ protected:
     bool _visible;
 
     std::string _tooltip_text;
+
+    std::function<void(Draggable *)> _callback_self;
 };
 
 class Draggable_screen_point : public Draggable
@@ -455,6 +468,9 @@ public:
     std::vector<Draggable_disc> const& get_position_points() const;
     std::vector<Draggable_disc> const& get_rotation_handles() const;
     std::unordered_map<std::string, Draggable_point> const& get_property_handles() const;
+    Draggable_disc const& get_setting_handle() const;
+    Draggable_disc      & get_setting_handle();
+
 
     Eigen::Vector3f get_min() const;
     Eigen::Vector3f get_max() const;
@@ -484,6 +500,7 @@ private:
     std::vector<Draggable_point> _size_handles;
     std::vector<Draggable_disc> _position_handles;
     std::vector<Draggable_disc> _rotation_handles;
+    Draggable_disc _setting_handle;
     std::unordered_map<std::string, Draggable_point> _property_handles;
     std::unordered_map<std::string, Eigen::Vector2f> _property_ranges;
 

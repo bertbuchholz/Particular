@@ -52,6 +52,7 @@ Main_game_screen::Main_game_screen(My_viewer &viewer, Core &core, Ui_state ui_st
     _rotate_tex = f.create_texture(Data_config::get_instance()->get_absolute_qfilename("textures/rotate.png"));
     _move_tex = f.create_texture(Data_config::get_instance()->get_absolute_qfilename("textures/move.png"));
     _scale_tex = f.create_texture(Data_config::get_instance()->get_absolute_qfilename("textures/scale.png"));
+    _settings_tex = f.create_texture(Data_config::get_instance()->get_absolute_qfilename("textures/handle_settings.png"));
     _slider_tex = f.create_texture(Data_config::get_instance()->get_absolute_qfilename("textures/slider.png"));
 
     _main_fbo = std::unique_ptr<QGLFramebufferObject>(new QGLFramebufferObject(QSize(_viewer.camera()->screenWidth(), _viewer.camera()->screenHeight()), QGLFramebufferObject::Depth));
@@ -821,6 +822,11 @@ void Main_game_screen::show_context_menu_for_element()
     delete action_user_property;
 }
 
+void Main_game_screen::level_element_settings_button_clicked(Draggable *clicked_draggable)
+{
+    show_context_menu_for_element();
+}
+
 void Main_game_screen::draw_molecules_for_picking()
 {
     for (Molecule const& molecule : _core.get_molecules())
@@ -922,6 +928,10 @@ void Main_game_screen::update_active_draggables()
         {
             edit_type = d.second->is_user_editable();
         }
+        else if (_ui_state == Ui_state::Editor)
+        {
+            edit_type = Level_element::Edit_type::Editor;
+        }
 
         std::vector<Draggable*> const draggables = d.first->get_draggables(edit_type);
         std::copy(draggables.begin(), draggables.end(), std::back_inserter(_active_draggables));
@@ -975,43 +985,44 @@ void Main_game_screen::update_draggable_to_level_element()
     {
         for (boost::shared_ptr<Level_element> const& element : _core.get_level_data()._level_elements)
         {
-            Level_element * e = element.get();
+            Level_element * level_element = element.get();
 
-            if (Brownian_box const* b = dynamic_cast<Brownian_box const*>(e))
+            Draggable_box * draggable = nullptr;
+
+            if (Brownian_box const* b = dynamic_cast<Brownian_box const*>(level_element))
             {
-                Draggable_box * draggable = new Draggable_box(b->get_position(), b->get_extent(), b->get_transform(), b->get_parameters());
-                _draggable_to_level_element[draggable] = e;
+                draggable = new Draggable_box(b->get_position(), b->get_extent(), b->get_transform(), b->get_parameters());
             }
-            else if (Moving_box_barrier * b = dynamic_cast<Moving_box_barrier*>(e))
+            else if (Moving_box_barrier * b = dynamic_cast<Moving_box_barrier*>(level_element))
             {
-                Draggable_box * draggable = new Draggable_box(b->get_position(), b->get_extent(), b->get_transform(), b->get_parameters(), b);
+                draggable = new Draggable_box(b->get_position(), b->get_extent(), b->get_transform(), b->get_parameters(), b);
                 b->add_observer(draggable);
-                _draggable_to_level_element[draggable] = e;
             }
-            else if (Charged_barrier const* b = dynamic_cast<Charged_barrier const*>(e))
+            else if (Charged_barrier const* b = dynamic_cast<Charged_barrier const*>(level_element))
             {
-                Draggable_box * draggable = new Draggable_box(b->get_position(), b->get_extent(), b->get_transform(), b->get_parameters());
-                _draggable_to_level_element[draggable] = e;
+                draggable = new Draggable_box(b->get_position(), b->get_extent(), b->get_transform(), b->get_parameters());
             }
-            else if (Box_barrier const* b = dynamic_cast<Box_barrier const*>(e))
+            else if (Box_barrier const* b = dynamic_cast<Box_barrier const*>(level_element))
             {
-                Draggable_box * draggable = new Draggable_box(b->get_position(), b->get_extent(), b->get_transform(), b->get_parameters());
-                _draggable_to_level_element[draggable] = e;
+                draggable = new Draggable_box(b->get_position(), b->get_extent(), b->get_transform(), b->get_parameters());
             }
-            else if (Blow_barrier const* b = dynamic_cast<Blow_barrier const*>(e))
+            else if (Blow_barrier const* b = dynamic_cast<Blow_barrier const*>(level_element))
             {
-                Draggable_box * draggable = new Draggable_box(b->get_position(), b->get_extent(), b->get_transform());
-                _draggable_to_level_element[draggable] = e;
+                draggable = new Draggable_box(b->get_position(), b->get_extent(), b->get_transform());
             }
-            else if (Box_portal const* b = dynamic_cast<Box_portal const*>(e))
+            else if (Box_portal const* b = dynamic_cast<Box_portal const*>(level_element))
             {
-                Draggable_box * draggable = new Draggable_box(b->get_position(), b->get_extent(), b->get_transform());
-                _draggable_to_level_element[draggable] = e;
+                draggable = new Draggable_box(b->get_position(), b->get_extent(), b->get_transform());
             }
-            else if (Molecule_releaser const* m = dynamic_cast<Molecule_releaser const*>(e)) // TODO: if Atom_cannon is added, must be before this entry
+            else if (Molecule_releaser const* m = dynamic_cast<Molecule_releaser const*>(level_element)) // TODO: if Atom_cannon is added, must be before this entry
             {
-                Draggable_box * draggable = new Draggable_box(m->get_position(), m->get_extent(), m->get_transform(), m->get_parameters());
-                _draggable_to_level_element[draggable] = e;
+                draggable = new Draggable_box(m->get_position(), m->get_extent(), m->get_transform(), m->get_parameters());
+            }
+
+            if (draggable)
+            {
+                _draggable_to_level_element[draggable] = level_element;
+                draggable->get_setting_handle().set_callback_self(std::bind(&Main_game_screen::level_element_settings_button_clicked, this, std::placeholders::_1));
             }
         }
     }
@@ -1090,6 +1101,20 @@ void Main_game_screen::draw_draggables() // FIXME: use visitors or change it so 
 
                     glPopMatrix();
                 }
+            }
+
+            if (always_draw || (int(edit_type) & int(Level_element::Edit_type::Settings)))
+            {
+                Draggable_disc const& d_disc = d_box->get_setting_handle();
+                glPushMatrix();
+
+                glTranslatef(d_disc.get_position()[0] + z_offset, d_disc.get_position()[1] + z_offset, d_disc.get_position()[2] + z_offset);
+                glScalef(scale, scale, scale);
+                glRotatef(90, 1.0, 0.0, 0.0);
+                glColor4f(1.0f, 1.0f, 1.0f, 0.5f);
+                _viewer.draw_textured_quad(_settings_tex);
+
+                glPopMatrix();
             }
 
             if (always_draw || (int(edit_type) & int(Level_element::Edit_type::Property)))

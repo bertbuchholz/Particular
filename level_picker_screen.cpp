@@ -38,7 +38,7 @@ void Level_picker_screen::init()
                                                                              std::bind(&Level_picker_screen::play_level, this, std::placeholders::_1), level_name.toStdString()));
         _play_buttons.push_back(play_button);
 
-        boost::shared_ptr<Draggable_button> stats_button(new Draggable_button(Eigen::Vector3f(0.25f + index_on_page * 0.25f, 0.4f, 0.0f), Eigen::Vector2f(0.2f, 0.1f), "Stats",
+        boost::shared_ptr<Draggable_button> stats_button(new Draggable_button(Eigen::Vector3f(0.25f + index_on_page * 0.25f, 0.4f, 0.0f), Eigen::Vector2f(0.2f, 0.1f), "Highscore",
                                                                               std::bind(&Level_picker_screen::show_stats, this, std::placeholders::_1), level_name.toStdString()));
         _statistic_buttons.push_back(stats_button);
 
@@ -48,11 +48,11 @@ void Level_picker_screen::init()
     }
 
     {
-        boost::shared_ptr<Draggable_button> left_arrow_button (new Draggable_button(Eigen::Vector3f(0.06f, 0.5f, 0.0f), Eigen::Vector2f(0.04f, 0.7f), "L",
+        boost::shared_ptr<Draggable_button> left_arrow_button (new Draggable_button(Eigen::Vector3f(0.06f, 0.5f, 0.0f), Eigen::Vector2f(0.04f, 0.7f), "<",
                                                                std::bind(&Level_picker_screen::change_page, this, std::placeholders::_1), "left"));
         _page_arrow_buttons.push_back(left_arrow_button);
 
-        boost::shared_ptr<Draggable_button> right_arrow_button(new Draggable_button(Eigen::Vector3f(0.94f, 0.5f, 0.0f), Eigen::Vector2f(0.04f, 0.7f), "R",
+        boost::shared_ptr<Draggable_button> right_arrow_button(new Draggable_button(Eigen::Vector3f(0.94f, 0.5f, 0.0f), Eigen::Vector2f(0.04f, 0.7f), ">",
                                                                std::bind(&Level_picker_screen::change_page, this, std::placeholders::_1), "right"));
         _page_arrow_buttons.push_back(right_arrow_button);
 

@@ -1533,16 +1533,26 @@ void Main_game_screen::handle_level_change(Main_game_screen::Level_state const l
         setup_intro();
         assert(_core.get_level_data()._game_field_borders.size() == 6);
     }
-    else if (_core.get_current_level_index() == 0 && _ui_state == Ui_state::Playing)
+    else if (_core.get_level_base_name(_core.get_current_level_index()) == std::string("Intro 1") && _ui_state == Ui_state::Playing)
     {
-        std::cout << "Level 0, adding tutorial events" << std::endl;
-        clear_events();
+        std::cout << "Intro 1, adding tutorial events" << std::endl;
         add_event(new Molecule_releaser_event(_core, _viewer, *this));
         add_event(new Portal_event(_core, _viewer, *this));
-        add_event(new Heat_button_event(_core, _viewer, *this));
-        add_event(new Heat_element_placed_event(_core, _viewer, *this));
+        add_event(new Static_existing_heat_element_event(_core, _viewer, *this));
         add_event(new Heat_turned_up_event(_core, _viewer, *this));
     }
+    else if (_core.get_level_base_name(_core.get_current_level_index()) == std::string("Intro 2") && _ui_state == Ui_state::Playing)
+    {
+        std::cout << "Intro 2, adding tutorial events" << std::endl;
+        add_event(new Movable_existing_heat_element_event(_core, _viewer, *this));
+    }
+    else if (_core.get_level_base_name(_core.get_current_level_index()) == std::string("Level 1") && _ui_state == Ui_state::Playing)
+    {
+        std::cout << "Level 1, adding tutorial events" << std::endl;
+        add_event(new Heat_button_event(_core, _viewer, *this));
+        add_event(new Heat_element_placed_event(_core, _viewer, *this));
+    }
+
 
 //    if (_ui_state != Ui_state::Level_editor)
     if (_core.get_game_state() == Core::Game_state::Running)

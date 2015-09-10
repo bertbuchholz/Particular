@@ -66,6 +66,24 @@ public:
     bool trigger() override;
 };
 
+class Static_existing_heat_element_event : public Event
+{
+public:
+    Static_existing_heat_element_event(Core & core, My_viewer & viewer, Screen & calling_screen) : Event(core, viewer, calling_screen)
+    { }
+
+    bool trigger() override;
+};
+
+class Movable_existing_heat_element_event : public Event
+{
+public:
+    Movable_existing_heat_element_event(Core & core, My_viewer & viewer, Screen & calling_screen) : Event(core, viewer, calling_screen)
+    { }
+
+    bool trigger() override;
+};
+
 class Heat_element_placed_event : public Event
 {
 public:

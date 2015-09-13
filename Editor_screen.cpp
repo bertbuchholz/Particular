@@ -53,8 +53,12 @@ std::string get_element_description(std::string const& element_type)
 
 Editor_screen::Editor_screen(My_viewer &viewer, Core &core) : Main_game_screen(viewer, core, Ui_state::Editor)
 {
-//    _placeable_molecules = std::vector<std::string>{ "H2O", "Na", "Cl" };
     _placeable_molecules = { "H2O", "Na", "Cl" };
+
+    for (std::string const& m : _placeable_molecules)
+    {
+        _num_molecules_to_be_placed_per_type[m] = 1;
+    }
 
     init_controls();
 
@@ -247,7 +251,15 @@ bool Editor_screen::mouseReleaseEvent(QMouseEvent * event)
 
             _selection = Selection::Level_element;
             Draggable * parent = _active_draggables[_picked_index]->get_parent();
-            parent->clicked();
+
+            if (event->button() == Qt::LeftButton)
+            {
+                parent->clicked();
+            }
+            else if (event->button() == Qt::RightButton)
+            {
+                parent->right_clicked();
+            }
 
             auto iter = _draggable_to_level_element.find(parent);
             if (iter != _draggable_to_level_element.end())
@@ -344,7 +356,7 @@ bool Editor_screen::keyPressEvent(QKeyEvent * event)
     return handled;
 }
 
-void Editor_screen::init_controls()
+void Editor_screen:: init_controls()
 {
     std::cout << __FUNCTION__ << std::endl;
 
@@ -404,10 +416,11 @@ void Editor_screen::init_controls()
 
         boost::shared_ptr<Draggable_button> button(new Draggable_button(pos, size, "", std::bind(&Editor_screen::level_element_button_pressed, this, std::placeholders::_1), molecule));
         button->set_pressable(true);
+        button->set_right_click_callback_with_data(std::bind(&Editor_screen::molecule_button_right_click_event, this, std::placeholders::_1), molecule);
 
 //        QImage button_img(Data_config::get_instance()->get_absolute_qfilename("textures/button_" + QString::fromStdString(molecule) + ".png"));
 
-        button->set_tooltip_text(get_element_description(molecule));
+        button->set_tooltip_text(get_element_description(molecule) + "\n(Right click for number to be added)");
 //        button->set_texture(_viewer.bindTexture(button_img));
         button->set_texture(f.create_texture(Data_config::get_instance()->get_absolute_qfilename("textures/button_" + QString::fromStdString(molecule) + ".png"), true));
 
@@ -529,6 +542,10 @@ void Editor_screen::init_controls()
     button_load_defaults->set_tooltip_text("Load default settings");
     button_load_defaults->set_visible(true);
 
+
+
+    // Normal Controls
+
     _buttons.push_back(button_load_defaults);
     _normal_controls.push_back(button_load_defaults);
 
@@ -540,6 +557,9 @@ void Editor_screen::init_controls()
     translation_fluctuation_slider->set_slider_marker_texture(_slider_tex);
     translation_fluctuation_slider->set_texture(f.create_texture(Data_config::get_instance()->get_absolute_qfilename("textures/slider_temperature.png")));
     translation_fluctuation_slider->set_tooltip_text("Overall temperature control, things start moving fast and randomly when it is hot");
+
+    translation_fluctuation_slider->set_right_click_callback_with_data(std::bind(&Editor_screen::parameter_slider_right_click_event, this, std::placeholders::_1), "Temperature");
+    _slider_parameter_names_to_parameters["Temperature"] = _core.get_level_data()._parameters["Temperature"];
 
     _sliders.push_back(translation_fluctuation_slider);
     _normal_controls.push_back(translation_fluctuation_slider);
@@ -553,6 +573,9 @@ void Editor_screen::init_controls()
     damping_slider->set_texture(f.create_texture(Data_config::get_instance()->get_absolute_qfilename("textures/slider_damping.png")));
     damping_slider->set_tooltip_text("Damping, controls how quickly moving objects lose their speed");
 
+    damping_slider->set_right_click_callback_with_data(std::bind(&Editor_screen::parameter_slider_right_click_event, this, std::placeholders::_1), "Damping");
+    _slider_parameter_names_to_parameters["Damping"] = _core.get_level_data()._parameters["Damping"];
+
     _sliders.push_back(damping_slider);
     _normal_controls.push_back(damping_slider);
 
@@ -565,9 +588,14 @@ void Editor_screen::init_controls()
     gravity_slider->set_texture(f.create_texture(Data_config::get_instance()->get_absolute_qfilename("textures/slider_gravity.png")));
     gravity_slider->set_tooltip_text("Gravity, controls how fast the apple falls");
 
+    gravity_slider->set_right_click_callback_with_data(std::bind(&Editor_screen::parameter_slider_right_click_event, this, std::placeholders::_1), "Gravity");
+    _slider_parameter_names_to_parameters["Gravity"] = _core.get_level_data()._parameters["gravity"];
+
     _sliders.push_back(gravity_slider);
     _normal_controls.push_back(gravity_slider);
 
+
+    // Advanced Controls
 
     boost::shared_ptr<Draggable_label> adv_options_label(
                 new Draggable_label(Eigen::Vector3f(0.9f, 0.71f, 0.0f),
@@ -587,6 +615,9 @@ void Editor_screen::init_controls()
     mass_slider->set_texture(f.create_texture(Data_config::get_instance()->get_absolute_qfilename("textures/slider_mass.png")));
     mass_slider->set_tooltip_text("Mass, controls the relative mass of the atoms");
 
+    mass_slider->set_right_click_callback_with_data(std::bind(&Editor_screen::parameter_slider_right_click_event, this, std::placeholders::_1), "Mass Factor");
+    _slider_parameter_names_to_parameters["Mass Factor"] = _core.get_parameters()["Mass Factor"];
+
     _sliders.push_back(mass_slider);
     _advanced_controls.push_back(mass_slider);
 
@@ -598,6 +629,9 @@ void Editor_screen::init_controls()
     coulomb_slider->set_slider_marker_texture(_slider_tex);
     coulomb_slider->set_texture(f.create_texture(Data_config::get_instance()->get_absolute_qfilename("textures/slider_coulomb.png")));
     coulomb_slider->set_tooltip_text("Coulomb Force, controls the strength of electric attraction and repulsion between molecules");
+
+    coulomb_slider->set_right_click_callback_with_data(std::bind(&Editor_screen::parameter_slider_right_click_event, this, std::placeholders::_1), "Coulomb Force");
+    _slider_parameter_names_to_parameters["Coulomb Force"] = _core.get_parameters()["Atomic Force Type/Coulomb Force/Strength"];
 
     _sliders.push_back(coulomb_slider);
     _advanced_controls.push_back(coulomb_slider);
@@ -611,6 +645,9 @@ void Editor_screen::init_controls()
     waals_slider->set_texture(f.create_texture(Data_config::get_instance()->get_absolute_qfilename("textures/slider_waals.png")));
     waals_slider->set_tooltip_text("Van der Waals Potential, controls the strength of attraction between chargeless molecules");
 
+    waals_slider->set_right_click_callback_with_data(std::bind(&Editor_screen::parameter_slider_right_click_event, this, std::placeholders::_1), "Van der Waals Force");
+    _slider_parameter_names_to_parameters["Van der Waals Force"] = _core.get_parameters()["Atomic Force Type/Van der Waals Force/Strength"];
+
     _sliders.push_back(waals_slider);
     _advanced_controls.push_back(waals_slider);
 
@@ -623,6 +660,9 @@ void Editor_screen::init_controls()
     width_slider->set_texture(f.create_texture(Data_config::get_instance()->get_absolute_qfilename("textures/slider_width.png")));
     width_slider->set_tooltip_text("Width of the containing box");
 
+    width_slider->set_right_click_callback_with_data(std::bind(&Editor_screen::parameter_slider_right_click_event, this, std::placeholders::_1), "Game Field Width");
+    _slider_parameter_names_to_parameters["Game Field Width"] = _core.get_level_data()._parameters["Game Field Width"];
+
     _sliders.push_back(width_slider);
     _advanced_controls.push_back(width_slider);
 
@@ -634,6 +674,9 @@ void Editor_screen::init_controls()
     height_slider->set_slider_marker_texture(_slider_tex);
     height_slider->set_texture(f.create_texture(Data_config::get_instance()->get_absolute_qfilename("textures/slider_height.png")));
     height_slider->set_tooltip_text("Height of the containing box");
+
+    height_slider->set_right_click_callback_with_data(std::bind(&Editor_screen::parameter_slider_right_click_event, this, std::placeholders::_1), "Game Field Height");
+    _slider_parameter_names_to_parameters["Game Field Height"] = _core.get_level_data()._parameters["Game Field Height"];
 
     _sliders.push_back(height_slider);
     _advanced_controls.push_back(height_slider);
@@ -667,15 +710,76 @@ void Editor_screen::level_element_button_pressed(const std::string &type)
     }
 }
 
+void Editor_screen::molecule_button_right_click_event(std::string const& type)
+{
+    std::cout << __FUNCTION__ << std::endl;
+
+    QMenu menu;
+
+    QWidgetAction * action_num_max_molecules = new QWidgetAction(this);
+
+    QSpinBox * spinbox_num_molecules = new QSpinBox();
+    {
+        spinbox_num_molecules->setMaximum(1000);
+        spinbox_num_molecules->setMinimum(1);
+        spinbox_num_molecules->setValue(_num_molecules_to_be_placed_per_type[type]);
+
+        action_num_max_molecules->setDefaultWidget(new Widget_text_combination(QString("Number of %1 molecules to place").arg(QString::fromStdString(type)), spinbox_num_molecules));
+    }
+
+    menu.addAction(action_num_max_molecules);
+
+    menu.exec(QCursor::pos());
+
+    _num_molecules_to_be_placed_per_type[type] = spinbox_num_molecules->value();
+
+    delete action_num_max_molecules;
+}
+
+void Editor_screen::parameter_slider_right_click_event(std::string const& parameter_name)
+{
+    std::cout << __FUNCTION__ << std::endl;
+
+    Parameter * parameter = _slider_parameter_names_to_parameters[parameter_name];
+
+    QString min_max_str = QString("(Min: %1, Max: %2)").arg(parameter->get_min<float>(), 0, 'f', 1).arg(parameter->get_max<float>(), 0, 'f', 1);
+
+    QMenu menu;
+
+    QWidgetAction * action_param = new QWidgetAction(this);
+
+    QDoubleSpinBox * spinbox_param = new QDoubleSpinBox();
+    {
+        float const step = (parameter->get_max<float>() - parameter->get_min<float>()) / 50.0f;
+        spinbox_param->setSingleStep(step);
+        spinbox_param->setRange(parameter->get_min<float>(), parameter->get_max<float>());
+        spinbox_param->setValue(parameter->get_value<float>());
+
+        action_param->setDefaultWidget(new Widget_text_combination(QString::fromStdString(parameter_name) + " " + min_max_str, spinbox_param));
+    }
+
+    menu.addAction(action_param);
+
+    menu.exec(QCursor::pos());
+
+    parameter->set_value(float(spinbox_param->value()));
+
+    delete action_param;
+}
+
+
 void Editor_screen::add_selected_level_element(const QPoint &mouse_pos)
 {
     bool const is_molecule_added = std::find(_placeable_molecules.begin(), _placeable_molecules.end(), _selected_level_element_button_type) != _placeable_molecules.end();
 
     Eigen::Hyperplane<float, 3> intersection_plane;
 
+    int num_to_add = 1;
+
     if (is_molecule_added)
     {
         intersection_plane = Eigen::Hyperplane<float, 3>(Eigen::Vector3f::UnitY(), Eigen::Vector3f::Zero());
+        num_to_add = _num_molecules_to_be_placed_per_type[_selected_level_element_button_type];
     }
     else
     {
@@ -702,7 +806,7 @@ void Editor_screen::add_selected_level_element(const QPoint &mouse_pos)
 //        _core.get_level_data()._available_elements[_selected_level_element_button_type] -= 1;
 //    }
 
-    add_element(placement_position, _selected_level_element_button_type);
+    add_element(placement_position, _selected_level_element_button_type, false, num_to_add);
 }
 
 void Editor_screen::toggle_simulation()

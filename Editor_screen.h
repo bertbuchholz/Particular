@@ -4,6 +4,7 @@
 #include "Main_game_screen.h"
 
 #include "Main_options_window.h"
+#include "widget_text_combination.h"
 
 class Editor_screen : public Main_game_screen
 {
@@ -17,7 +18,9 @@ public:
     bool keyPressEvent(QKeyEvent * event) override;
 
     void init_controls();
-    void level_element_button_pressed(const std::string &type);
+    void level_element_button_pressed(std::string const& type);
+    void molecule_button_right_click_event(std::string const& type);
+    void parameter_slider_right_click_event(std::string const& parameter_name);
 
     void add_selected_level_element(QPoint const& mouse_pos);
 
@@ -34,7 +37,7 @@ private:
     void load_defaults();
 
     std::vector<std::string> _placeable_molecules;
-
+    std::unordered_map<std::string, int> _num_molecules_to_be_placed_per_type;
 
     std::map<std::string, boost::shared_ptr<Draggable_button> > _level_element_buttons;
 
@@ -49,7 +52,10 @@ private:
     std::vector< boost::shared_ptr<Draggable> > _normal_controls;
     std::vector< boost::shared_ptr<Draggable> > _advanced_controls;
 
+    std::unordered_map<std::string, Parameter*> _slider_parameter_names_to_parameters;
+
 //    boost::shared_ptr<Draggable_slider> _translation_fluctuation_slider;
+
 };
 
 

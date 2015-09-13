@@ -51,6 +51,24 @@ void Draggable_slider::notify()
     _property_handle.set_position(Eigen::Vector3f(normalized_current_value * slider_range_3d - slider_range_3d / 2.0f, 0.0f, 0.0f));
 }
 
+void Draggable_slider::right_clicked()
+{
+    if (_callback_right_click_with_data) _callback_right_click_with_data(_callback_right_click_data);
+    else if (_callback_right_click) _callback_right_click();
+}
+
+void Draggable_slider::set_right_click_callback(std::function<void ()> callback_right_click)
+{
+    _callback_right_click = callback_right_click;
+}
+
+void Draggable_slider::set_right_click_callback_with_data(std::function<void (const std::string &)> callback_right_click_with_data, const std::string &data)
+{
+    _callback_right_click_with_data = callback_right_click_with_data;
+    _callback_right_click_data = data;
+}
+
+
 GLuint Draggable_slider::get_slider_marker_texture() const
 {
     return _slider_marker_texture;
@@ -427,6 +445,17 @@ Draggable_button::~Draggable_button()
     }
 }
 
+void Draggable_button::set_right_click_callback(std::function<void ()> callback_right_click)
+{
+    _callback_right_click = callback_right_click;
+}
+
+void Draggable_button::set_right_click_callback_with_data(std::function<void (const std::string &)> callback_right_click_with_data, const std::string &data)
+{
+    _callback_right_click_with_data = callback_right_click_with_data;
+    _callback_right_click_data = data;
+}
+
 void Draggable_button::set_pressable(const bool is_pressable)
 {
     _is_pressable = is_pressable;
@@ -467,6 +496,12 @@ void Draggable_button::clicked()
 
     if (_callback_with_data) _callback_with_data(_callback_data);
     else if (_callback) _callback();
+}
+
+void Draggable_button::right_clicked()
+{
+    if (_callback_right_click_with_data) _callback_right_click_with_data(_callback_right_click_data);
+    else if (_callback_right_click) _callback_right_click();
 }
 
 bool Draggable_button::is_pressable() const

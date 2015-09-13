@@ -12,7 +12,7 @@ Level_data::Level_data()
 
     _parameters.add_parameter(new Parameter("Game Field Width",  80.0f, 40.0f, 200.0f, std::bind(&Level_data::change_game_field_borders, this)));
     _parameters.add_parameter(new Parameter("Game Field Height", 40.0f, 20.0f, 200.0f, std::bind(&Level_data::change_game_field_borders, this)));
-    _parameters.add_parameter(new Parameter("Game Field Depth",  40.0f, 5.0f, 1000.0f, std::bind(&Level_data::change_game_field_borders, this)));
+    _parameters.add_parameter(new Parameter("Game Field Depth",  40.0f, 5.0f,  100.0f, std::bind(&Level_data::change_game_field_borders, this)));
 
     _parameters.add_parameter(new Parameter("score_time_factor", 60.0f, 1.0f, 3000.0f, update_variables));
 

@@ -53,7 +53,7 @@ public:
     void update_score_labels();
 
     void add_element_event(QPoint const& position);
-    void add_element(Eigen::Vector3f const& position, std::string const& element_type, bool const make_fully_editable = false);
+    void add_element(Eigen::Vector3f const& position, std::string const& element_type, bool const make_fully_editable = false, int const num_to_add = 1);
 
     void update_level_element_buttons();
     void level_element_button_pressed(std::string const& type);

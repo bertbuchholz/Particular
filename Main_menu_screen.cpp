@@ -141,6 +141,8 @@ void Main_menu_screen::start_editor()
 
     if (_core.get_progress().last_level == _core.get_level_names().size() || _core.get_progress().sandbox_warning_seen)
     {
+        _viewer.replace_screens(new Editor_screen(_viewer, _core));
+
         _core.load_level_defaults();
         _core.set_simulation_state(false);
 
@@ -148,7 +150,6 @@ void Main_menu_screen::start_editor()
 
         _core.set_new_game_state(Core::Game_state::Unstarted);
 
-        _viewer.replace_screens(new Editor_screen(_viewer, _core));
     }
 }
 

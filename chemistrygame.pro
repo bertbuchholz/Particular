@@ -187,4 +187,5 @@ HEADERS += \
     Draggable_event.h \
     Random_generator.h \
     Fps.h \
-    level_picker_screen.h
+    level_picker_screen.h \
+    widget_text_combination.h

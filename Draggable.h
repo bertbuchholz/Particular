@@ -145,6 +145,8 @@ public:
         }
     }
 
+    virtual void right_clicked() { }
+
 protected:
     Draggable * _parent;
 
@@ -273,6 +275,9 @@ public:
 
     ~Draggable_button();
 
+    void set_right_click_callback(std::function<void(void)> callback_right_click);
+    void set_right_click_callback_with_data(std::function<void(std::string const&)> callback_right_click_with_data, std::string const& data);
+
     void set_pressable(bool const is_pressable);
     bool is_pressable() const;
 
@@ -287,11 +292,20 @@ public:
 
     void clicked() override;
 
+    void right_clicked() override;
+
 private:
     std::function<void(void)> _callback;
     std::function<void(std::string const&)> _callback_with_data;
 
     std::string _callback_data;
+
+
+    std::function<void(void)> _callback_right_click;
+    std::function<void(std::string const&)> _callback_right_click_with_data;
+
+    std::string _callback_right_click_data;
+
 
     bool _is_pressable;
     bool _is_pressed;
@@ -365,6 +379,9 @@ public:
 
     const Draggable_screen_point &get_slider_marker() const;
 
+    void set_right_click_callback(std::function<void(void)> callback_right_click);
+    void set_right_click_callback_with_data(std::function<void(std::string const&)> callback_right_click_with_data, std::string const& data);
+
     GLuint get_slider_marker_texture() const;
     void set_slider_marker_texture(GLuint const texture);
 
@@ -372,12 +389,19 @@ public:
 
     void notify() override;
 
+    void right_clicked() override;
+
 private:
     void init();
 
     Draggable_screen_point  _property_handle;
 
     std::function<void(void)> _callback;
+
+    std::function<void(void)> _callback_right_click;
+    std::function<void(std::string const&)> _callback_right_click_with_data;
+
+    std::string _callback_right_click_data;
 
     Parameter * _parameter;
 

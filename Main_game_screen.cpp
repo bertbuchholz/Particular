@@ -1,5 +1,7 @@
 #include "Main_game_screen.h"
 
+#include <Low_discrepancy_sequences.h>
+
 #include "My_viewer.h"
 #include "Pause_screen.h"
 #include "Editor_pause_screen.h"
@@ -10,18 +12,7 @@
 #include "GL_texture.h"
 #include "Main_options_window.h"
 #include "Event.h"
-
-class Widget_text_combination : public QWidget
-{
-    public:
-    Widget_text_combination(QString const& text, QWidget * widget)
-    {
-        QHBoxLayout * layout = new QHBoxLayout;
-        layout->addWidget(new QLabel(text));
-        layout->addWidget(widget);
-        setLayout(layout);
-    }
-};
+#include "widget_text_combination.h"
 
 //Main_game_screen::Main_game_screen(My_viewer &viewer, Core &core, std::unique_ptr<World_renderer> &renderer) : Screen(viewer),
 Main_game_screen::Main_game_screen(My_viewer &viewer, Core &core, Ui_state ui_state) :
@@ -1216,14 +1207,23 @@ void Main_game_screen::add_element_event(const QPoint &position)
     }
 }
 
-void Main_game_screen::add_element(const Eigen::Vector3f &position, const std::string &element_type, bool const make_fully_editable)
+void Main_game_screen::add_element(const Eigen::Vector3f &position, const std::string &element_type, bool const make_fully_editable, int const num_to_add)
 {
     float front_pos = _core.get_level_data()._game_field_borders[Level_data::Plane::Neg_Y]->get_position()[1];
     float back_pos  = _core.get_level_data()._game_field_borders[Level_data::Plane::Pos_Y]->get_position()[1];
 
     if (Molecule::molecule_exists(element_type))
     {
-        _core.add_molecule(Molecule::create(element_type, position));
+        int const num_per_axis = std::ceil(std::pow(num_to_add, 1.0f / 3.0f));
+        float const radius = 3.0f * num_per_axis;
+
+        for (int i = 0; i < num_to_add; ++i)
+        {
+            Eigen::Vector3f offset = hammersley_3<Eigen::Vector3f>(i, num_to_add) * 2.0f - Eigen::Vector3f(1.0f, 1.0f, 1.0f);
+
+            Eigen::Vector3f final_position = position + offset * radius;
+            _core.add_molecule(Molecule::create(element_type, final_position));
+        }
     }
     else if (element_type == std::string("Box_barrier"))
     {
@@ -1523,34 +1523,41 @@ void Main_game_screen::handle_level_change(Main_game_screen::Level_state const l
 {
     std::cout << __FUNCTION__ << std::endl;
 
+    // when changing to sandbox, the main game screen is still in the stack as it's in state Killing. But it
+    // will still get signals and handle those events which can lead to crashes
+    if (get_state() == State::Killing) return;
+
     _level_state = level_state;
 
     clear_events();
     init_labels();
 
-    if (_level_state == Level_state::Intro)
+    if (_ui_state == Ui_state::Playing)
     {
-        setup_intro();
-        assert(_core.get_level_data()._game_field_borders.size() == 6);
-    }
-    else if (_core.get_level_base_name(_core.get_current_level_index()) == std::string("Intro 1") && _ui_state == Ui_state::Playing)
-    {
-        std::cout << "Intro 1, adding tutorial events" << std::endl;
-        add_event(new Molecule_releaser_event(_core, _viewer, *this));
-        add_event(new Portal_event(_core, _viewer, *this));
-        add_event(new Static_existing_heat_element_event(_core, _viewer, *this));
-        add_event(new Heat_turned_up_event(_core, _viewer, *this));
-    }
-    else if (_core.get_level_base_name(_core.get_current_level_index()) == std::string("Intro 2") && _ui_state == Ui_state::Playing)
-    {
-        std::cout << "Intro 2, adding tutorial events" << std::endl;
-        add_event(new Movable_existing_heat_element_event(_core, _viewer, *this));
-    }
-    else if (_core.get_level_base_name(_core.get_current_level_index()) == std::string("Level 1") && _ui_state == Ui_state::Playing)
-    {
-        std::cout << "Level 1, adding tutorial events" << std::endl;
-        add_event(new Heat_button_event(_core, _viewer, *this));
-        add_event(new Heat_element_placed_event(_core, _viewer, *this));
+        if (_level_state == Level_state::Intro)
+        {
+            setup_intro();
+            assert(_core.get_level_data()._game_field_borders.size() == 6);
+        }
+        else if (_core.get_level_base_name(_core.get_current_level_index()) == std::string("Intro 1"))
+        {
+            std::cout << "Intro 1, adding tutorial events" << std::endl;
+            add_event(new Molecule_releaser_event(_core, _viewer, *this));
+            add_event(new Portal_event(_core, _viewer, *this));
+            add_event(new Static_existing_heat_element_event(_core, _viewer, *this));
+            add_event(new Heat_turned_up_event(_core, _viewer, *this));
+        }
+        else if (_core.get_level_base_name(_core.get_current_level_index()) == std::string("Intro 2"))
+        {
+            std::cout << "Intro 2, adding tutorial events" << std::endl;
+            add_event(new Movable_existing_heat_element_event(_core, _viewer, *this));
+        }
+        else if (_core.get_level_base_name(_core.get_current_level_index()) == std::string("Level 1"))
+        {
+            std::cout << "Level 1, adding tutorial events" << std::endl;
+            add_event(new Heat_button_event(_core, _viewer, *this));
+            add_event(new Heat_element_placed_event(_core, _viewer, *this));
+        }
     }
 
 

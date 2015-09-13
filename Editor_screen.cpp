@@ -556,7 +556,7 @@ void Editor_screen:: init_controls()
                                      _core.get_level_data()._parameters["Temperature"]));
     translation_fluctuation_slider->set_slider_marker_texture(_slider_tex);
     translation_fluctuation_slider->set_texture(f.create_texture(Data_config::get_instance()->get_absolute_qfilename("textures/slider_temperature.png")));
-    translation_fluctuation_slider->set_tooltip_text("Overall temperature control, things start moving fast and randomly when it is hot");
+    translation_fluctuation_slider->set_tooltip_text("Overall temperature control, things start moving fast and randomly when it is hot\n(Right click for numerical input)");
 
     translation_fluctuation_slider->set_right_click_callback_with_data(std::bind(&Editor_screen::parameter_slider_right_click_event, this, std::placeholders::_1), "Temperature");
     _slider_parameter_names_to_parameters["Temperature"] = _core.get_level_data()._parameters["Temperature"];
@@ -571,7 +571,7 @@ void Editor_screen:: init_controls()
                                      _core.get_level_data()._parameters["Damping"]));
     damping_slider->set_slider_marker_texture(_slider_tex);
     damping_slider->set_texture(f.create_texture(Data_config::get_instance()->get_absolute_qfilename("textures/slider_damping.png")));
-    damping_slider->set_tooltip_text("Damping, controls how quickly moving objects lose their speed");
+    damping_slider->set_tooltip_text("Damping, controls how quickly moving objects lose their speed\n(Right click for numerical input)");
 
     damping_slider->set_right_click_callback_with_data(std::bind(&Editor_screen::parameter_slider_right_click_event, this, std::placeholders::_1), "Damping");
     _slider_parameter_names_to_parameters["Damping"] = _core.get_level_data()._parameters["Damping"];
@@ -586,7 +586,7 @@ void Editor_screen:: init_controls()
                                      _core.get_level_data()._parameters["gravity"]));
     gravity_slider->set_slider_marker_texture(_slider_tex);
     gravity_slider->set_texture(f.create_texture(Data_config::get_instance()->get_absolute_qfilename("textures/slider_gravity.png")));
-    gravity_slider->set_tooltip_text("Gravity, controls how fast the apple falls");
+    gravity_slider->set_tooltip_text("Gravity, controls how fast the apple falls\n(Right click for numerical input)");
 
     gravity_slider->set_right_click_callback_with_data(std::bind(&Editor_screen::parameter_slider_right_click_event, this, std::placeholders::_1), "Gravity");
     _slider_parameter_names_to_parameters["Gravity"] = _core.get_level_data()._parameters["gravity"];
@@ -613,7 +613,7 @@ void Editor_screen:: init_controls()
                                      _core.get_parameters()["Mass Factor"]));
     mass_slider->set_slider_marker_texture(_slider_tex);
     mass_slider->set_texture(f.create_texture(Data_config::get_instance()->get_absolute_qfilename("textures/slider_mass.png")));
-    mass_slider->set_tooltip_text("Mass, controls the relative mass of the atoms");
+    mass_slider->set_tooltip_text("Mass, controls the relative mass of the atoms\n(Right click for numerical input)");
 
     mass_slider->set_right_click_callback_with_data(std::bind(&Editor_screen::parameter_slider_right_click_event, this, std::placeholders::_1), "Mass Factor");
     _slider_parameter_names_to_parameters["Mass Factor"] = _core.get_parameters()["Mass Factor"];
@@ -628,7 +628,7 @@ void Editor_screen:: init_controls()
                                      _core.get_parameters()["Atomic Force Type/Coulomb Force/Strength"]));
     coulomb_slider->set_slider_marker_texture(_slider_tex);
     coulomb_slider->set_texture(f.create_texture(Data_config::get_instance()->get_absolute_qfilename("textures/slider_coulomb.png")));
-    coulomb_slider->set_tooltip_text("Coulomb Force, controls the strength of electric attraction and repulsion between molecules");
+    coulomb_slider->set_tooltip_text("Coulomb Force, controls the strength of electric attraction and repulsion between molecules\n(Right click for numerical input)");
 
     coulomb_slider->set_right_click_callback_with_data(std::bind(&Editor_screen::parameter_slider_right_click_event, this, std::placeholders::_1), "Coulomb Force");
     _slider_parameter_names_to_parameters["Coulomb Force"] = _core.get_parameters()["Atomic Force Type/Coulomb Force/Strength"];
@@ -643,7 +643,7 @@ void Editor_screen:: init_controls()
                                      _core.get_parameters()["Atomic Force Type/Van der Waals Force/Strength"]));
     waals_slider->set_slider_marker_texture(_slider_tex);
     waals_slider->set_texture(f.create_texture(Data_config::get_instance()->get_absolute_qfilename("textures/slider_waals.png")));
-    waals_slider->set_tooltip_text("Van der Waals Potential, controls the strength of attraction between chargeless molecules");
+    waals_slider->set_tooltip_text("Van der Waals Potential, controls the strength of attraction between chargeless molecules\n(Right click for numerical input)");
 
     waals_slider->set_right_click_callback_with_data(std::bind(&Editor_screen::parameter_slider_right_click_event, this, std::placeholders::_1), "Van der Waals Force");
     _slider_parameter_names_to_parameters["Van der Waals Force"] = _core.get_parameters()["Atomic Force Type/Van der Waals Force/Strength"];
@@ -658,7 +658,7 @@ void Editor_screen:: init_controls()
                                      _core.get_level_data()._parameters["Game Field Width"]));
     width_slider->set_slider_marker_texture(_slider_tex);
     width_slider->set_texture(f.create_texture(Data_config::get_instance()->get_absolute_qfilename("textures/slider_width.png")));
-    width_slider->set_tooltip_text("Width of the containing box");
+    width_slider->set_tooltip_text("Width of the containing box\n(Right click for numerical input)");
 
     width_slider->set_right_click_callback_with_data(std::bind(&Editor_screen::parameter_slider_right_click_event, this, std::placeholders::_1), "Game Field Width");
     _slider_parameter_names_to_parameters["Game Field Width"] = _core.get_level_data()._parameters["Game Field Width"];
@@ -673,7 +673,7 @@ void Editor_screen:: init_controls()
                                      _core.get_level_data()._parameters["Game Field Height"]));
     height_slider->set_slider_marker_texture(_slider_tex);
     height_slider->set_texture(f.create_texture(Data_config::get_instance()->get_absolute_qfilename("textures/slider_height.png")));
-    height_slider->set_tooltip_text("Height of the containing box");
+    height_slider->set_tooltip_text("Height of the containing box\n(Right click for numerical input)");
 
     height_slider->set_right_click_callback_with_data(std::bind(&Editor_screen::parameter_slider_right_click_event, this, std::placeholders::_1), "Game Field Height");
     _slider_parameter_names_to_parameters["Game Field Height"] = _core.get_level_data()._parameters["Game Field Height"];

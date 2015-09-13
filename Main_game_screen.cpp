@@ -1214,7 +1214,7 @@ void Main_game_screen::add_element(const Eigen::Vector3f &position, const std::s
 
     if (Molecule::molecule_exists(element_type))
     {
-        int const num_per_axis = std::ceil(std::pow(num_to_add, 1.0f / 3.0f));
+        int const num_per_axis = std::ceil(std::pow(num_to_add, 1.0f / 3.0f)) - 1;
         float const radius = 3.0f * num_per_axis;
 
         for (int i = 0; i < num_to_add; ++i)

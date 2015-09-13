@@ -15,7 +15,7 @@ class Screen : public QObject, public QOpenGLFunctions_3_3_Core
     Q_OBJECT
 
 public:
-    enum class Type { Modal = 0x01, Fullscreen = 0x02 };
+    enum class Type { Modal = 0x01, Non_Modal = 0x02, Fullscreen = 0x04 };
     enum class State { Paused = 0, Resuming, Pausing, Running, Fading_out, Fading_in, Faded_out, Killing, Killed };
 
     Screen(My_viewer & viewer) :

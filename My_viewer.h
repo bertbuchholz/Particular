@@ -92,6 +92,9 @@ public:
 
     Eigen::Vector2f qpixel_to_uniform_screen_pos(QPoint const& p);
 
+    void disable_camera_control();
+    void enable_camera_control();
+
 public Q_SLOTS:
     void handle_level_change(Main_game_screen::Level_state const state);
 

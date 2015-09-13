@@ -18,7 +18,7 @@ public:
 
     bool mousePressEvent(QMouseEvent * event) override;
     bool mouseMoveEvent(QMouseEvent *event) override;
-    bool wheelEvent(QWheelEvent *) override { return true; } // eat all wheel events in menus to avoid them being used in underlying screens
+//    bool wheelEvent(QWheelEvent *) override { return true; } // eat all wheel events in menus to avoid them being used in underlying screens
 
     void resize(QSize const&) override;
 

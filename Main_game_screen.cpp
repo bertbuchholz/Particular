@@ -1532,6 +1532,8 @@ void Main_game_screen::handle_level_change(Main_game_screen::Level_state const l
     clear_events();
     init_labels();
 
+    _viewer.enable_camera_control();
+
     if (_ui_state == Ui_state::Playing)
     {
         if (_level_state == Level_state::Intro)
@@ -1539,18 +1541,27 @@ void Main_game_screen::handle_level_change(Main_game_screen::Level_state const l
             setup_intro();
             assert(_core.get_level_data()._game_field_borders.size() == 6);
         }
+        else if (_core.get_level_base_name(_core.get_current_level_index()) == std::string("Intro 0"))
+        {
+            std::cout << "Intro 0, adding tutorial events" << std::endl;
+            add_event(new Intro_event(_core, _viewer, *this));
+            add_event(new Molecule_releaser_event(_core, _viewer, *this));
+            add_event(new Intro_done_event(_core, _viewer, *this));
+            _viewer.disable_camera_control();
+        }
         else if (_core.get_level_base_name(_core.get_current_level_index()) == std::string("Intro 1"))
         {
             std::cout << "Intro 1, adding tutorial events" << std::endl;
-            add_event(new Molecule_releaser_event(_core, _viewer, *this));
             add_event(new Portal_event(_core, _viewer, *this));
             add_event(new Static_existing_heat_element_event(_core, _viewer, *this));
             add_event(new Heat_turned_up_event(_core, _viewer, *this));
+//            _viewer.disable_camera_control();
         }
         else if (_core.get_level_base_name(_core.get_current_level_index()) == std::string("Intro 2"))
         {
             std::cout << "Intro 2, adding tutorial events" << std::endl;
             add_event(new Movable_existing_heat_element_event(_core, _viewer, *this));
+//            _viewer.disable_camera_control();
         }
         else if (_core.get_level_base_name(_core.get_current_level_index()) == std::string("Level 1"))
         {

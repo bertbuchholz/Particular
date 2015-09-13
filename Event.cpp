@@ -3,6 +3,7 @@
 #include "Core.h"
 #include "My_viewer.h"
 #include "Help_screen.h"
+#include "Before_start_screen.h"
 
 
 Eigen::AlignedBox2f get_projected_outlines_bb(My_viewer const& viewer, Eigen::AlignedBox3f const& aabb)
@@ -22,7 +23,7 @@ Eigen::AlignedBox2f get_projected_outlines_bb(My_viewer const& viewer, Eigen::Al
 
 bool Molecule_releaser_event::trigger()
 {
-    if (_core.get_current_time() < 5.0f) return false;
+    if (_core.get_current_time() < 10.0f) return false;
 
     if (_core.get_level_data()._molecule_releasers.size() != 1) return false;
 
@@ -336,6 +337,89 @@ bool Heat_turned_up_event::trigger()
     help_screen->init();
 
     _viewer.add_screen_delayed(help_screen);
+
+    return true;
+}
+
+bool Intro_event::trigger()
+{
+    if (_core.get_current_time() < 5.0f) return false;
+
+    Help_screen * help_screen = new Help_screen(_viewer, _core, _calling_screen);
+
+    Help_screen::Help_item item;
+    item._text_rect_size = Eigen::Vector2f(0.3f, 0.3f);
+    item._text_rect_position = Eigen::Vector2f(0.6f, 0.4f);
+    item._use_particle_system = false;
+
+    _core.set_simulation_state(false);
+
+    {
+        item._text = QString("In this intro level, you can watch molecules and later experiment with the camera controls. Not much else to be done here. :-)");
+
+        help_screen->_help_items.push_back(item);
+    }
+
+    help_screen->init();
+
+    _viewer.add_screen_delayed(help_screen);
+
+    return true;
+}
+
+
+class My_help_screen : public Help_screen
+{
+public:
+    My_help_screen(My_viewer & viewer, Core & core, Screen & calling_screen, Screen::Type const type = Screen::Type::Modal) :
+        Help_screen(viewer, core, calling_screen, type)
+    { }
+
+    virtual void continue_game() override
+    {
+        _core.load_next_level();
+
+        _viewer.add_screen(new Before_start_screen(_viewer, _core));
+
+        kill();
+    }
+};
+
+
+bool Intro_done_event::trigger()
+{
+    if (_core.get_current_time() < 15.0f) return false;
+
+    Help_screen * help_screen = new My_help_screen(_viewer, _core, _calling_screen, Screen::Type::Non_Modal);
+
+    Help_screen::Help_item item;
+    item._text_rect_size = Eigen::Vector2f(0.4f, 0.3f);
+    item._text_rect_position = Eigen::Vector2f(0.55f, 0.4f);
+    item._use_particle_system = false;
+
+//    {
+//        item._text = QString("In the further intro, the camera controls will be disabled.");
+
+//        help_screen->_help_items.push_back(item);
+//    }
+
+    {
+        item._text = QString("You can now experiment with the camera controls.");
+
+        help_screen->_help_items.push_back(item);
+    }
+
+    {
+        item._text = QString("Left mouse button: Rotate\nRight mouse button: Pan\nMouse wheel: Zoom\nWhen you are done experimenting, click \"Got it!\" to advance to the next level.");
+
+        help_screen->_help_items.push_back(item);
+    }
+
+    help_screen->init();
+
+    _viewer.add_screen_delayed(help_screen);
+
+    _viewer.enable_camera_control();
 
     return true;
 }

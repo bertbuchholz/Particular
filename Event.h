@@ -38,6 +38,32 @@ protected:
 // Event 5
 // -
 
+class Intro_event : public Event
+{
+public:
+    Intro_event(Core & core, My_viewer & viewer, Screen & calling_screen) : Event(core, viewer, calling_screen)
+    { }
+
+    bool trigger() override;
+};
+
+class Camera_controls_event : public Event
+{
+public:
+    Camera_controls_event(Core & core, My_viewer & viewer, Screen & calling_screen) : Event(core, viewer, calling_screen)
+    { }
+
+    bool trigger() override;
+};
+
+class Intro_done_event : public Event
+{
+public:
+    Intro_done_event(Core & core, My_viewer & viewer, Screen & calling_screen) : Event(core, viewer, calling_screen)
+    { }
+
+    bool trigger() override;
+};
 
 class Molecule_releaser_event : public Event
 {

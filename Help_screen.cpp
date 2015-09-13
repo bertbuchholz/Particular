@@ -3,11 +3,11 @@
 #include "Core.h"
 #include "My_viewer.h"
 
-Help_screen::Help_screen(My_viewer &viewer, Core &core, Screen & calling_screen) : Menu_screen(viewer, core),
+Help_screen::Help_screen(My_viewer &viewer, Core &core, Screen & calling_screen, Screen::Type const type) : Menu_screen(viewer, core),
     _calling_screen(calling_screen),
     _current_item_index(0)
 {
-    _type = Screen::Type::Modal;
+    _type = type;
 
     _picking.init(_viewer.context());
 }
@@ -117,7 +117,10 @@ void Help_screen::init()
 
     assert(_buttons.size() == _help_items.size() && _labels.size() == _help_items.size());
 
-    _calling_screen.pause();
+    if (_type == Screen::Type::Modal)
+    {
+        _calling_screen.pause();
+    }
 }
 
 void Help_screen::draw()

@@ -198,6 +198,10 @@ void My_viewer::init()
     glEnable(GL_TEXTURE_2D);
 
     setBackgroundColor(QColor::fromRgbF(1.0f, 1.0f, 1.0f, 1.0f));
+
+//    qglviewer::AxisPlaneConstraint * constraint = new qglviewer::WorldConstraint();
+//    constraint->setRotationConstraintType(qglviewer::AxisPlaneConstraint::FORBIDDEN);
+//    camera()->frame()->setConstraint(constraint);
 }
 
 void My_viewer::start()
@@ -645,8 +649,8 @@ void My_viewer::wheelEvent(QWheelEvent * event)
 
 void My_viewer::animate()
 {
-    float const time_step = _frame_timer.restart() / 1000.0f;
-//    float const time_step = animationPeriod() / 1000.0f;
+//    float const time_step = _frame_timer.restart() / 1000.0f;
+    float const time_step = animationPeriod() / 1000.0f;
 //    std::cout << __func__ << " frame time: " << time_step << std::endl;
 
 //    _core.update_level_elements(time_step);
@@ -768,6 +772,22 @@ Eigen::Vector2f My_viewer::qpixel_to_uniform_screen_pos(const QPoint & p)
                 p.x() / float(camera()->screenWidth()),
                 (camera()->screenHeight() - p.y())  / float(camera()->screenHeight())
                 );
+}
+
+void My_viewer::disable_camera_control()
+{
+    setMouseBinding(Qt::NoModifier, Qt::LeftButton, QGLViewer::CAMERA, QGLViewer::NO_MOUSE_ACTION);
+    setMouseBinding(Qt::NoModifier, Qt::RightButton, QGLViewer::CAMERA, QGLViewer::NO_MOUSE_ACTION);
+    setMouseBinding(Qt::NoModifier, Qt::MidButton, QGLViewer::CAMERA, QGLViewer::NO_MOUSE_ACTION);
+    setWheelBinding(Qt::NoModifier, QGLViewer::CAMERA, QGLViewer::NO_MOUSE_ACTION);
+}
+
+void My_viewer::enable_camera_control()
+{
+    setMouseBinding(Qt::NoModifier, Qt::LeftButton, QGLViewer::CAMERA, QGLViewer::ROTATE);
+    setMouseBinding(Qt::NoModifier, Qt::RightButton, QGLViewer::CAMERA, QGLViewer::TRANSLATE);
+    setMouseBinding(Qt::NoModifier, Qt::MidButton, QGLViewer::CAMERA, QGLViewer::ZOOM);
+    setWheelBinding(Qt::NoModifier, QGLViewer::CAMERA, QGLViewer::ZOOM);
 }
 
 void My_viewer::handle_level_change(const Main_game_screen::Level_state state)

@@ -663,6 +663,8 @@ void Core::do_sensor_check()
 
 bool Core::check_is_finished() const
 {
+    if (_level_data._portals.size() == 0) return false;
+
     End_condition::State end_state = End_condition::State::Finished;
 
     for (Portal const* p : _level_data._portals)

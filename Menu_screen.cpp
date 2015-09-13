@@ -122,6 +122,8 @@ void Menu_screen::draw()
 
 bool Menu_screen::mousePressEvent(QMouseEvent *event)
 {
+    bool handled = false;
+
     if (event->buttons() & Qt::LeftButton)
     {
         int picked_index = _picking.do_pick(
@@ -132,14 +134,18 @@ bool Menu_screen::mousePressEvent(QMouseEvent *event)
         if (picked_index > -1)
         {
             _buttons[picked_index]->clicked();
+
+            handled = true;
         }
     }
 
-    return true;
+    return handled;
 }
 
 bool Menu_screen::mouseMoveEvent(QMouseEvent * event)
 {
+    bool handled = false;
+
     int const new_picking_index = _picking.do_pick(event->pos().x() / float(_viewer.camera()->screenWidth()), (_viewer.camera()->screenHeight() - event->pos().y())  / float(_viewer.camera()->screenHeight()),
                                      std::bind(&Menu_screen::draw_draggables_for_picking, this));
 
@@ -151,6 +157,8 @@ bool Menu_screen::mouseMoveEvent(QMouseEvent * event)
             std::cout << __FUNCTION__ << " stopped hovering" << std::endl;
 
             _hover_index = -1;
+
+            handled = true;
         }
 
         if (new_picking_index != -1)
@@ -159,10 +167,12 @@ bool Menu_screen::mouseMoveEvent(QMouseEvent * event)
 
             _hover_index = new_picking_index;
             std::cout << __FUNCTION__ << " started hovering" << std::endl;
+
+            handled = true;
         }
     }
 
-    return true;
+    return handled;
 }
 
 void Menu_screen::resize(QSize const& /* size */)

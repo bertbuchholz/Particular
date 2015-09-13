@@ -17,7 +17,7 @@ public:
         bool _use_particle_system;
     };
 
-    Help_screen(My_viewer & viewer, Core & core, Screen & calling_screen);
+    Help_screen(My_viewer & viewer, Core & core, Screen & calling_screen, Screen::Type const type = Screen::Type::Modal);
 
 //    bool keyPressEvent(QKeyEvent * event) override;
 
@@ -26,14 +26,14 @@ public:
     void draw() override;
     void update_event(float const time_step) override;
 
-    void continue_game();
+    virtual void continue_game();
     void next_help();
 
     static Help_screen * test(My_viewer &viewer, Core &core);
 
     std::vector<Help_item> _help_items;
 
-private:
+protected:
     Screen & _calling_screen;
 
     int _current_item_index;

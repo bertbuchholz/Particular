@@ -696,6 +696,27 @@ void My_viewer::replace_screens(Screen *s)
     add_screen(s);
 }
 
+void My_viewer::kill_screens_on_top(Screen *s)
+{
+    bool done = false;
+
+    assert(std::find(_screen_stack.begin(), _screen_stack.end(), s) != _screen_stack.end());
+
+    while (!done)
+    {
+        Screen * top_screen = _screen_stack.front().get();
+
+        if (top_screen != s)
+        {
+            s->kill();
+        }
+        else
+        {
+            done = true;
+        }
+    }
+}
+
 Screen *My_viewer::get_current_screen() const
 {
     return _screen_stack.front().get();

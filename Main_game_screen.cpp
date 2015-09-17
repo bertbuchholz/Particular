@@ -1586,13 +1586,15 @@ void Main_game_screen::handle_game_state_change()
 {
     std::cout << __FUNCTION__ << std::endl;
 
-    // check for killing when this state is started from the editor, don't want to revive the dying editor
+    // check for killing when this state is started from the editor, otherwise the dying editor is being revived
     if (_core.get_game_state() == Core::Game_state::Running && get_state() != State::Killing)
     {
         resume();
     }
     else if (_core.get_game_state() == Core::Game_state::Finished)
     {
+        clear_events();
+
         pause();
 
         _viewer.add_screen(new After_finish_screen(_viewer, _core, _ui_state));

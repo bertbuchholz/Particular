@@ -67,6 +67,7 @@ public:
     void add_screen_delayed(Screen * s);
     void kill_all_screens();
     void replace_screens(Screen * s);
+    void kill_screens_on_top(Screen * s); // remove the screens that are in the stack above s
     Screen * get_current_screen() const;
 
     //    void clear();

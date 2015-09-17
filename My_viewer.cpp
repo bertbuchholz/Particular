@@ -27,7 +27,6 @@ private:
     float _box_size_half;
 };
 
-
 My_viewer::My_viewer(Core &core, const QGLFormat &format) : Options_viewer(format), _core(core)
 {
     std::function<void(void)> update = std::bind(static_cast<void (My_viewer::*)()>(&My_viewer::update), this);
@@ -136,11 +135,6 @@ void My_viewer::update_game_camera()
     //        kfi->startInterpolation();
 
     camera()->interpolateTo(level_initial_view, 2.0f);
-
-//    Game_camera_constraint * camera_constraint = new Game_camera_constraint(_core.get_level_data()._game_field_borders); // FIXME: leak
-
-    //        delete camera()->frame()->constraint();
-    //        camera()->frame()->setConstraint(camera_constraint);
 }
 
 void My_viewer::change_clipping()
@@ -177,6 +171,10 @@ void My_viewer::init()
     Game_camera_constraint * camera_constraint = new Game_camera_constraint(195.0f);
     _my_camera->frame()->setConstraint(camera_constraint);
 
+    // constrains the rotation so that the camera can't rotate around the viewing axis
+    _my_camera->setUpVector({0.0f, 0.0f, 1.0f});
+    _my_camera->frame()->setRotatesAroundUpVector(true);
+
     setCamera(_my_camera);
 
     // effectively disables update() calls during manipulation since they are not necessary when running animation
@@ -198,10 +196,6 @@ void My_viewer::init()
     glEnable(GL_TEXTURE_2D);
 
     setBackgroundColor(QColor::fromRgbF(1.0f, 1.0f, 1.0f, 1.0f));
-
-//    qglviewer::AxisPlaneConstraint * constraint = new qglviewer::WorldConstraint();
-//    constraint->setRotationConstraintType(qglviewer::AxisPlaneConstraint::FORBIDDEN);
-//    camera()->frame()->setConstraint(constraint);
 }
 
 void My_viewer::start()

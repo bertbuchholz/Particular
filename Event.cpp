@@ -355,7 +355,7 @@ bool Intro_event::trigger()
     _core.set_simulation_state(false);
 
     {
-        item._text = QString("In this intro level, you can watch molecules and later experiment with the camera controls. Not much else to be done here. :-)");
+        item._text = QString("This intro level allows you to watch water molecules interact in zero-g and to experiment with the camera controls. Have fun. :-)");
 
         help_screen->_help_items.push_back(item);
     }

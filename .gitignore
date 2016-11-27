@@ -1,0 +1,5 @@
+*.o
+/build
+*.pro.user
+Makefile
+log.txt
